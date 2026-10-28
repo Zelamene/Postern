@@ -132,6 +132,9 @@ public class IngestAndTombstoneTests
         public Task<Alias?> FindAliasForIngestAsync(string fullAddressHash, CancellationToken cancellationToken) =>
             Task.FromResult(_aliases.SingleOrDefault(alias => alias.FullAddressHash == fullAddressHash));
 
+        public Task<Alias?> FindAliasForIngestWithExpectedSendersAsync(string fullAddressHash, CancellationToken cancellationToken) =>
+            Task.FromResult(_aliases.SingleOrDefault(alias => alias.FullAddressHash == fullAddressHash));
+
         public Task<Message> RecordMessageAsync(Message message, CancellationToken cancellationToken)
         {
             Messages.Add(message);
@@ -143,6 +146,10 @@ public class IngestAndTombstoneTests
             BlockedMessages.Add(blockedMessage);
             return Task.FromResult(blockedMessage);
         }
+
+        public Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<int> CountForwardedMessagesLast24HoursAsync(CancellationToken cancellationToken) => Task.FromResult(Messages.Count);
     }
 
     private sealed class InMemoryAliasRepository : IAliasRepository
