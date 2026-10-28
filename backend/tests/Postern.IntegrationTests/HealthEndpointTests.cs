@@ -5,13 +5,15 @@ using System.Net.Http.Json;
 
 namespace Postern.IntegrationTests;
 
-public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>, IDisposable
 {
+    private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public HealthEndpointTests(WebApplicationFactory<Program> factory)
     {
-        _client = factory.CreateClient();
+        _factory = ConfigureFactory(factory, "Development");
+        _client = _factory.CreateClient();
     }
 
     [Fact]
@@ -27,8 +29,7 @@ public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task SwaggerIsAvailableInDevelopment()
     {
-        using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseEnvironment("Development"));
+        using var factory = ConfigureFactory(new WebApplicationFactory<Program>(), "Development");
         using var client = factory.CreateClient();
 
         var uiResponse = await client.GetAsync("/swagger/index.html");
@@ -41,8 +42,7 @@ public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task SwaggerIsUnavailableOutsideDevelopment()
     {
-        using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseEnvironment("Production"));
+        using var factory = ConfigureFactory(new WebApplicationFactory<Program>(), "Production");
         using var client = factory.CreateClient();
 
         var uiResponse = await client.GetAsync("/swagger/index.html");
@@ -50,6 +50,23 @@ public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 
         Assert.Equal(HttpStatusCode.NotFound, uiResponse.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, documentResponse.StatusCode);
+    }
+
+    private static WebApplicationFactory<Program> ConfigureFactory(
+        WebApplicationFactory<Program> factory,
+        string environment) =>
+        factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment(environment);
+            builder.UseSetting(
+                "ConnectionStrings:Postgres",
+                "Host=localhost;Database=postern;Username=postern_app;Password=test-only;Search Path=postern");
+        });
+
+    public void Dispose()
+    {
+        _client.Dispose();
+        _factory.Dispose();
     }
 
     private sealed record HealthResponse(string Status);

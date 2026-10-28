@@ -56,6 +56,8 @@ CREATE SCHEMA IF NOT EXISTS postern;
 SELECT format('ALTER SCHEMA postern OWNER TO %I', :'migrator_role')
 \gexec
 
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+
 SELECT format('REVOKE ALL ON SCHEMA public FROM %I', :'app_role')
 \gexec
 

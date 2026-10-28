@@ -29,6 +29,14 @@ services:
     pids_limit: 256
     volumes:
       - ./backend:/workspace
+      - /workspace/src/Postern.Api/bin
+      - /workspace/src/Postern.Api/obj
+      - /workspace/src/Postern.Application/bin
+      - /workspace/src/Postern.Application/obj
+      - /workspace/src/Postern.Domain/bin
+      - /workspace/src/Postern.Domain/obj
+      - /workspace/src/Postern.Infrastructure/bin
+      - /workspace/src/Postern.Infrastructure/obj
     depends_on:
       db:
         condition: service_healthy
