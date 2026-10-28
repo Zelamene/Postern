@@ -59,6 +59,9 @@ public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         {
             builder.UseEnvironment(environment);
             builder.UseSetting(
+                "Authentication:SigningKey",
+                "integration-test-key-material-at-least-thirty-two-bytes");
+            builder.UseSetting(
                 "ConnectionStrings:Postgres",
                 "Host=localhost;Database=postern;Username=postern_app;Password=test-only;Search Path=postern");
         });
