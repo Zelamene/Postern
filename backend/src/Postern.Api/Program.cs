@@ -6,8 +6,12 @@ using Microsoft.IdentityModel.Tokens;
 using Postern.Api.Endpoints;
 using Postern.Api.Security;
 using Postern.Application.Accounts;
+using Postern.Application.Activity;
+using Postern.Application.Aliases;
 using Postern.Application.Integrations;
 using Postern.Infrastructure.Accounts;
+using Postern.Infrastructure.Activity;
+using Postern.Infrastructure.Aliases;
 using Postern.Infrastructure.Integrations;
 using Postern.Infrastructure.Persistence;
 
@@ -35,7 +39,11 @@ if (string.IsNullOrWhiteSpace(connectionString))
 builder.Services.AddDbContext<PosternDbContext>(options =>
     PosternDbContext.ConfigureNpgsql(options, connectionString));
 builder.Services.AddScoped<IAccountRepository, EfAccountRepository>();
+builder.Services.AddScoped<IAliasRepository, EfAliasRepository>();
+builder.Services.AddScoped<IActivityRepository, EfActivityRepository>();
 builder.Services.AddScoped<AuthenticationService>();
+builder.Services.AddScoped<AliasService>();
+builder.Services.AddScoped<IngestService>();
 builder.Services.AddSingleton<IPasswordHashingService, AspNetPasswordHashingService>();
 builder.Services.AddSingleton(TimeProvider.System);
 
@@ -107,6 +115,8 @@ if (app.Environment.IsDevelopment())
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapAuthenticationEndpoints();
+app.MapAliasEndpoints();
+app.MapIngestEndpoints();
 
 app.Run();
 
