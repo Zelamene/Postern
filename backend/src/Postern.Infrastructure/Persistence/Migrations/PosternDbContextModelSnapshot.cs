@@ -121,6 +121,11 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_users_normalized_email");
 
+                    b.HasIndex("RecoveryKeyHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_users_recovery_key_hash")
+                        .HasFilter("recovery_key_hash IS NOT NULL");
+
                     b.ToTable("users", "postern", t =>
                         {
                             t.HasCheckConstraint("ck_users_status", "status IN ('pending', 'active', 'suspended')");

@@ -36,6 +36,10 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
             entity.Property(user => user.InviteCodeUsedId).HasColumnName("invite_code_used_id");
             entity.Property(user => user.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.HasIndex(user => user.NormalizedEmail).IsUnique().HasDatabaseName("ux_users_normalized_email");
+            entity.HasIndex(user => user.RecoveryKeyHash)
+                .IsUnique()
+                .HasFilter("recovery_key_hash IS NOT NULL")
+                .HasDatabaseName("ux_users_recovery_key_hash");
             entity.HasOne<InviteCode>()
                 .WithMany()
                 .HasForeignKey(user => user.InviteCodeUsedId)

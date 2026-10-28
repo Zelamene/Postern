@@ -44,7 +44,21 @@ The API registers PostgreSQL using its runtime role but does not open a database
 
 Migrations run as `postern_migrator`; the API only receives the restricted `postern_app` credentials. The migration command does not use or require the bootstrap superuser.
 
+### Day 2 authentication
+
+The API exposes `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/recovery`, `POST /api/auth/logout`, and the authenticated `GET /api/auth/me`. Registration requires a single-use invite and a password of at least 12 characters. The signup cap is 199 accounts; pending verification accounts also count because they reserve destination slots.
+
+Signup and login accept internationalized email addresses, including Unicode local parts (EAI) and Unicode domain names (IDN). Inputs are Unicode-normalized, common international domain separators are accepted, and Unicode domains are validated and compared through their IDNA form. Use the same normalized address at signup and login.
+
+Login checks destination verification for pending accounts before activating them. The first successful verified login returns a one-time recovery key; only its SHA-256 hash is stored. `POST /api/auth/recovery` uses that key to change the password and atomically rotate to a new key. The key is shown only in that response, so save it securely. Login and recovery responses are marked `no-store`.
+
+Authentication uses a one-hour JWT in an `HttpOnly`, `SameSite=Strict` cookie, with `Secure` enabled outside Development. Configure `Authentication__SigningKey` in `env/api.env` with at least 32 bytes of random material; do not use or commit the example placeholder. Registration, login, and recovery are rate-limited per client IP in-process.
+
+Until the Day 15 invite manager exists, create a seven-day single-use local invite with `.\database\create-invite.ps1`. It prints the raw invite once; store it safely. In Development only, `POST /api/dev/destinations/{email}/verify` simulates Cloudflare destination verification after signup. The production Cloudflare destination adapter is not yet implemented; production registration and pending-account verification must not be enabled until that adapter is configured.
+
 The API and web development containers run as non-root users. Compose also drops Linux capabilities and enables `no-new-privileges` for both application containers.
+
+The API Dockerfile has an SDK-based `development` target selected by Compose and a multi-stage `production` target that publishes the application and runs only on the ASP.NET runtime image as UID `10001`. The default-deny backend build context allows only C# source and project files.
 
 Stop the containers with `Ctrl+C`, then run `docker compose down`. To remove the local database volume as well, run `docker compose down --volumes`; this permanently deletes local database data.
 
