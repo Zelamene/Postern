@@ -15,9 +15,15 @@ public static class AliasEndpoints
             .RequireAuthorization();
         group.MapPost("", CreateAliasAsync)
             .RequireAuthorization();
+        group.MapPatch("{aliasId:guid}", UpdateAliasAsync)
+            .RequireAuthorization();
         group.MapPatch("{aliasId:guid}/disable", DisableAliasAsync)
             .RequireAuthorization();
+        group.MapDelete("{aliasId:guid}", DeleteAliasAsync)
+            .RequireAuthorization();
         group.MapPatch("{aliasId:guid}/delete", DeleteAliasAsync)
+            .RequireAuthorization();
+        group.MapPost("{aliasId:guid}/replace", ReplaceAliasWithNewAsync)
             .RequireAuthorization();
         group.MapPatch("{aliasId:guid}/replace/{replacementAliasId:guid}", ReplaceAliasAsync)
             .RequireAuthorization();
@@ -113,6 +119,58 @@ public static class AliasEndpoints
 
         var success = await service.ReplaceAsync(currentUserId.Value, aliasId, replacementAliasId, cancellationToken);
         return success ? Results.NoContent() : Results.NotFound();
+    }
+
+    private static async Task<IResult> ReplaceAliasWithNewAsync(
+        Guid aliasId,
+        ReplaceAliasRequest request,
+        ClaimsPrincipal user,
+        AliasService service,
+        CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId(user);
+        if (currentUserId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var replacement = await service.CreateAsync(currentUserId.Value, request.Label ?? "replaced", request.PurposeMetadata ?? string.Empty, cancellationToken);
+        if (replacement is null)
+        {
+            return Results.BadRequest(new { error = "cannot_create_replacement" });
+        }
+
+        await service.CopyExpectedSendersAsync(currentUserId.Value, aliasId, replacement.Id, cancellationToken);
+        var success = await service.ReplaceAsync(currentUserId.Value, aliasId, replacement.Id, cancellationToken);
+        return success ? Results.Ok(MapAliasResponse(replacement)) : Results.NotFound();
+    }
+
+    private static async Task<IResult> UpdateAliasAsync(
+        Guid aliasId,
+        UpdateAliasRequest request,
+        ClaimsPrincipal user,
+        AliasService service,
+        CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId(user);
+        if (currentUserId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        if (string.Equals(request.Action, "disable", StringComparison.OrdinalIgnoreCase))
+        {
+            var success = await service.DisableAsync(currentUserId.Value, aliasId, cancellationToken);
+            return success ? Results.NoContent() : Results.NotFound();
+        }
+
+        if (string.Equals(request.Action, "delete", StringComparison.OrdinalIgnoreCase))
+        {
+            var success = await service.DeleteAsync(currentUserId.Value, aliasId, cancellationToken);
+            return success ? Results.NoContent() : Results.NotFound();
+        }
+
+        return Results.BadRequest(new { error = "unknown_action" });
     }
 
     private static async Task<IResult> ListExpectedSendersAsync(
@@ -216,6 +274,8 @@ public static class AliasEndpoints
             alias.DeletedAt);
 
     public sealed record CreateAliasRequest(string? Label, string? PurposeMetadata);
+    public sealed record UpdateAliasRequest(string Action);
+    public sealed record ReplaceAliasRequest(string? Label, string? PurposeMetadata);
     public sealed record AddExpectedSenderRequest(string SenderEtld1);
     public sealed record MarkExpectedSenderRequest(string SenderEtld1);
     public sealed record BlockSenderRequest(string SenderEtld1);
