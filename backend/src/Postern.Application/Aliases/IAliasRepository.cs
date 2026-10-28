@@ -51,4 +51,10 @@ public interface IAliasRepository
         Guid userId,
         string senderEtld1,
         CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<ExpectedSender>> CopyExpectedSendersAsync(
+        Guid sourceAliasId,
+        Guid targetAliasId,
+        Guid userId,
+        CancellationToken cancellationToken);
 }

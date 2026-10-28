@@ -135,26 +135,53 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
             return false;
         }
 
-        var kvValue = System.Text.Json.JsonSerializer.Serialize(new
-        {
-            destination = string.Empty,
-            status = alias.Status.ToString().ToLowerInvariant(),
-            userId = userId.ToString(),
-            blockedSenders = new[] { senderEtld1 }
-        });
-
-        try
-        {
-            if (alias.FullAddress is not null)
-            {
-                await dbContext.Database.ExecuteSqlRawAsync("SELECT 1", cancellationToken);
-            }
-        }
-        catch
-        {
-        }
-
         await MarkKvDirtyAsync(aliasId, cancellationToken);
         return true;
+    }
+
+    public async Task<IReadOnlyCollection<ExpectedSender>> CopyExpectedSendersAsync(
+        Guid sourceAliasId,
+        Guid targetAliasId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var sourceOwned = await GetOwnedAliasAsync(sourceAliasId, userId, cancellationToken);
+        var targetOwned = await GetOwnedAliasAsync(targetAliasId, userId, cancellationToken);
+        if (sourceOwned is null || targetOwned is null)
+        {
+            return Array.Empty<ExpectedSender>();
+        }
+
+        var existing = await dbContext.ExpectedSenders
+            .Where(sender => sender.AliasId == sourceAliasId)
+            .ToListAsync(cancellationToken);
+
+        var copied = new List<ExpectedSender>();
+        foreach (var sender in existing)
+        {
+            var alreadyExists = await dbContext.ExpectedSenders.AnyAsync(item => item.AliasId == targetAliasId && item.SenderEtld1 == sender.SenderEtld1, cancellationToken);
+            if (alreadyExists)
+            {
+                continue;
+            }
+
+            var entry = new ExpectedSender
+            {
+                Id = Guid.NewGuid(),
+                AliasId = targetAliasId,
+                SenderEtld1 = sender.SenderEtld1,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            dbContext.ExpectedSenders.Add(entry);
+            copied.Add(entry);
+        }
+
+        if (copied.Count > 0)
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        return copied;
     }
 }

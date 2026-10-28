@@ -238,5 +238,8 @@ public class IngestAndTombstoneTests
 
         public Task<bool> BlockSenderAsync(Guid aliasId, Guid userId, string senderEtld1, CancellationToken cancellationToken) =>
             Task.FromResult(_aliases.Any(item => item.Id == aliasId && item.UserId == userId));
+
+        public Task<IReadOnlyCollection<ExpectedSender>> CopyExpectedSendersAsync(Guid sourceAliasId, Guid targetAliasId, Guid userId, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyCollection<ExpectedSender>>(Array.Empty<ExpectedSender>());
     }
 }
