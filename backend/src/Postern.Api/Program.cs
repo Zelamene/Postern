@@ -44,6 +44,7 @@ builder.Services.AddScoped<IActivityRepository, EfActivityRepository>();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<AliasService>();
 builder.Services.AddScoped<IngestService>();
+builder.Services.AddScoped<RateLimitService>();
 builder.Services.AddSingleton<IPasswordHashingService, AspNetPasswordHashingService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IKvWriter, NoOpKvWriter>();

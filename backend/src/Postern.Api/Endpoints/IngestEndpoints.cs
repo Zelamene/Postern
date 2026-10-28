@@ -11,10 +11,18 @@ public static class IngestEndpoints
     }
 
     private static async Task<IResult> IngestAsync(
+        HttpContext context,
         IngestRequest request,
         IngestService ingestService,
         CancellationToken cancellationToken)
     {
+        var configuredSecret = context.RequestServices.GetService<IConfiguration>()?["Ingest:SharedSecret"];
+        var providedSecret = context.Request.Headers["X-Postern-Ingest-Secret"].ToString();
+        if (!string.IsNullOrWhiteSpace(configuredSecret) && !string.Equals(configuredSecret, providedSecret, StringComparison.Ordinal))
+        {
+            return Results.Unauthorized();
+        }
+
         var result = await ingestService.IngestAsync(
             request.RecipientAddress ?? string.Empty,
             request.EnvelopeSender ?? string.Empty,
