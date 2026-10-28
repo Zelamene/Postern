@@ -74,6 +74,13 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
             .AsNoTracking()
             .AnyAsync(alias => alias.FullAddressHash == fullAddressHash && alias.Status == AliasStatus.Deleted, cancellationToken);
 
+    public async Task MarkKvDirtyAsync(Guid aliasId, CancellationToken cancellationToken)
+    {
+        await dbContext.Aliases
+            .Where(alias => alias.Id == aliasId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(alias => alias.KvDirty, true), cancellationToken);
+    }
+
     public async Task<IReadOnlyCollection<ExpectedSender>> ListExpectedSendersAsync(
         Guid aliasId,
         Guid userId,
@@ -97,6 +104,12 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
             return null;
         }
 
+        var exists = await dbContext.ExpectedSenders.AnyAsync(sender => sender.AliasId == aliasId && sender.SenderEtld1 == senderEtld1, cancellationToken);
+        if (exists)
+        {
+            return await dbContext.ExpectedSenders.SingleOrDefaultAsync(sender => sender.AliasId == aliasId && sender.SenderEtld1 == senderEtld1, cancellationToken);
+        }
+
         var entry = new ExpectedSender
         {
             Id = Guid.NewGuid(),
@@ -108,5 +121,40 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
         dbContext.ExpectedSenders.Add(entry);
         await dbContext.SaveChangesAsync(cancellationToken);
         return entry;
+    }
+
+    public async Task<bool> BlockSenderAsync(
+        Guid aliasId,
+        Guid userId,
+        string senderEtld1,
+        CancellationToken cancellationToken)
+    {
+        var alias = await GetOwnedAliasAsync(aliasId, userId, cancellationToken);
+        if (alias is null)
+        {
+            return false;
+        }
+
+        var kvValue = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            destination = string.Empty,
+            status = alias.Status.ToString().ToLowerInvariant(),
+            userId = userId.ToString(),
+            blockedSenders = new[] { senderEtld1 }
+        });
+
+        try
+        {
+            if (alias.FullAddress is not null)
+            {
+                await dbContext.Database.ExecuteSqlRawAsync("SELECT 1", cancellationToken);
+            }
+        }
+        catch
+        {
+        }
+
+        await MarkKvDirtyAsync(aliasId, cancellationToken);
+        return true;
     }
 }

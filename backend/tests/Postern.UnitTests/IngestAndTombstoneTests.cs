@@ -79,11 +79,12 @@ public class IngestAndTombstoneTests
     {
         var timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 10, 28, 10, 0, 0, TimeSpan.Zero));
         var repository = new InMemoryAliasRepository();
-        var service = new AliasService(repository, timeProvider);
+        var kvWriter = new Postern.UnitTests.Fakes.InMemoryKvWriter();
+        var service = new AliasService(repository, timeProvider, kvWriter);
 
         var userId = Guid.NewGuid();
         var alias = await service.CreateAsync(userId, "test", "purpose", CancellationToken.None);
-        var originalAddress = alias.FullAddress!;
+        var originalAddress = alias!.FullAddress!;
         await service.DeleteAsync(userId, alias.Id, CancellationToken.None);
 
         var tombstoned = await service.IsAddressHashTombstonedAsync(originalAddress, CancellationToken.None);
@@ -211,10 +212,24 @@ public class IngestAndTombstoneTests
         public Task<bool> IsAddressHashTombstonedAsync(string fullAddressHash, CancellationToken cancellationToken) =>
             Task.FromResult(_aliases.Any(alias => alias.FullAddressHash == fullAddressHash && alias.Status == AliasStatus.Deleted));
 
+        public Task MarkKvDirtyAsync(Guid aliasId, CancellationToken cancellationToken)
+        {
+            var alias = _aliases.SingleOrDefault(item => item.Id == aliasId);
+            if (alias is not null)
+            {
+                alias.KvDirty = true;
+            }
+
+            return Task.CompletedTask;
+        }
+
         public Task<IReadOnlyCollection<ExpectedSender>> ListExpectedSendersAsync(Guid aliasId, Guid userId, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyCollection<ExpectedSender>>([]);
 
         public Task<ExpectedSender?> AddExpectedSenderAsync(Guid aliasId, Guid userId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) =>
             Task.FromResult<ExpectedSender?>(null);
+
+        public Task<bool> BlockSenderAsync(Guid aliasId, Guid userId, string senderEtld1, CancellationToken cancellationToken) =>
+            Task.FromResult(_aliases.Any(item => item.Id == aliasId && item.UserId == userId));
     }
 }
