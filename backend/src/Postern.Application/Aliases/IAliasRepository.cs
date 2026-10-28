@@ -32,6 +32,8 @@ public interface IAliasRepository
 
     Task<bool> IsAddressHashTombstonedAsync(string fullAddressHash, CancellationToken cancellationToken);
 
+    Task MarkKvDirtyAsync(Guid aliasId, CancellationToken cancellationToken);
+
     Task<IReadOnlyCollection<ExpectedSender>> ListExpectedSendersAsync(
         Guid aliasId,
         Guid userId,
@@ -42,5 +44,11 @@ public interface IAliasRepository
         Guid userId,
         string senderEtld1,
         DateTimeOffset createdAt,
+        CancellationToken cancellationToken);
+
+    Task<bool> BlockSenderAsync(
+        Guid aliasId,
+        Guid userId,
+        string senderEtld1,
         CancellationToken cancellationToken);
 }

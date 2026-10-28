@@ -25,6 +25,10 @@ public static class AliasEndpoints
             .RequireAuthorization();
         group.MapPost("{aliasId:guid}/expected-senders", AddExpectedSenderAsync)
             .RequireAuthorization();
+        group.MapPost("{aliasId:guid}/mark-expected", MarkExpectedSenderAsync)
+            .RequireAuthorization();
+        group.MapPost("{aliasId:guid}/block-sender", BlockSenderAsync)
+            .RequireAuthorization();
 
         return endpoints;
     }
@@ -57,7 +61,9 @@ public static class AliasEndpoints
         }
 
         var alias = await service.CreateAsync(currentUserId.Value, request.Label, request.PurposeMetadata ?? "", cancellationToken);
-        return Results.Created($"/api/aliases/{alias.Id}", MapAliasResponse(alias));
+        return alias is null
+            ? Results.BadRequest(new { error = "reserved_or_invalid_label" })
+            : Results.Created($"/api/aliases/{alias.Id}", MapAliasResponse(alias));
     }
 
     private static async Task<IResult> DisableAliasAsync(
@@ -148,6 +154,46 @@ public static class AliasEndpoints
                 new ExpectedSenderResponse(sender.Id, sender.SenderEtld1, sender.CreatedAt));
     }
 
+    private static async Task<IResult> MarkExpectedSenderAsync(
+        Guid aliasId,
+        MarkExpectedSenderRequest request,
+        ClaimsPrincipal user,
+        AliasService service,
+        CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId(user);
+        if (currentUserId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var success = await service.MarkExpectedSenderAsync(currentUserId.Value, aliasId, request.SenderEtld1, cancellationToken);
+        return success ? Results.NoContent() : Results.ValidationProblem(new Dictionary<string, string[]>
+        {
+            [nameof(MarkExpectedSenderRequest.SenderEtld1)] = ["Sender domain is required and must be <= 253 characters."]
+        });
+    }
+
+    private static async Task<IResult> BlockSenderAsync(
+        Guid aliasId,
+        BlockSenderRequest request,
+        ClaimsPrincipal user,
+        AliasService service,
+        CancellationToken cancellationToken)
+    {
+        var currentUserId = GetCurrentUserId(user);
+        if (currentUserId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var success = await service.BlockSenderAsync(currentUserId.Value, aliasId, request.SenderEtld1, cancellationToken);
+        return success ? Results.NoContent() : Results.ValidationProblem(new Dictionary<string, string[]>
+        {
+            [nameof(BlockSenderRequest.SenderEtld1)] = ["Sender domain is required and must be <= 253 characters."]
+        });
+    }
+
     private static Guid? GetCurrentUserId(ClaimsPrincipal user)
     {
         var value = user.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -171,6 +217,8 @@ public static class AliasEndpoints
 
     public sealed record CreateAliasRequest(string? Label, string? PurposeMetadata);
     public sealed record AddExpectedSenderRequest(string SenderEtld1);
+    public sealed record MarkExpectedSenderRequest(string SenderEtld1);
+    public sealed record BlockSenderRequest(string SenderEtld1);
 
     public sealed record AliasResponse(
         Guid Id,

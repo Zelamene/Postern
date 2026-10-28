@@ -46,6 +46,7 @@ builder.Services.AddScoped<AliasService>();
 builder.Services.AddScoped<IngestService>();
 builder.Services.AddSingleton<IPasswordHashingService, AspNetPasswordHashingService>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IKvWriter, NoOpKvWriter>();
 
 if (builder.Environment.IsDevelopment())
 {
