@@ -1,0 +1,13 @@
+name = "postern-mail-worker"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+
+[[kv_namespaces]]
+binding = "POSTERN_KV"
+id = "local-dev-placeholder"
+preview_id = "local-dev-placeholder"
+
+[vars]
+INGEST_ENDPOINT = "http://localhost:8080/api/ingest"
+INGEST_SECRET = "dev-ingest-secret"
+POSTERN_DOMAIN = "postern.local"
