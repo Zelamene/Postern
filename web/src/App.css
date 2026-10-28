@@ -1,0 +1,86 @@
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  width: min(100% - 3rem, 72rem);
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 0;
+  color: #17253f;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.welcome {
+  width: min(100%, 42rem);
+  margin: auto;
+  padding: 4rem 0 7rem;
+}
+
+.eyebrow {
+  margin: 0 0 1rem;
+  color: #435b83;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: #17253f;
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+}
+
+.intro {
+  max-width: 34rem;
+  margin: 1.5rem 0 0;
+  color: #49566b;
+  font-size: 1.125rem;
+  line-height: 1.65;
+}
+
+.api-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 2rem 0 0;
+  color: #34445f;
+  font-size: 0.95rem;
+}
+
+.status-indicator {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: #9a6b0c;
+}
+
+.api-status--available .status-indicator {
+  background: #18794e;
+}
+
+.api-status--unavailable .status-indicator {
+  background: #b42318;
+}
+
+@media (max-width: 40rem) {
+  .app-shell {
+    width: min(100% - 2rem, 72rem);
+  }
+
+  .welcome {
+    padding: 2rem 0 4rem;
+  }
+}

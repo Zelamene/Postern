@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Postern.Api/Postern.Api.csproj" />
+    <Project Path="src/Postern.Domain/Postern.Domain.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Postern.IntegrationTests/Postern.IntegrationTests.csproj" />
+    <Project Path="tests/Postern.UnitTests/Postern.UnitTests.csproj" />
+  </Folder>
+</Solution>
