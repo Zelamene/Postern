@@ -34,9 +34,15 @@ docker compose up --build
 
 PostgreSQL initialization creates three distinct roles: `postern` is the local bootstrap superuser used only by the database image; `postern_migrator` owns the private `postern` schema and is intended for schema migrations; `postern_app` is the API runtime login and receives DML permissions only. The API connects using `postern_app` with `postern` as its search path. Access to the default `public` schema is revoked.
 
-The role initializer runs automatically only when PostgreSQL initializes a **new, empty data volume**. If you already have a database volume, preserve it: start the database, then apply the initializer once with `docker compose exec -T db psql -U postern -d postern -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/10-postern-roles.sql`. This script is safe to rerun to reapply role passwords and grants. Review and migrate any existing application tables into the `postern` schema before switching an application that already has data to the runtime connection.
+The role initializer runs automatically only when PostgreSQL initializes a **new, empty data volume**. If you already have a database volume, preserve it: start the database with `docker compose up -d db`, then run `.\database\initialize-roles.ps1`. This re-applies the idempotent role and schema grants without deleting the volume. Review and migrate any existing application tables into the `postern` schema before switching an application that already has data to the runtime connection.
 
-The health endpoint is a database-independent liveness check; database schema and application data access will be added with the relevant feature work.
+The API registers PostgreSQL using its runtime role but does not open a database connection for `GET /health`. The initial EF Core migration creates the private `postern` schema and the Day 1 tables. After the database is running and `env/db.env` has valid local credentials, apply migrations with:
+
+```powershell
+.\database\migrate.ps1
+```
+
+Migrations run as `postern_migrator`; the API only receives the restricted `postern_app` credentials. The migration command does not use or require the bootstrap superuser.
 
 The API and web development containers run as non-root users. Compose also drops Linux capabilities and enables `no-new-privileges` for both application containers.
 
@@ -83,7 +89,7 @@ Run backend tests from the repository root:
 dotnet test backend/Postern.slnx
 ```
 
-The solution contains the API, domain, xUnit unit-test, and xUnit API integration-test projects.
+The solution contains API, application, domain, and infrastructure projects, plus xUnit unit and API integration tests.
 
 ## Progressive Web App
 
