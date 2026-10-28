@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Postern.Domain\Postern.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Postern.Application\Postern.Application.csproj" />
   </ItemGroup>
 
 </Project>

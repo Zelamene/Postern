@@ -1,4 +1,16 @@
+using Microsoft.EntityFrameworkCore;
+using Postern.Infrastructure.Persistence;
+
 var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = builder.Configuration.GetConnectionString("Postgres");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("The PostgreSQL connection string is required.");
+}
+
+builder.Services.AddDbContext<PosternDbContext>(options =>
+    PosternDbContext.ConfigureNpgsql(options, connectionString));
 
 if (builder.Environment.IsDevelopment())
 {
