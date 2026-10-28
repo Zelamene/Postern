@@ -29,6 +29,9 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
             return IngestResult.UnknownAlias;
         }
 
+        var decodedSubject = Rfc2047Decoder.Decode(subject);
+        var truncatedSubject = TruncateSubject(decodedSubject);
+
         if (alias.Status == AliasStatus.Deleted || alias.Status == AliasStatus.Replaced || alias.Status == AliasStatus.Disabled)
         {
             var blocked = new BlockedMessage
@@ -36,7 +39,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                 Id = Guid.NewGuid(),
                 AliasId = alias.Id,
                 FromHeader = TruncateHeader(fromHeader),
-                Subject = TruncateSubject(subject),
+                Subject = truncatedSubject,
                 ReceivedAt = timeProvider.GetUtcNow(),
                 Reason = alias.Status.ToString().ToLowerInvariant()
             };
@@ -61,7 +64,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                         AliasId = alias.Id,
                         FromHeader = TruncateHeader(fromHeader),
                         EnvelopeSender = envelopeSender.Trim(),
-                        Subject = TruncateSubject(subject),
+                        Subject = truncatedSubject,
                         ReceivedAt = timeProvider.GetUtcNow(),
                         AuthenticationResult = authResult,
                         IsFlagged = false,
@@ -80,7 +83,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                         AliasId = alias.Id,
                         FromHeader = TruncateHeader(fromHeader),
                         EnvelopeSender = envelopeSender.Trim(),
-                        Subject = TruncateSubject(subject),
+                        Subject = truncatedSubject,
                         ReceivedAt = timeProvider.GetUtcNow(),
                         AuthenticationResult = authResult,
                         IsFlagged = true,
@@ -99,7 +102,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                         AliasId = alias.Id,
                         FromHeader = TruncateHeader(fromHeader),
                         EnvelopeSender = envelopeSender.Trim(),
-                        Subject = TruncateSubject(subject),
+                        Subject = truncatedSubject,
                         ReceivedAt = timeProvider.GetUtcNow(),
                         AuthenticationResult = authResult,
                         IsFlagged = true,
@@ -118,7 +121,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                         AliasId = alias.Id,
                         FromHeader = TruncateHeader(fromHeader),
                         EnvelopeSender = envelopeSender.Trim(),
-                        Subject = TruncateSubject(subject),
+                        Subject = truncatedSubject,
                         ReceivedAt = timeProvider.GetUtcNow(),
                         AuthenticationResult = authResult,
                         IsFlagged = true,
@@ -143,7 +146,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                 AliasId = alias.Id,
                 FromHeader = TruncateHeader(fromHeader),
                 EnvelopeSender = envelopeSender.Trim(),
-                Subject = TruncateSubject(subject),
+                Subject = truncatedSubject,
                 ReceivedAt = timeProvider.GetUtcNow(),
                 AuthenticationResult = authResult,
                 IsFlagged = authResult != "pass",

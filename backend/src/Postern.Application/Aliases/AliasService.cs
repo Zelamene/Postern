@@ -235,6 +235,13 @@ public sealed class AliasService(
         return await aliases.BlockSenderAsync(aliasId, userId, normalized, cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<ExpectedSender>> CopyExpectedSendersAsync(
+        Guid userId,
+        Guid sourceAliasId,
+        Guid targetAliasId,
+        CancellationToken cancellationToken) =>
+        await aliases.CopyExpectedSendersAsync(sourceAliasId, targetAliasId, userId, cancellationToken);
+
     public static string HashAddress(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 }
