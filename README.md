@@ -60,6 +60,8 @@ dotnet run --project backend/src/Postern.Api --urls http://localhost:8080
 
 The API listens on <http://localhost:8080> and exposes `GET /health`.
 
+Swagger UI is enabled only when the API runs in the `Development` environment: open <http://localhost:8080/swagger>. The Compose API environment file sets `ASPNETCORE_ENVIRONMENT=Development`; production deployments must set their environment separately.
+
 ### Tests and checks
 
 Run frontend checks from `web/`:
