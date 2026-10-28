@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Postern.Application.Aliases;
 using Postern.Domain.Activity;
 using Postern.Domain.Aliases;
 
@@ -22,7 +23,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
 
         var hash = HashAddress(recipientAddress.Trim().ToLowerInvariant());
 
-        var alias = await activityRepository.FindAliasForIngestAsync(hash, cancellationToken);
+        var alias = await activityRepository.FindAliasForIngestWithExpectedSendersAsync(hash, cancellationToken);
         if (alias is null)
         {
             return IngestResult.UnknownAlias;
@@ -46,7 +47,97 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
 
         if (alias.Status == AliasStatus.Active)
         {
-            var message = new Message
+            var authResult = NormalizeAuthenticationResult(authenticationResult);
+            var senderEtld1 = Etld1Normalizer.Normalize(fromHeader);
+
+            if (alias.ExpectedSenders is not null && alias.ExpectedSenders.Count > 0)
+            {
+                var hasExpected = senderEtld1 is not null && alias.ExpectedSenders.Any(expected => string.Equals(expected.SenderEtld1, senderEtld1, StringComparison.OrdinalIgnoreCase));
+                if (hasExpected)
+                {
+                    var expectedMessage = new Message
+                    {
+                        Id = Guid.NewGuid(),
+                        AliasId = alias.Id,
+                        FromHeader = TruncateHeader(fromHeader),
+                        EnvelopeSender = envelopeSender.Trim(),
+                        Subject = TruncateSubject(subject),
+                        ReceivedAt = timeProvider.GetUtcNow(),
+                        AuthenticationResult = authResult,
+                        IsFlagged = false,
+                        FlagReason = null
+                    };
+
+                    await activityRepository.RecordMessageAsync(expectedMessage, cancellationToken);
+                    return IngestResult.Accepted;
+                }
+
+                if (authResult == "pass")
+                {
+                    var flaggedMessagePass = new Message
+                    {
+                        Id = Guid.NewGuid(),
+                        AliasId = alias.Id,
+                        FromHeader = TruncateHeader(fromHeader),
+                        EnvelopeSender = envelopeSender.Trim(),
+                        Subject = TruncateSubject(subject),
+                        ReceivedAt = timeProvider.GetUtcNow(),
+                        AuthenticationResult = authResult,
+                        IsFlagged = true,
+                        FlagReason = "unexpected_pass"
+                    };
+
+                    await activityRepository.RecordMessageAsync(flaggedMessagePass, cancellationToken);
+                    return IngestResult.Accepted;
+                }
+
+                if (authResult == "none")
+                {
+                    var flaggedMessageNone = new Message
+                    {
+                        Id = Guid.NewGuid(),
+                        AliasId = alias.Id,
+                        FromHeader = TruncateHeader(fromHeader),
+                        EnvelopeSender = envelopeSender.Trim(),
+                        Subject = TruncateSubject(subject),
+                        ReceivedAt = timeProvider.GetUtcNow(),
+                        AuthenticationResult = authResult,
+                        IsFlagged = true,
+                        FlagReason = "unexpected_none"
+                    };
+
+                    await activityRepository.RecordMessageAsync(flaggedMessageNone, cancellationToken);
+                    return IngestResult.Accepted;
+                }
+
+                if (authResult == "fail")
+                {
+                    var flaggedMessageFail = new Message
+                    {
+                        Id = Guid.NewGuid(),
+                        AliasId = alias.Id,
+                        FromHeader = TruncateHeader(fromHeader),
+                        EnvelopeSender = envelopeSender.Trim(),
+                        Subject = TruncateSubject(subject),
+                        ReceivedAt = timeProvider.GetUtcNow(),
+                        AuthenticationResult = authResult,
+                        IsFlagged = true,
+                        FlagReason = "fail"
+                    };
+
+                    await activityRepository.RecordMessageAsync(flaggedMessageFail, cancellationToken);
+                    return IngestResult.Accepted;
+                }
+            }
+            else
+            {
+                if (authResult == "pass" && senderEtld1 is not null)
+                {
+                    await activityRepository.AddExpectedSenderAsync(alias.Id, senderEtld1, timeProvider.GetUtcNow(), cancellationToken);
+                }
+            }
+
+            var finalMessage = new Message
             {
                 Id = Guid.NewGuid(),
                 AliasId = alias.Id,
@@ -54,12 +145,12 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                 EnvelopeSender = envelopeSender.Trim(),
                 Subject = TruncateSubject(subject),
                 ReceivedAt = timeProvider.GetUtcNow(),
-                AuthenticationResult = NormalizeAuthenticationResult(authenticationResult),
-                IsFlagged = false,
-                FlagReason = null
+                AuthenticationResult = authResult,
+                IsFlagged = authResult != "pass",
+                FlagReason = authResult != "pass" ? authResult : null
             };
 
-            await activityRepository.RecordMessageAsync(message, cancellationToken);
+            await activityRepository.RecordMessageAsync(finalMessage, cancellationToken);
             return IngestResult.Accepted;
         }
 
