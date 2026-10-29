@@ -44,6 +44,7 @@ public sealed class AuthenticationService(
             Id = Guid.NewGuid(),
             Email = normalizedEmail,
             NormalizedEmail = normalizedIdentity,
+            ForwardingAddress = normalizedEmail,
             PasswordHash = passwords.HashPassword(password),
             IsAdmin = false,
             Status = "pending",
@@ -105,8 +106,9 @@ public sealed class AuthenticationService(
 
         if (user.Status == "pending")
         {
-            await destinations.AddAsync(user.Email, cancellationToken);
-            if (!await destinations.IsVerifiedAsync(user.Email, cancellationToken))
+            var forwardingAddress = user.EffectiveForwardingAddress;
+            await destinations.AddAsync(forwardingAddress, cancellationToken);
+            if (!await destinations.IsVerifiedAsync(forwardingAddress, cancellationToken))
             {
                 return (AuthenticationResult.VerificationRequired, null);
             }

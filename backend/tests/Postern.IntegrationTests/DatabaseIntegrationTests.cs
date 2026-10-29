@@ -17,7 +17,7 @@ namespace Postern.IntegrationTests;
 
 public class DatabaseIntegrationTests
 {
-    private const string ConnectionString = "Host=localhost;Port=5432;Database=postern;Username=postern_app;Password=unused;Search Path=postern";
+    private const string ConnectionString = "Host=localhost;Port=5432;Database=postern;Username=postern_app;Password=unused;Search Path=postern"; // pragma: allowlist secret
 
     [Fact]
     public async Task EfAccountRepository_CrudOperations()
@@ -48,7 +48,13 @@ public class DatabaseIntegrationTests
 
         db.ChangeTracker.Clear();
         var updatedUser = await db.Users.FindAsync(userId);
-        Assert.Equal("new@example.com", updatedUser!.Email);
+        Assert.Equal("new@example.com", updatedUser!.ForwardingAddress);
+        Assert.Equal("new@example.com", updatedUser.EffectiveForwardingAddress);
+
+        // The forwarding change must not touch the login identity.
+        Assert.Equal(user.Email, updatedUser.Email);
+        Assert.Equal(user.NormalizedEmail, updatedUser.NormalizedEmail);
+        Assert.NotNull(await repo.FindByNormalizedEmailAsync(user.NormalizedEmail, CancellationToken.None));
     }
 
     [Fact]

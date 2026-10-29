@@ -24,9 +24,12 @@ public sealed class AccountManagementService(
             return false;
         }
 
+        var previousAddress = user.EffectiveForwardingAddress;
+        var nextAddress = newForwardingAddress.Trim();
+
         try
         {
-            await destinations.RemoveAsync(user.Email, cancellationToken);
+            await destinations.RemoveAsync(previousAddress, cancellationToken);
         }
         catch
         {
@@ -34,14 +37,14 @@ public sealed class AccountManagementService(
 
         try
         {
-            await destinations.AddAsync(newForwardingAddress.Trim(), cancellationToken);
+            await destinations.AddAsync(nextAddress, cancellationToken);
         }
         catch
         {
             return false;
         }
 
-        return await accounts.UpdateForwardingAddressAsync(userId, newForwardingAddress.Trim(), cancellationToken);
+        return await accounts.UpdateForwardingAddressAsync(userId, nextAddress, cancellationToken);
     }
 
     public async Task<bool> DeleteAccountAsync(
@@ -70,7 +73,7 @@ public sealed class AccountManagementService(
 
         try
         {
-            await destinations.RemoveAsync(user.Email, cancellationToken);
+            await destinations.RemoveAsync(user.EffectiveForwardingAddress, cancellationToken);
         }
         catch
         {
