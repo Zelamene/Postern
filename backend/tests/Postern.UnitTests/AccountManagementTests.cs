@@ -10,7 +10,7 @@ namespace Postern.UnitTests;
 public class AccountManagementTests
 {
     [Fact]
-    public async Task ChangeForwardingAddress_RemovesOldDestination_AddsNew_UpdatesEmail()
+    public async Task ChangeForwardingAddress_RemovesOldDestination_AddsNew_UpdatesForwardingAddressOnly()
     {
         var userId = Guid.NewGuid();
         var user = new PosternUser
@@ -30,9 +30,68 @@ public class AccountManagementTests
 
         var result = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
         Assert.True(result);
-        Assert.Contains("old@example.com", destinations.Removed);
-        Assert.Contains("new@example.com", destinations.Added);
-        Assert.Equal("new@example.com", user.Email);
+        Assert.Equal(["old@example.com"], destinations.Removed);
+        Assert.Equal(["new@example.com"], destinations.Added);
+        Assert.Equal("new@example.com", user.ForwardingAddress);
+        Assert.Equal("new@example.com", user.EffectiveForwardingAddress);
+
+        // Login identity must survive a forwarding change.
+        Assert.Equal("old@example.com", user.Email);
+        Assert.Equal("OLD@EXAMPLE.COM", user.NormalizedEmail);
+        Assert.NotNull(await accounts.FindByNormalizedEmailAsync("OLD@EXAMPLE.COM", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_SecondChange_RemovesCurrentForwardingAddressNotLoginEmail()
+    {
+        var userId = Guid.NewGuid();
+        var user = new PosternUser
+        {
+            Id = userId,
+            Email = "login@example.com",
+            NormalizedEmail = "LOGIN@EXAMPLE.COM",
+            ForwardingAddress = "first@example.com",
+            PasswordHash = "hash",
+            Status = "active"
+        };
+
+        var accounts = new InMemoryAccountRepository(user);
+        var destinations = new InMemoryDestinationService();
+        var kvWriter = new Fakes.InMemoryKvWriter();
+        var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
+        var service = new AccountManagementService(accounts, destinations, kvWriter, timeProvider);
+
+        Assert.True(await service.ChangeForwardingAddressAsync(userId, "second@example.com", CancellationToken.None));
+
+        Assert.Equal(["first@example.com"], destinations.Removed);
+        Assert.Equal(["second@example.com"], destinations.Added);
+        Assert.Equal("login@example.com", user.Email);
+        Assert.Equal("LOGIN@EXAMPLE.COM", user.NormalizedEmail);
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_WithoutPriorForwardingAddress_UsesLoginEmail()
+    {
+        var userId = Guid.NewGuid();
+        var user = new PosternUser
+        {
+            Id = userId,
+            Email = "login@example.com",
+            NormalizedEmail = "LOGIN@EXAMPLE.COM",
+            PasswordHash = "hash",
+            Status = "active"
+        };
+
+        var accounts = new InMemoryAccountRepository(user);
+        var destinations = new InMemoryDestinationService();
+        var kvWriter = new Fakes.InMemoryKvWriter();
+        var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
+        var service = new AccountManagementService(accounts, destinations, kvWriter, timeProvider);
+
+        Assert.True(await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None));
+
+        Assert.Equal(["login@example.com"], destinations.Removed);
+        Assert.Equal(["new@example.com"], destinations.Added);
     }
 
     [Fact]
@@ -184,11 +243,10 @@ public class AccountManagementTests
         public Task<bool> ActivatePendingUserAsync(Guid userId, CancellationToken cancellationToken) => throw new NotImplementedException();
         public Task<bool> SetInitialRecoveryKeyHashAsync(Guid userId, string recoveryKeyHash, CancellationToken cancellationToken) => throw new NotImplementedException();
         public Task<bool> RotateRecoveryCredentialsAsync(string currentRecoveryKeyHash, string passwordHash, string nextRecoveryKeyHash, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<bool> UpdateForwardingAddressAsync(Guid userId, string newEmail, CancellationToken cancellationToken)
+        public Task<bool> UpdateForwardingAddressAsync(Guid userId, string newForwardingAddress, CancellationToken cancellationToken)
         {
             if (!_users.TryGetValue(userId, out var u)) return Task.FromResult(false);
-            u.Email = newEmail;
-            u.NormalizedEmail = newEmail.ToUpperInvariant();
+            u.ForwardingAddress = newForwardingAddress;
             return Task.FromResult(true);
         }
         public Task<bool> DeleteAccountAsync(Guid userId, DateTimeOffset deletedAt, CancellationToken cancellationToken)

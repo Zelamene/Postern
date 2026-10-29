@@ -29,6 +29,7 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
             entity.Property(user => user.Id).HasColumnName("id");
             entity.Property(user => user.Email).HasColumnName("email").HasMaxLength(320).IsRequired();
             entity.Property(user => user.NormalizedEmail).HasColumnName("normalized_email").HasMaxLength(320).IsRequired();
+            entity.Property(user => user.ForwardingAddress).HasColumnName("forwarding_address").HasMaxLength(320);
             entity.Property(user => user.PasswordHash).HasColumnName("password_hash").HasMaxLength(512).IsRequired();
             entity.Property(user => user.RecoveryKeyHash).HasColumnName("recovery_key_hash").HasMaxLength(256);
             entity.Property(user => user.IsAdmin).HasColumnName("is_admin");
