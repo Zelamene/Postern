@@ -17,7 +17,7 @@ namespace Postern.IntegrationTests;
 
 public class RepositoryIntegrationTests
 {
-    private const string ConnectionString = "Host=localhost;Port=5432;Database=postern;Username=postern_app;Password=0jkIFHcwFzSYocIqyEZN6dbmdB7wtUOi6ROe1AU;Search Path=postern";
+    private const string ConnectionString = "Host=localhost;Port=5432;Database=postern;Username=postern_app;Password=0jkIFHcwFzSYocIqyEZN6dbmdB7wtUOi6ROe1AU;Search Path=postern"; // pragma: allowlist secret
 
     [Fact]
     public async Task EfAliasRepository_UpdateStatus_DisableEnable()

@@ -82,6 +82,11 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(320)")
                         .HasColumnName("email");
 
+                    b.Property<string>("ForwardingAddress")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("forwarding_address");
+
                     b.Property<Guid?>("InviteCodeUsedId")
                         .HasColumnType("uuid")
                         .HasColumnName("invite_code_used_id");

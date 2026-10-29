@@ -35,7 +35,7 @@ public interface IAccountRepository
 
     Task<bool> UpdateForwardingAddressAsync(
         Guid userId,
-        string newEmail,
+        string newForwardingAddress,
         CancellationToken cancellationToken);
 
     Task<bool> DeleteAccountAsync(

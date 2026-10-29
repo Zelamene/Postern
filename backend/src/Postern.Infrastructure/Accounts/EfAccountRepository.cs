@@ -117,11 +117,13 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
 
     public async Task<bool> UpdateForwardingAddressAsync(
         Guid userId,
-        string newEmail,
+        string newForwardingAddress,
         CancellationToken cancellationToken) =>
         await dbContext.Users
             .Where(user => user.Id == userId)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(user => user.Email, newEmail), cancellationToken) == 1;
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(user => user.ForwardingAddress, newForwardingAddress),
+                cancellationToken) == 1;
 
     public async Task<bool> DeleteAccountAsync(
         Guid userId,
