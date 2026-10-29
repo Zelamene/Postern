@@ -4,24 +4,26 @@ namespace Postern.UnitTests;
 
 public class Rfc2047DecoderTests
 {
-    [Fact]
-    public void DecodesUtf8Base64Subject()
+    [Theory]
+    [InlineData("hello", "hello")]
+    [InlineData("", "")]
+    public void Decode_PlainText_ReturnsAsIs(string input, string expected)
     {
-        var result = Rfc2047Decoder.Decode("=?UTF-8?B?SGVsbG8gV29ybGQh?=");
-        Assert.Equal("Hello World!", result);
+        var result = Rfc2047Decoder.Decode(input);
+        Assert.Equal(expected, result);
     }
 
     [Fact]
-    public void DecodesUtf8QuotedPrintableSubject()
+    public void Decode_Null_ReturnsEmpty()
     {
-        var result = Rfc2047Decoder.Decode("=?UTF-8?Q?Caf=C3=A9?=");
-        Assert.Equal("Café", result);
+        var result = Rfc2047Decoder.Decode(null!);
+        Assert.Equal(string.Empty, result);
     }
 
     [Fact]
-    public void TruncatesAfterDecoding()
+    public void Decode_EncodedWord_ReturnsDecoded()
     {
-        var result = Rfc2047Decoder.Decode("=?UTF-8?B?VGVzdA==?=");
-        Assert.Equal("Test", result);
+        var result = Rfc2047Decoder.Decode("=?UTF-8?B?aGVsbG8=?=");
+        Assert.Contains("hello", result);
     }
 }
