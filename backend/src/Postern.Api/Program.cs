@@ -42,6 +42,7 @@ builder.Services.AddScoped<IAccountRepository, EfAccountRepository>();
 builder.Services.AddScoped<IAliasRepository, EfAliasRepository>();
 builder.Services.AddScoped<IActivityRepository, EfActivityRepository>();
 builder.Services.AddScoped<AuthenticationService>();
+builder.Services.AddScoped<AccountManagementService>();
 builder.Services.AddScoped<AliasService>();
 builder.Services.AddScoped<IngestService>();
 builder.Services.AddScoped<RateLimitService>();
@@ -117,6 +118,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapAuthenticationEndpoints();
+app.MapAccountManagementEndpoints();
 app.MapAliasEndpoints();
 app.MapIngestEndpoints();
 
