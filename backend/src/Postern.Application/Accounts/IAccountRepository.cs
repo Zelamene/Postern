@@ -16,6 +16,10 @@ public interface IAccountRepository
         string normalizedEmail,
         CancellationToken cancellationToken);
 
+    Task<PosternUser?> FindByIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken);
+
     Task<bool> ActivatePendingUserAsync(Guid userId, CancellationToken cancellationToken);
 
     Task<bool> SetInitialRecoveryKeyHashAsync(
@@ -27,5 +31,15 @@ public interface IAccountRepository
         string currentRecoveryKeyHash,
         string passwordHash,
         string nextRecoveryKeyHash,
+        CancellationToken cancellationToken);
+
+    Task<bool> UpdateForwardingAddressAsync(
+        Guid userId,
+        string newEmail,
+        CancellationToken cancellationToken);
+
+    Task<bool> DeleteAccountAsync(
+        Guid userId,
+        DateTimeOffset deletedAt,
         CancellationToken cancellationToken);
 }

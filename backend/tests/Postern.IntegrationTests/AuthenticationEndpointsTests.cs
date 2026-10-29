@@ -250,6 +250,33 @@ public sealed class AuthenticationEndpointsTests
             return Task.FromResult(true);
         }
 
+        public Task<PosternUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken) =>
+            Task.FromResult(_users.Values.SingleOrDefault(user => user.Id == userId));
+
+        public Task<bool> UpdateForwardingAddressAsync(Guid userId, string newEmail, CancellationToken cancellationToken)
+        {
+            var user = _users.Values.SingleOrDefault(item => item.Id == userId);
+            if (user is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            user.Email = newEmail;
+            return Task.FromResult(true);
+        }
+
+        public Task<bool> DeleteAccountAsync(Guid userId, DateTimeOffset deletedAt, CancellationToken cancellationToken)
+        {
+            var user = _users.Values.SingleOrDefault(item => item.Id == userId);
+            if (user is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            _users.Remove(user.NormalizedEmail);
+            return Task.FromResult(true);
+        }
+
         private static string HashSecret(string value) =>
             Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     }
