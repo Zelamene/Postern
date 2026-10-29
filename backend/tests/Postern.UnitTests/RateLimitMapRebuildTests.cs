@@ -79,5 +79,7 @@ public class RateLimitMapRebuildTests
         public Task<BlockedMessage> RecordBlockedMessageAsync(BlockedMessage blockedMessage, CancellationToken cancellationToken) => Task.FromResult(blockedMessage);
         public Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<int> CountForwardedMessagesLast24HoursAsync(CancellationToken cancellationToken) => Task.FromResult(count);
+        public Task<IReadOnlyList<Message>> ListMessagesAsync(Guid aliasId, DateTimeOffset receivedAfter, DateTimeOffset? beforeReceivedAt, Guid? beforeId, int limit, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Message>>(Array.Empty<Message>());
+        public Task<IReadOnlyList<BlockedMessage>> ListBlockedMessagesForUserAsync(Guid userId, Guid? aliasId, DateTimeOffset receivedAfter, DateTimeOffset? beforeReceivedAt, Guid? beforeId, int limit, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<BlockedMessage>>(Array.Empty<BlockedMessage>());
     }
 }
