@@ -45,6 +45,7 @@ builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<AccountManagementService>();
 builder.Services.AddScoped<AliasService>();
 builder.Services.AddScoped<IngestService>();
+builder.Services.AddScoped<ActivityService>();
 builder.Services.AddScoped<RateLimitService>();
 builder.Services.AddSingleton<IPasswordHashingService, AspNetPasswordHashingService>();
 builder.Services.AddSingleton(TimeProvider.System);
@@ -120,6 +121,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapAuthenticationEndpoints();
 app.MapAccountManagementEndpoints();
 app.MapAliasEndpoints();
+app.MapActivityEndpoints();
 app.MapIngestEndpoints();
 
 app.Run();

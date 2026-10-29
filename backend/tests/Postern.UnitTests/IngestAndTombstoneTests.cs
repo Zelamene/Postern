@@ -150,6 +150,36 @@ public class IngestAndTombstoneTests
         public Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task<int> CountForwardedMessagesLast24HoursAsync(CancellationToken cancellationToken) => Task.FromResult(Messages.Count);
+
+        public Task<IReadOnlyList<Message>> ListMessagesAsync(
+            Guid aliasId,
+            DateTimeOffset receivedAfter,
+            DateTimeOffset? beforeReceivedAt,
+            Guid? beforeId,
+            int limit,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<Message>>(Messages
+                .Where(message => message.AliasId == aliasId && message.ReceivedAt >= receivedAfter)
+                .OrderByDescending(message => message.ReceivedAt)
+                .ThenByDescending(message => message.Id)
+                .Take(limit)
+                .ToList());
+
+        public Task<IReadOnlyList<BlockedMessage>> ListBlockedMessagesForUserAsync(
+            Guid userId,
+            Guid? aliasId,
+            DateTimeOffset receivedAfter,
+            DateTimeOffset? beforeReceivedAt,
+            Guid? beforeId,
+            int limit,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<BlockedMessage>>(BlockedMessages
+                .Where(message => message.ReceivedAt >= receivedAfter)
+                .Where(message => aliasId is null || message.AliasId == aliasId)
+                .OrderByDescending(message => message.ReceivedAt)
+                .ThenByDescending(message => message.Id)
+                .Take(limit)
+                .ToList());
     }
 
     private sealed class InMemoryAliasRepository : IAliasRepository

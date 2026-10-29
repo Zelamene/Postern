@@ -57,4 +57,67 @@ public sealed class EfActivityRepository(PosternDbContext dbContext) : IActivity
         return await dbContext.Messages
             .CountAsync(message => message.ReceivedAt >= cutoff, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Message>> ListMessagesAsync(
+        Guid aliasId,
+        DateTimeOffset receivedAfter,
+        DateTimeOffset? beforeReceivedAt,
+        Guid? beforeId,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var query = dbContext.Messages
+            .AsNoTracking()
+            .Where(message => message.AliasId == aliasId && message.ReceivedAt >= receivedAfter);
+
+        if (beforeReceivedAt is { } cursorTimestamp && beforeId is { } cursorId)
+        {
+            var cursorIdText = cursorId.ToString("N");
+            query = query.Where(message =>
+                message.ReceivedAt < cursorTimestamp
+                || (message.ReceivedAt == cursorTimestamp
+                    && string.Compare(message.Id.ToString(), cursorIdText) < 0));
+        }
+
+        return await query
+            .OrderByDescending(message => message.ReceivedAt)
+            .ThenByDescending(message => message.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<BlockedMessage>> ListBlockedMessagesForUserAsync(
+        Guid userId,
+        Guid? aliasId,
+        DateTimeOffset receivedAfter,
+        DateTimeOffset? beforeReceivedAt,
+        Guid? beforeId,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var query = dbContext.BlockedMessages
+            .AsNoTracking()
+            .Where(message =>
+                message.Alias.UserId == userId && message.ReceivedAt >= receivedAfter);
+
+        if (aliasId is { } scopedAliasId)
+        {
+            query = query.Where(message => message.AliasId == scopedAliasId);
+        }
+
+        if (beforeReceivedAt is { } cursorTimestamp && beforeId is { } cursorId)
+        {
+            var cursorIdText = cursorId.ToString("N");
+            query = query.Where(message =>
+                message.ReceivedAt < cursorTimestamp
+                || (message.ReceivedAt == cursorTimestamp
+                    && string.Compare(message.Id.ToString(), cursorIdText) < 0));
+        }
+
+        return await query
+            .OrderByDescending(message => message.ReceivedAt)
+            .ThenByDescending(message => message.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+    }
 }
