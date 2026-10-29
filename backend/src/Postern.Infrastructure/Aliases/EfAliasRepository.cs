@@ -30,44 +30,65 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
         Guid userId,
         AliasStatus nextStatus,
         DateTimeOffset updatedAt,
-        CancellationToken cancellationToken) =>
-        await dbContext.Aliases
-            .Where(alias => alias.Id == aliasId && alias.UserId == userId && AliasLifecycle.CanTransition(alias.Status, nextStatus))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(alias => alias.Status, nextStatus)
-                .SetProperty(alias => alias.DeletedAt, nextStatus == AliasStatus.Deleted ? (DateTimeOffset?)updatedAt : (DateTimeOffset?)null), cancellationToken) == 1;
+        CancellationToken cancellationToken)
+    {
+        var alias = await dbContext.Aliases
+            .SingleOrDefaultAsync(a => a.Id == aliasId && a.UserId == userId, cancellationToken);
+        if (alias is null || !AliasLifecycle.CanTransition(alias.Status, nextStatus))
+        {
+            return false;
+        }
+        alias.Status = nextStatus;
+        alias.DeletedAt = nextStatus == AliasStatus.Deleted ? updatedAt : null;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 
     public async Task<bool> MarkReplacedAsync(
         Guid aliasId,
         Guid userId,
         Guid replacementAliasId,
         DateTimeOffset updatedAt,
-        CancellationToken cancellationToken) =>
-        await dbContext.Aliases
-            .Where(alias => alias.Id == aliasId && alias.UserId == userId && alias.Status == AliasStatus.Active)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(alias => alias.Status, AliasStatus.Replaced)
-                .SetProperty(alias => alias.ReplacedByAliasId, (Guid?)replacementAliasId)
-                .SetProperty(alias => alias.DeletedAt, (DateTimeOffset?)null), cancellationToken) == 1;
+        CancellationToken cancellationToken)
+    {
+        var alias = await dbContext.Aliases
+            .SingleOrDefaultAsync(a => a.Id == aliasId && a.UserId == userId && a.Status == AliasStatus.Active, cancellationToken);
+        if (alias is null)
+        {
+            return false;
+        }
+        alias.Status = AliasStatus.Replaced;
+        alias.ReplacedByAliasId = replacementAliasId;
+        alias.DeletedAt = null;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 
     public async Task<bool> DeleteAsync(
         Guid aliasId,
         Guid userId,
         DateTimeOffset deletedAt,
-        CancellationToken cancellationToken) =>
-        await dbContext.Aliases
-            .Where(alias => alias.Id == aliasId && alias.UserId == userId && AliasLifecycle.CanTransition(alias.Status, AliasStatus.Deleted))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(alias => alias.Status, AliasStatus.Deleted)
-                .SetProperty(alias => alias.UserId, (Guid?)null)
-                .SetProperty(alias => alias.Label, (string?)null)
-                .SetProperty(alias => alias.RandomSuffix, (string?)null)
-                .SetProperty(alias => alias.FullAddress, (string?)null)
-                .SetProperty(alias => alias.PurposeMetadata, (string?)null)
-                .SetProperty(alias => alias.Category, (string?)null)
-                .SetProperty(alias => alias.ReplacedByAliasId, (Guid?)null)
-                .SetProperty(alias => alias.KvDirty, false)
-                .SetProperty(alias => alias.DeletedAt, deletedAt), cancellationToken) == 1;
+        CancellationToken cancellationToken)
+    {
+        var alias = await dbContext.Aliases
+            .SingleOrDefaultAsync(a => a.Id == aliasId && a.UserId == userId, cancellationToken);
+        if (alias is null || !AliasLifecycle.CanTransition(alias.Status, AliasStatus.Deleted))
+        {
+            return false;
+        }
+        alias.Status = AliasStatus.Deleted;
+        alias.UserId = null;
+        alias.Label = null;
+        alias.RandomSuffix = null;
+        alias.FullAddress = null;
+        alias.PurposeMetadata = null;
+        alias.Category = null;
+        alias.ReplacedByAliasId = null;
+        alias.KvDirty = false;
+        alias.DeletedAt = deletedAt;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 
     public async Task<bool> IsAddressHashTombstonedAsync(string fullAddressHash, CancellationToken cancellationToken) =>
         await dbContext.Aliases
