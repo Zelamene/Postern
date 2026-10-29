@@ -16,6 +16,20 @@ public static class Etld1Normalizer
 
         var trimmed = domain.Trim().ToLowerInvariant();
 
+        var openBracket = trimmed.LastIndexOf('<');
+        if (openBracket >= 0)
+        {
+            trimmed = trimmed[(openBracket + 1)..];
+        }
+
+        var closeBracket = trimmed.IndexOf('>');
+        if (closeBracket >= 0)
+        {
+            trimmed = trimmed[..closeBracket];
+        }
+
+        trimmed = trimmed.Trim();
+
         if (trimmed.Contains('@'))
         {
             var atIndex = trimmed.LastIndexOf('@');

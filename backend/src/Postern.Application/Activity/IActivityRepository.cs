@@ -16,4 +16,22 @@ public interface IActivityRepository
     Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken);
 
     Task<int> CountForwardedMessagesLast24HoursAsync(CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<Message>> ListMessagesAsync(
+        Guid aliasId,
+        DateTimeOffset receivedAfter,
+        DateTimeOffset? beforeReceivedAt,
+        Guid? beforeId,
+        int limit,
+        CancellationToken cancellationToken);
+
+
+    Task<IReadOnlyList<BlockedMessage>> ListBlockedMessagesForUserAsync(
+        Guid userId,
+        Guid? aliasId,
+        DateTimeOffset receivedAfter,
+        DateTimeOffset? beforeReceivedAt,
+        Guid? beforeId,
+        int limit,
+        CancellationToken cancellationToken);
 }
