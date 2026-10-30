@@ -15,7 +15,13 @@ public interface IActivityRepository
 
     Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken);
 
-    Task<int> CountForwardedMessagesLast24HoursAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// Forwarded message count per owning user since <paramref name="receivedAfter"/>.
+    /// Tombstoned aliases have no owner and are therefore excluded.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, int>> CountForwardedMessagesPerUserAsync(
+        DateTimeOffset receivedAfter,
+        CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Message>> ListMessagesAsync(
         Guid aliasId,

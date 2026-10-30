@@ -11,7 +11,7 @@ public class AliasServiceKvFailureTests
     {
         var repo = new RecordingAliasRepository();
         var kv = new InMemoryKvWriter { ShouldFail = true };
-        var service = new AliasService(repo, TimeProvider.System, kv);
+        var service = TestAliasService.Create(repo, TimeProvider.System, kv);
         var userId = Guid.NewGuid();
 
         var alias = await service.CreateAsync(userId, "shop", "", CancellationToken.None);
@@ -26,7 +26,7 @@ public class AliasServiceKvFailureTests
     {
         var repo = new RecordingAliasRepository();
         var kv = new InMemoryKvWriter();
-        var service = new AliasService(repo, TimeProvider.System, kv);
+        var service = TestAliasService.Create(repo, TimeProvider.System, kv);
         var userId = Guid.NewGuid();
 
         var alias = await service.CreateAsync(userId, "shop", "{}", CancellationToken.None);
@@ -40,7 +40,7 @@ public class AliasServiceKvFailureTests
     public async Task DisableAsync_WhenKvWriteFails_StillMarksAliasDisabledAndDirty()
     {
         var repo = new RecordingAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter { ShouldFail = true });
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter { ShouldFail = true });
         var userId = Guid.NewGuid();
         var alias = repo.Seed(userId);
 
@@ -54,7 +54,7 @@ public class AliasServiceKvFailureTests
     public async Task DeleteAsync_WhenKvDeleteFails_StillReturnsTombstoneSuccess()
     {
         var repo = new RecordingAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter { ShouldFail = true });
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter { ShouldFail = true });
         var userId = Guid.NewGuid();
         var alias = repo.Seed(userId);
 
@@ -66,7 +66,7 @@ public class AliasServiceKvFailureTests
     public async Task ReplaceAsync_WhenKvWriteFails_StillReplacesAndMarksDirty()
     {
         var repo = new RecordingAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter { ShouldFail = true });
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter { ShouldFail = true });
         var userId = Guid.NewGuid();
         var alias = repo.Seed(userId);
 

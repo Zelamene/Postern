@@ -265,6 +265,22 @@ public sealed class AuthenticationServiceTests
 
         public IReadOnlyList<Postern.Domain.Accounts.PosternUser> Users => _users;
 
+        public Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyCollection<Guid>>(
+                _users.Where(u => u.Status == "suspended").Select(u => u.Id).ToList());
+
+        public Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken)
+        {
+            var user = _users.SingleOrDefault(u => u.Id == userId);
+            if (user is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            user.Status = status;
+            return Task.FromResult(true);
+        }
+
         public void AddInvite(string code)
         {
             var hash = HashSecret(code);

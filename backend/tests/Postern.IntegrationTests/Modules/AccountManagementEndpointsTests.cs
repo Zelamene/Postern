@@ -45,6 +45,46 @@ public sealed class AccountManagementEndpointsTests(PosternFixture fixture) : IA
     }
 
     [Fact]
+    public async Task ChangeForwardingAddress_RepublishesAliasKvDestinations()
+    {
+        var user = await fixture.AUserAsync();
+        var alias = await fixture.AnAliasAsync(user.Id);
+        var kv = new RecordingKvWriter();
+        using var factory = new PosternApiFactory(fixture, kv);
+        using var client = factory.CreateAuthenticatedClient(user.Id, user.Email);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/users/change-forwarding-address",
+            new { newForwardingAddress = "new-inbox@example.test" });
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var json = kv.Get(alias.FullAddress!.ToLowerInvariant());
+        Assert.NotNull(json);
+        var record = System.Text.Json.JsonDocument.Parse(json!).RootElement;
+        Assert.Equal("new-inbox@example.test", record.GetProperty("destination").GetString());
+        Assert.Equal("active", record.GetProperty("status").GetString());
+        Assert.Equal(user.Id.ToString(), record.GetProperty("userId").GetString());
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_WhenKvWriteFails_MarksAliasDirty()
+    {
+        var user = await fixture.AUserAsync();
+        var alias = await fixture.AnAliasAsync(user.Id);
+        var kv = new RecordingKvWriter { ShouldFail = true };
+        using var factory = new PosternApiFactory(fixture, kv);
+        using var client = factory.CreateAuthenticatedClient(user.Id, user.Email);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/users/change-forwarding-address",
+            new { newForwardingAddress = "new-inbox@example.test" });
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        await using var db = fixture.CreateContext();
+        Assert.True((await db.Aliases.SingleAsync(item => item.Id == alias.Id)).KvDirty);
+    }
+
+    [Fact]
     public async Task ChangeForwardingAddress_RejectsBlankAddress()
     {
         var user = await fixture.AUserAsync();

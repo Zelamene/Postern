@@ -167,6 +167,23 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
         return true;
     }
 
+    public async Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Status == "suspended")
+            .Select(user => user.Id)
+            .ToListAsync(cancellationToken);
+
+    public async Task<bool> SetStatusAsync(
+        Guid userId,
+        string status,
+        CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .Where(user => user.Id == userId)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(user => user.Status, status),
+                cancellationToken) == 1;
+
     private static bool IsDuplicateEmail(DbUpdateException exception) =>
         exception.InnerException is PostgresException
         {

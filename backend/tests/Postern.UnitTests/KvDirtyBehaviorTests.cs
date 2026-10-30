@@ -12,7 +12,7 @@ public class KvDirtyBehaviorTests
         var timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 10, 28, 12, 0, 0, TimeSpan.Zero));
         var repository = new InMemoryAliasRepository();
         var kvWriter = new InMemoryKvWriter { ShouldFail = true };
-        var service = new AliasService(repository, timeProvider, kvWriter);
+        var service = TestAliasService.Create(repository, timeProvider, kvWriter);
 
         var userId = Guid.NewGuid();
         var alias = await service.CreateAsync(userId, "test", "p", CancellationToken.None);
@@ -32,7 +32,7 @@ public class KvDirtyBehaviorTests
         var timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 10, 28, 12, 0, 0, TimeSpan.Zero));
         var repository = new InMemoryAliasRepository();
         var kvWriter = new InMemoryKvWriter { ShouldFail = true };
-        var service = new AliasService(repository, timeProvider, kvWriter);
+        var service = TestAliasService.Create(repository, timeProvider, kvWriter);
 
         var userId = Guid.NewGuid();
         var original = await service.CreateAsync(userId, "orig", "p1", CancellationToken.None);
@@ -53,7 +53,7 @@ public class KvDirtyBehaviorTests
         var timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 10, 28, 12, 0, 0, TimeSpan.Zero));
         var repository = new InMemoryAliasRepository();
         var kvWriter = new InMemoryKvWriter { ShouldFail = true };
-        var service = new AliasService(repository, timeProvider, kvWriter);
+        var service = TestAliasService.Create(repository, timeProvider, kvWriter);
 
         var userId = Guid.NewGuid();
         var alias = await service.CreateAsync(userId, "test", "p", CancellationToken.None);

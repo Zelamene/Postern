@@ -51,11 +51,17 @@ public sealed class EfActivityRepository(PosternDbContext dbContext) : IActivity
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<int> CountForwardedMessagesLast24HoursAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyDictionary<Guid, int>> CountForwardedMessagesPerUserAsync(
+        DateTimeOffset receivedAfter,
+        CancellationToken cancellationToken)
     {
-        var cutoff = DateTimeOffset.UtcNow.AddHours(-24);
-        return await dbContext.Messages
-            .CountAsync(message => message.ReceivedAt >= cutoff, cancellationToken);
+        var counts = await dbContext.Messages
+            .Where(message => message.ReceivedAt >= receivedAfter && message.Alias.UserId != null)
+            .GroupBy(message => message.Alias.UserId!.Value)
+            .Select(group => new { UserId = group.Key, Count = group.Count() })
+            .ToListAsync(cancellationToken);
+
+        return counts.ToDictionary(item => item.UserId, item => item.Count);
     }
 
     public async Task<IReadOnlyList<Message>> ListMessagesAsync(

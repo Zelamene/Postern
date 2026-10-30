@@ -14,7 +14,9 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         string fromHeader,
         string? subject,
         string authenticationResult,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool blocked = false,
+        string? reason = null)
     {
         if (string.IsNullOrWhiteSpace(recipientAddress))
         {
@@ -32,9 +34,25 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         var decodedSubject = Rfc2047Decoder.Decode(subject);
         var truncatedSubject = TruncateSubject(decodedSubject);
 
+        if (blocked)
+        {
+            var blockedMessage = new BlockedMessage
+            {
+                Id = Guid.NewGuid(),
+                AliasId = alias.Id,
+                FromHeader = TruncateHeader(fromHeader),
+                Subject = truncatedSubject,
+                ReceivedAt = timeProvider.GetUtcNow(),
+                Reason = NormalizeReason(reason)
+            };
+
+            await activityRepository.RecordBlockedMessageAsync(blockedMessage, cancellationToken);
+            return IngestResult.Blocked;
+        }
+
         if (alias.Status == AliasStatus.Deleted || alias.Status == AliasStatus.Replaced || alias.Status == AliasStatus.Disabled)
         {
-            var blocked = new BlockedMessage
+            var statusBlocked = new BlockedMessage
             {
                 Id = Guid.NewGuid(),
                 AliasId = alias.Id,
@@ -44,7 +62,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                 Reason = alias.Status.ToString().ToLowerInvariant()
             };
 
-            await activityRepository.RecordBlockedMessageAsync(blocked, cancellationToken);
+            await activityRepository.RecordBlockedMessageAsync(statusBlocked, cancellationToken);
             return IngestResult.Blocked;
         }
 
@@ -188,6 +206,17 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         }
 
         return trimmed.Length > 60 ? trimmed[..60] : trimmed;
+    }
+
+    private static string NormalizeReason(string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return "blocked";
+        }
+
+        var trimmed = reason.Trim();
+        return trimmed.Length > 32 ? trimmed[..32] : trimmed;
     }
 
     private static string NormalizeAuthenticationResult(string? authenticationResult)

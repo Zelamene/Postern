@@ -42,4 +42,8 @@ public interface IAccountRepository
         Guid userId,
         DateTimeOffset deletedAt,
         CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken);
+
+    Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken);
 }

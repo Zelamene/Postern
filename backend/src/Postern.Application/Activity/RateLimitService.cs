@@ -1,35 +1,54 @@
 using System.Text.Json;
 using Postern.Application.Integrations;
-using Postern.Application.Activity;
 
 namespace Postern.Application.Activity;
 
 public sealed class RateLimitService(
     IActivityRepository activityRepository,
-    IKvWriter kvWriter)
+    IKvWriter kvWriter,
+    TimeProvider timeProvider)
 {
-    private static readonly SemaphoreSlim Semaphore = new(1, 1);
+    public const int DailyForwardingLimit = 500;
+    public const string KvKey = "rate_limited_users";
+
+    private static readonly SemaphoreSlim WriterLock = new(1, 1);
 
     public async Task RebuildRateLimitedUsersAsync(CancellationToken cancellationToken)
     {
-        await Semaphore.WaitAsync(cancellationToken);
+        await WriterLock.WaitAsync(cancellationToken);
         try
         {
-            var count = await activityRepository.CountForwardedMessagesLast24HoursAsync(cancellationToken);
-            if (count <= 500)
+            var windowStart = timeProvider.GetUtcNow().AddHours(-24);
+            var counts = await activityRepository.CountForwardedMessagesPerUserAsync(
+                windowStart,
+                cancellationToken);
+
+            var limitedUntil = timeProvider.GetUtcNow().AddHours(24).ToUnixTimeSeconds();
+            var limited = counts
+                .Where(pair => pair.Value > DailyForwardingLimit)
+                .ToDictionary(pair => pair.Key.ToString(), _ => limitedUntil);
+
+            if (limited.Count == 0)
             {
-                var empty = JsonSerializer.Serialize(new { users = new Dictionary<string, long>() });
-                await kvWriter.PutAsync("rate_limited_users", empty, cancellationToken);
                 return;
             }
 
-            var users = new Dictionary<string, long>();
-            var value = JsonSerializer.Serialize(new { users });
-            await kvWriter.PutAsync("rate_limited_users", value, cancellationToken);
+            try
+            {
+                await kvWriter.PutAsync(
+                    KvKey,
+                    JsonSerializer.Serialize(new { users = limited }),
+                    cancellationToken);
+            }
+            catch
+            {
+                // Ingest must not fail because the map could not be published; the next accepted
+                // message rebuilds the same map from the database.
+            }
         }
         finally
         {
-            Semaphore.Release();
+            WriterLock.Release();
         }
     }
 }

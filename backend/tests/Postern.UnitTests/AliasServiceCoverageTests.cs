@@ -10,7 +10,7 @@ public class AliasServiceCoverageTests
     public async Task AddExpectedSenderAsync_InvalidEtld_ReturnsNull()
     {
         var repo = new InMemoryAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter());
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter());
         var result = await service.AddExpectedSenderAsync(Guid.NewGuid(), Guid.NewGuid(), "", CancellationToken.None);
         Assert.Null(result);
     }
@@ -19,7 +19,7 @@ public class AliasServiceCoverageTests
     public async Task AddExpectedSenderAsync_NormalizesAndAdds()
     {
         var repo = new InMemoryAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter());
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter());
         var userId = Guid.NewGuid();
         var aliasId = Guid.NewGuid();
         repo.AddAlias(new Alias { Id = aliasId, UserId = userId, Status = AliasStatus.Active, FullAddress = "a@b.com", FullAddressHash = "x", Label = "a", RandomSuffix = "x", Category = "p", CreatedAt = DateTimeOffset.UtcNow });
@@ -31,7 +31,7 @@ public class AliasServiceCoverageTests
     public async Task MarkExpectedSenderAsync_ReturnsTrueIfAdded()
     {
         var repo = new InMemoryAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter());
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter());
         var userId = Guid.NewGuid();
         var aliasId = Guid.NewGuid();
         repo.AddAlias(new Alias { Id = aliasId, UserId = userId, Status = AliasStatus.Active, FullAddress = "a@b.com", FullAddressHash = "x", Label = "a", RandomSuffix = "x", Category = "p", CreatedAt = DateTimeOffset.UtcNow });
@@ -43,7 +43,7 @@ public class AliasServiceCoverageTests
     public async Task BlockSenderAsync_Invalid_ReturnsFalse()
     {
         var repo = new InMemoryAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter());
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter());
         Assert.False(await service.BlockSenderAsync(Guid.NewGuid(), Guid.NewGuid(), "", CancellationToken.None));
     }
 
@@ -51,7 +51,7 @@ public class AliasServiceCoverageTests
     public async Task BlockSenderAsync_Valid_ReturnsTrue()
     {
         var repo = new InMemoryAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter());
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter());
         var result = await service.BlockSenderAsync(Guid.NewGuid(), Guid.NewGuid(), "example.com", CancellationToken.None);
         Assert.True(result);
     }
@@ -60,7 +60,7 @@ public class AliasServiceCoverageTests
     public async Task ListExpectedSendersAsync_ReturnsList()
     {
         var repo = new InMemoryAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter());
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter());
         var list = await service.ListExpectedSendersAsync(Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
         Assert.NotNull(list);
     }
@@ -69,7 +69,7 @@ public class AliasServiceCoverageTests
     public async Task IsAddressHashTombstonedAsync_Empty_ReturnsFalse()
     {
         var repo = new InMemoryAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter());
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter());
         Assert.False(await service.IsAddressHashTombstonedAsync("   ", CancellationToken.None));
     }
 
@@ -77,7 +77,7 @@ public class AliasServiceCoverageTests
     public async Task CopyExpectedSendersAsync_CallsRepo()
     {
         var repo = new InMemoryAliasRepository();
-        var service = new AliasService(repo, TimeProvider.System, new InMemoryKvWriter());
+        var service = TestAliasService.Create(repo, TimeProvider.System, new InMemoryKvWriter());
         var result = await service.CopyExpectedSendersAsync(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), CancellationToken.None);
         Assert.NotNull(result);
     }
