@@ -4,7 +4,7 @@ using Xunit;
 namespace Postern.IntegrationTests.Collections;
 
 [CollectionDefinition(Name)]
-public class DatabaseCollection : ICollectionFixture<PostgresFixture>
+public class IntegrationCollection : ICollectionFixture<PosternFixture>
 {
-    public const string Name = "DatabaseCollection";
+    public const string Name = "Integration";
 }

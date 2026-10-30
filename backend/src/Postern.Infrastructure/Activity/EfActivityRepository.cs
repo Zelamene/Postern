@@ -72,7 +72,7 @@ public sealed class EfActivityRepository(PosternDbContext dbContext) : IActivity
 
         if (beforeReceivedAt is { } cursorTimestamp && beforeId is { } cursorId)
         {
-            var cursorIdText = cursorId.ToString("N");
+            var cursorIdText = CursorIdText(cursorId);
             query = query.Where(message =>
                 message.ReceivedAt < cursorTimestamp
                 || (message.ReceivedAt == cursorTimestamp
@@ -107,7 +107,7 @@ public sealed class EfActivityRepository(PosternDbContext dbContext) : IActivity
 
         if (beforeReceivedAt is { } cursorTimestamp && beforeId is { } cursorId)
         {
-            var cursorIdText = cursorId.ToString("N");
+            var cursorIdText = CursorIdText(cursorId);
             query = query.Where(message =>
                 message.ReceivedAt < cursorTimestamp
                 || (message.ReceivedAt == cursorTimestamp
@@ -120,4 +120,10 @@ public sealed class EfActivityRepository(PosternDbContext dbContext) : IActivity
             .Take(limit)
             .ToListAsync(cancellationToken);
     }
+
+    /// <summary>
+    /// Must use the same canonical rendering EF sends for <c>message.Id.ToString()</c>, otherwise
+    /// the cursor row compares as "before itself" and repeats on the next page.
+    /// </summary>
+    private static string CursorIdText(Guid cursorId) => cursorId.ToString();
 }
