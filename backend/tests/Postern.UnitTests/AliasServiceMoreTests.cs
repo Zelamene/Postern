@@ -12,7 +12,7 @@ public class AliasServiceMoreTests
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
         var repo = new InMemoryAliasRepository();
         var kv = new InMemoryKvWriter();
-        var service = new AliasService(repo, timeProvider, kv);
+        var service = TestAliasService.Create(repo, timeProvider, kv);
 
         var longLabel = new string('a', 100);
         var alias = await service.CreateAsync(Guid.NewGuid(), longLabel, "p", CancellationToken.None);
@@ -26,7 +26,7 @@ public class AliasServiceMoreTests
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
         var repo = new InMemoryAliasRepository();
         var kv = new InMemoryKvWriter();
-        var service = new AliasService(repo, timeProvider, kv);
+        var service = TestAliasService.Create(repo, timeProvider, kv);
 
         var alias = await service.CreateAsync(Guid.NewGuid(), "postmaster", "p", CancellationToken.None);
         Assert.Null(alias);
@@ -38,7 +38,7 @@ public class AliasServiceMoreTests
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
         var repo = new InMemoryAliasRepository();
         var kv = new InMemoryKvWriter();
-        var service = new AliasService(repo, timeProvider, kv);
+        var service = TestAliasService.Create(repo, timeProvider, kv);
 
         var alias = await service.CreateAsync(Guid.NewGuid(), "   ", "p", CancellationToken.None);
         Assert.NotNull(alias);
@@ -51,7 +51,7 @@ public class AliasServiceMoreTests
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
         var repo = new InMemoryAliasRepository();
         var kv = new InMemoryKvWriter();
-        var service = new AliasService(repo, timeProvider, kv);
+        var service = TestAliasService.Create(repo, timeProvider, kv);
 
         var userId = Guid.NewGuid();
         var alias = await service.CreateAsync(userId, "test", "p", CancellationToken.None);
@@ -65,7 +65,7 @@ public class AliasServiceMoreTests
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
         var repo = new InMemoryAliasRepository();
         var kv = new InMemoryKvWriter();
-        var service = new AliasService(repo, timeProvider, kv);
+        var service = TestAliasService.Create(repo, timeProvider, kv);
 
         var userId = Guid.NewGuid();
         var orig = await service.CreateAsync(userId, "orig", "p1", CancellationToken.None);
@@ -80,7 +80,7 @@ public class AliasServiceMoreTests
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
         var repo = new InMemoryAliasRepository();
         var kv = new InMemoryKvWriter();
-        var service = new AliasService(repo, timeProvider, kv);
+        var service = TestAliasService.Create(repo, timeProvider, kv);
 
         var userId = Guid.NewGuid();
         await service.CreateAsync(userId, "a", "p1", CancellationToken.None);

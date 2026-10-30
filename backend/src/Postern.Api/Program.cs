@@ -7,10 +7,12 @@ using Postern.Api.Endpoints;
 using Postern.Api.Security;
 using Postern.Application.Accounts;
 using Postern.Application.Activity;
+using Postern.Application.Administration;
 using Postern.Application.Aliases;
 using Postern.Application.Integrations;
 using Postern.Infrastructure.Accounts;
 using Postern.Infrastructure.Activity;
+using Postern.Infrastructure.Administration;
 using Postern.Infrastructure.Aliases;
 using Postern.Infrastructure.Integrations;
 using Postern.Infrastructure.Persistence;
@@ -36,6 +38,33 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("The PostgreSQL connection string is required.");
 }
 
+if (!builder.Environment.IsDevelopment()
+    && string.IsNullOrWhiteSpace(builder.Configuration["Ingest:SharedSecret"]))
+{
+    throw new InvalidOperationException(
+        "Ingest:SharedSecret must be configured outside Development so the worker endpoint is authenticated.");
+}
+
+var aliasDomain = builder.Configuration["Alias:Domain"];
+if (string.IsNullOrWhiteSpace(aliasDomain))
+{
+    aliasDomain = AliasPolicy.DefaultDomain;
+}
+
+var suffixLength = AliasPolicy.DefaultSuffixLength;
+if (int.TryParse(builder.Configuration["Alias:SuffixLength"], out var configuredSuffixLength))
+{
+    suffixLength = configuredSuffixLength;
+}
+
+if (suffixLength is < AliasPolicy.MinimumSuffixLength or > AliasPolicy.MaximumSuffixLength)
+{
+    throw new InvalidOperationException(
+        $"Alias:SuffixLength must be between {AliasPolicy.MinimumSuffixLength} and {AliasPolicy.MaximumSuffixLength}.");
+}
+
+var aliasPolicy = new AliasPolicy(aliasDomain, suffixLength);
+
 builder.Services.AddDbContext<PosternDbContext>(options =>
     PosternDbContext.ConfigureNpgsql(options, connectionString));
 builder.Services.AddScoped<IAccountRepository, EfAccountRepository>();
@@ -47,6 +76,11 @@ builder.Services.AddScoped<AliasService>();
 builder.Services.AddScoped<IngestService>();
 builder.Services.AddScoped<ActivityService>();
 builder.Services.AddScoped<RateLimitService>();
+builder.Services.AddScoped<SuspendedUserService>();
+builder.Services.AddScoped<GlobalBlocklistService>();
+builder.Services.AddScoped<AdministrationService>();
+builder.Services.AddScoped<IAdministrationRepository, EfAdministrationRepository>();
+builder.Services.AddSingleton(aliasPolicy);
 builder.Services.AddSingleton<IPasswordHashingService, AspNetPasswordHashingService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IKvWriter, NoOpKvWriter>();
@@ -123,6 +157,7 @@ app.MapAccountManagementEndpoints();
 app.MapAliasEndpoints();
 app.MapActivityEndpoints();
 app.MapIngestEndpoints();
+app.MapAdministrationEndpoints();
 
 app.Run();
 

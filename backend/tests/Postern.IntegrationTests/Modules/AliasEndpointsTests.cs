@@ -46,9 +46,65 @@ public sealed class AliasEndpointsTests(PosternFixture fixture) : IAsyncLifetime
         Assert.Equal(AliasStatus.Active, stored.Status);
         Assert.Equal("shop", System.Text.Json.JsonDocument.Parse(stored.PurposeMetadata!).RootElement
             .GetProperty("site").GetString());
+        Assert.NotNull(stored.FullAddress);
+        Assert.Contains($"shop.{stored.RandomSuffix}@postern.local", stored.FullAddress);
         Assert.EndsWith("@postern.local", stored.FullAddress!);
-        Assert.StartsWith("shop-", stored.FullAddress!);
-        Assert.Equal(8, stored.RandomSuffix!.Length);
+        Assert.StartsWith("shop.", stored.FullAddress!);
+        Assert.Equal(4, stored.RandomSuffix!.Length);
+    }
+
+    [Fact]
+    public async Task Create_PublishesAliasRecordWithOwnerDestination()
+    {
+        var user = await fixture.AUserAsync();
+        var kv = new RecordingKvWriter();
+        using var factory = new PosternApiFactory(fixture, kv);
+        using var client = factory.CreateAuthenticatedClient(user.Id, user.Email);
+
+        var response = await client.PostAsJsonAsync("/api/aliases", new { label = "shop" });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        await using var db = fixture.CreateContext();
+        var stored = await db.Aliases.SingleAsync(item => item.Label == "shop" && item.UserId == user.Id);
+        var json = kv.Get(stored.FullAddress!.ToLowerInvariant());
+        Assert.NotNull(json);
+        var record = System.Text.Json.JsonDocument.Parse(json!).RootElement;
+        Assert.Equal(user.Email, record.GetProperty("destination").GetString());
+        Assert.Equal("active", record.GetProperty("status").GetString());
+        Assert.Equal(user.Id.ToString(), record.GetProperty("userId").GetString());
+    }
+
+    [Fact]
+    public async Task Disable_PublishesDisabledAliasRecord()
+    {
+        var user = await fixture.AUserAsync();
+        var alias = await fixture.AnAliasAsync(user.Id);
+        var kv = new RecordingKvWriter();
+        using var factory = new PosternApiFactory(fixture, kv);
+        using var client = factory.CreateAuthenticatedClient(user.Id, user.Email);
+
+        var response = await client.PatchAsync($"/api/aliases/{alias.Id}/disable", null);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var record = System.Text.Json.JsonDocument.Parse(kv.Get(alias.FullAddress!.ToLowerInvariant())!).RootElement;
+        Assert.Equal("disabled", record.GetProperty("status").GetString());
+        Assert.Equal(user.Email, record.GetProperty("destination").GetString());
+    }
+
+    [Fact]
+    public async Task Delete_RemovesAliasRecordFromKv()
+    {
+        var user = await fixture.AUserAsync();
+        var alias = await fixture.AnAliasAsync(user.Id);
+        var kv = new RecordingKvWriter();
+        kv.PutAsync(alias.FullAddress!.ToLowerInvariant(), "{}", CancellationToken.None).GetAwaiter().GetResult();
+        using var factory = new PosternApiFactory(fixture, kv);
+        using var client = factory.CreateAuthenticatedClient(user.Id, user.Email);
+
+        var response = await client.DeleteAsync($"/api/aliases/{alias.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        Assert.Null(kv.Get(alias.FullAddress!.ToLowerInvariant()));
     }
 
     [Fact]

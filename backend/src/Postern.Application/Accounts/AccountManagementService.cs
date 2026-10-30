@@ -1,9 +1,11 @@
+using Postern.Application.Aliases;
 using Postern.Application.Integrations;
 
 namespace Postern.Application.Accounts;
 
 public sealed class AccountManagementService(
     IAccountRepository accounts,
+    IAliasRepository aliases,
     IDestinationService destinations,
     IKvWriter kvWriter,
     TimeProvider timeProvider)
@@ -44,7 +46,13 @@ public sealed class AccountManagementService(
             return false;
         }
 
-        return await accounts.UpdateForwardingAddressAsync(userId, nextAddress, cancellationToken);
+        if (!await accounts.UpdateForwardingAddressAsync(userId, nextAddress, cancellationToken))
+        {
+            return false;
+        }
+
+        await RepublishAliasesAsync(userId, nextAddress, cancellationToken);
+        return true;
     }
 
     public async Task<bool> DeleteAccountAsync(
@@ -80,5 +88,32 @@ public sealed class AccountManagementService(
         }
 
         return await accounts.DeleteAccountAsync(userId, timeProvider.GetUtcNow(), cancellationToken);
+    }
+
+    private async Task RepublishAliasesAsync(
+        Guid userId,
+        string destination,
+        CancellationToken cancellationToken)
+    {
+        var ownedAliases = await aliases.ListByUserAsync(userId, cancellationToken);
+        foreach (var alias in ownedAliases)
+        {
+            if (alias.FullAddress is null)
+            {
+                continue;
+            }
+
+            try
+            {
+                await kvWriter.PutAsync(
+                    alias.FullAddress.ToLowerInvariant(),
+                    AliasKvRecord.Serialize(destination, alias.Status.ToString().ToLowerInvariant(), userId),
+                    cancellationToken);
+            }
+            catch
+            {
+                await aliases.MarkKvDirtyAsync(alias.Id, cancellationToken);
+            }
+        }
     }
 }

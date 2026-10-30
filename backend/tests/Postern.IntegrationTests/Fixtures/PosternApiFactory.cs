@@ -20,8 +20,18 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
     private const string Audience = "Postern.Web";
 
     private readonly PosternFixture _fixture;
+    private readonly IKvWriter _kvWriter;
+    private readonly string? _ingestSecret;
 
-    public PosternApiFactory(PosternFixture fixture) => _fixture = fixture;
+    public PosternApiFactory(
+        PosternFixture fixture,
+        IKvWriter? kvWriter = null,
+        string? ingestSecret = null)
+    {
+        _fixture = fixture;
+        _kvWriter = kvWriter ?? new NoOpKvWriter();
+        _ingestSecret = ingestSecret;
+    }
 
     public DevelopmentDestinationService Destinations =>
         (DevelopmentDestinationService)Services.GetRequiredService<IDestinationService>();
@@ -33,13 +43,18 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Authentication:Issuer", Issuer);
         builder.UseSetting("Authentication:Audience", Audience);
         builder.UseSetting("ConnectionStrings:Postgres", _fixture.ConnectionString);
+        if (_ingestSecret is not null)
+        {
+            builder.UseSetting("Ingest:SharedSecret", _ingestSecret);
+        }
+
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<PosternDbContext>();
             services.AddDbContext<PosternDbContext>(options =>
                 PosternDbContext.ConfigureNpgsql(options, _fixture.ConnectionString));
             services.RemoveAll<IKvWriter>();
-            services.AddSingleton<IKvWriter>(new NoOpKvWriter());
+            services.AddSingleton(_kvWriter);
             services.RemoveAll<IDestinationService>();
             services.AddSingleton<IDestinationService>(new DevelopmentDestinationService());
         });

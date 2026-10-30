@@ -48,6 +48,34 @@ public sealed class HealthEndpointTests
             builder.UseEnvironment("Development");
             builder.UseSetting("Authentication:SigningKey", "too-short");
             builder.UseSetting("ConnectionStrings:Postgres", ApiTestConfiguration.UnusedConnectionString);
+            builder.UseSetting("Ingest:SharedSecret", ApiTestConfiguration.IngestSecret);
+        });
+
+        Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+    }
+
+    [Fact]
+    public void Api_RefusesToStartOutsideDevelopment_WithoutIngestSecret()
+    {
+        using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Production");
+            builder.UseSetting("Authentication:SigningKey", "integration-test-key-material-at-least-thirty-two-bytes");
+            builder.UseSetting("ConnectionStrings:Postgres", ApiTestConfiguration.UnusedConnectionString);
+        });
+
+        Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+    }
+
+    [Fact]
+    public void Api_RefusesToStart_WithOutOfRangeSuffixLength()
+    {
+        using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Development");
+            builder.UseSetting("Authentication:SigningKey", "integration-test-key-material-at-least-thirty-two-bytes");
+            builder.UseSetting("ConnectionStrings:Postgres", ApiTestConfiguration.UnusedConnectionString);
+            builder.UseSetting("Alias:SuffixLength", "2");
         });
 
         Assert.ThrowsAny<Exception>(() => factory.CreateClient());
@@ -61,6 +89,8 @@ internal static class ApiTestConfiguration
     public const string UnusedConnectionString =
         "Host=localhost;Database=postern;Username=postern_app;Password=unused;Search Path=postern"; // pragma: allowlist secret
 
+    public const string IngestSecret = "integration-test-ingest-secret";
+
     public static WebApplicationFactory<Program> CreateFactory(string environment) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -69,5 +99,6 @@ internal static class ApiTestConfiguration
                 "Authentication:SigningKey",
                 "integration-test-key-material-at-least-thirty-two-bytes");
             builder.UseSetting("ConnectionStrings:Postgres", UnusedConnectionString);
+            builder.UseSetting("Ingest:SharedSecret", IngestSecret);
         });
 }
