@@ -129,6 +129,126 @@ public sealed class AuthenticationEndpointsTests
         Assert.Equal("café@müller.de", loginBody?.Email);
     }
 
+    [Fact]
+    public async Task Register_RejectsMalformedEmailAndShortPassword()
+    {
+        using var factory = CreateFactory(new InMemoryAccountRepository("test-invite"));
+        using var client = factory.CreateClient();
+
+        var badEmail = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "not-an-email",
+            password = "correct horse battery staple",
+            inviteCode = "test-invite"
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, badEmail.StatusCode);
+
+        var shortPassword = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "user@example.test",
+            password = "short",
+            inviteCode = "test-invite"
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, shortPassword.StatusCode);
+    }
+
+    [Fact]
+    public async Task Register_RejectsUnknownInvite()
+    {
+        using var factory = CreateFactory(new InMemoryAccountRepository("test-invite"));
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "user@example.test",
+            password = "correct horse battery staple",
+            inviteCode = "wrong-invite"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ErrorBody>();
+        Assert.Equal("invalid_invite", body?.Error);
+    }
+
+    [Fact]
+    public async Task Register_SecondTimeWithSameEmailConflicts()
+    {
+        using var factory = CreateFactory(new InMemoryAccountRepository("first-invite", "second-invite"));
+        using var client = factory.CreateClient();
+
+        var first = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "user@example.test",
+            password = "correct horse battery staple",
+            inviteCode = "first-invite"
+        });
+        Assert.Equal(HttpStatusCode.Accepted, first.StatusCode);
+
+        var duplicate = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "user@example.test",
+            password = "correct horse battery staple",
+            inviteCode = "second-invite"
+        });
+
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+    }
+
+    [Fact]
+    public async Task Register_WithConsumedInviteIsRejected()
+    {
+        using var factory = CreateFactory(new InMemoryAccountRepository("test-invite"));
+        using var client = factory.CreateClient();
+
+        Assert.Equal(HttpStatusCode.Accepted, (await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "first@example.test",
+            password = "correct horse battery staple",
+            inviteCode = "test-invite"
+        })).StatusCode);
+
+        var reused = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "second@example.test",
+            password = "correct horse battery staple",
+            inviteCode = "test-invite"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, reused.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_RejectsWrongPasswordAndUnknownAccount()
+    {
+        var repository = new InMemoryAccountRepository("test-invite");
+        using var factory = CreateFactory(repository);
+        using var client = factory.CreateClient();
+
+        await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "user@example.test",
+            password = "correct horse battery staple",
+            inviteCode = "test-invite"
+        });
+        await client.PostAsync(
+            $"/api/dev/destinations/{Uri.EscapeDataString("user@example.test")}/verify",
+            content: null);
+
+        var wrongPassword = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = "user@example.test",
+            password = "definitely not the password"
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, wrongPassword.StatusCode);
+
+        var unknownAccount = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = "nobody@example.test",
+            password = "correct horse battery staple"
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, unknownAccount.StatusCode);
+    }
+
     private static WebApplicationFactory<Program> CreateFactory(InMemoryAccountRepository repository) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -148,21 +268,25 @@ public sealed class AuthenticationEndpointsTests
 
     private sealed record LoginResponse(Guid UserId, string Email, string? RecoveryKey);
     private sealed record RecoveryResponse(string RecoveryKey);
+    private sealed record ErrorBody(string? Error);
 
     private sealed class InMemoryAccountRepository : IAccountRepository
     {
         private readonly Dictionary<string, PosternUser> _users = new(StringComparer.Ordinal);
         private readonly Dictionary<string, InviteCode> _invites = new(StringComparer.Ordinal);
 
-        public InMemoryAccountRepository(string inviteCode)
+        public InMemoryAccountRepository(params string[] inviteCodes)
         {
-            var hash = HashSecret(inviteCode);
-            _invites.Add(hash, new InviteCode
+            foreach (var inviteCode in inviteCodes)
             {
-                Id = Guid.NewGuid(),
-                CodeHash = hash,
-                CreatedAt = DateTimeOffset.UtcNow
-            });
+                var hash = HashSecret(inviteCode);
+                _invites.Add(hash, new InviteCode
+                {
+                    Id = Guid.NewGuid(),
+                    CodeHash = hash,
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
         }
 
         public Task<RegistrationResult> RegisterPendingUserAsync(
