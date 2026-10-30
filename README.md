@@ -105,6 +105,8 @@ dotnet test backend/Postern.slnx
 
 The solution contains API, application, domain, and infrastructure projects, plus xUnit unit and API integration tests.
 
+`Postern.UnitTests` runs anywhere. `Postern.IntegrationTests` needs Docker: it starts a disposable PostgreSQL container per test collection, runs the real API pipeline against it, and removes the container when the run ends. See `backend/tests/Postern.IntegrationTests/README.md` for the folder layout and seeding helpers.
+
 ## Progressive Web App
 
 The Vite frontend is configured with `vite-plugin-pwa`, a web app manifest, generated service-worker registration, and install icons. The service worker is produced during the production build; development mode uses Vite’s normal dev server.

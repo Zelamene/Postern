@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Postern.Application.Accounts;
 using Postern.Domain.Accounts;
 
-namespace Postern.IntegrationTests;
+namespace Postern.IntegrationTests.Flows;
 
 public sealed class AuthenticationEndpointsTests
 {
@@ -138,7 +138,7 @@ public sealed class AuthenticationEndpointsTests
                 "integration-test-key-material-at-least-thirty-two-bytes");
             builder.UseSetting(
                 "ConnectionStrings:Postgres",
-                "Host=localhost;Database=postern;Username=postern_app;******;Search Path=postern");
+                "Host=localhost;Database=postern;Username=postern_app;Password=unused;Search Path=postern");
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<IAccountRepository>();

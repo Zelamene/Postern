@@ -66,7 +66,7 @@ public static class AliasEndpoints
             return Results.Unauthorized();
         }
 
-        var alias = await service.CreateAsync(currentUserId.Value, request.Label, request.PurposeMetadata ?? "", cancellationToken);
+        var alias = await service.CreateAsync(currentUserId.Value, request.Label ?? string.Empty, request.PurposeMetadata ?? "", cancellationToken);
         return alias is null
             ? Results.BadRequest(new { error = "reserved_or_invalid_label" })
             : Results.Created($"/api/aliases/{alias.Id}", MapAliasResponse(alias));
