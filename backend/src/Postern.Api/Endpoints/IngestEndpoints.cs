@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Postern.Application.Activity;
 
 namespace Postern.Api.Endpoints;
@@ -14,11 +16,11 @@ public static class IngestEndpoints
         HttpContext context,
         IngestRequest request,
         IngestService ingestService,
+        RateLimitService rateLimits,
+        IConfiguration configuration,
         CancellationToken cancellationToken)
     {
-        var configuredSecret = context.RequestServices.GetService<IConfiguration>()?["Ingest:SharedSecret"];
-        var providedSecret = context.Request.Headers["X-Postern-Ingest-Secret"].ToString();
-        if (!string.IsNullOrWhiteSpace(configuredSecret) && !string.Equals(configuredSecret, providedSecret, StringComparison.Ordinal))
+        if (!IsAuthorized(context, configuration))
         {
             return Results.Unauthorized();
         }
@@ -29,7 +31,14 @@ public static class IngestEndpoints
             request.FromHeader ?? string.Empty,
             request.Subject,
             request.AuthenticationResult ?? "unknown",
-            cancellationToken);
+            cancellationToken,
+            request.Blocked ?? false,
+            request.Reason);
+
+        if (result == IngestResult.Accepted)
+        {
+            await rateLimits.RebuildRateLimitedUsersAsync(cancellationToken);
+        }
 
         return result switch
         {
@@ -39,5 +48,24 @@ public static class IngestEndpoints
             IngestResult.Dropped => Results.BadRequest(new { status = "dropped" }),
             _ => Results.BadRequest(new { status = "dropped" })
         };
+    }
+
+    private static bool IsAuthorized(HttpContext context, IConfiguration configuration)
+    {
+        var configuredSecret = configuration["Ingest:SharedSecret"];
+        if (string.IsNullOrWhiteSpace(configuredSecret))
+        {
+            return true;
+        }
+
+        var providedSecret = context.Request.Headers["X-Postern-Ingest-Secret"].ToString();
+        if (string.IsNullOrEmpty(providedSecret))
+        {
+            return false;
+        }
+
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(configuredSecret),
+            Encoding.UTF8.GetBytes(providedSecret));
     }
 }

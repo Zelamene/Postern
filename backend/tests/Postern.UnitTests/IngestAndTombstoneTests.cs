@@ -2,6 +2,7 @@ using Postern.Application.Activity;
 using Postern.Application.Aliases;
 using Postern.Domain.Activity;
 using Postern.Domain.Aliases;
+using Postern.UnitTests.Fakes;
 
 namespace Postern.UnitTests;
 
@@ -80,7 +81,7 @@ public class IngestAndTombstoneTests
         var timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 10, 28, 10, 0, 0, TimeSpan.Zero));
         var repository = new InMemoryAliasRepository();
         var kvWriter = new Postern.UnitTests.Fakes.InMemoryKvWriter();
-        var service = new AliasService(repository, timeProvider, kvWriter);
+        var service = TestAliasService.Create(repository, timeProvider, kvWriter);
 
         var userId = Guid.NewGuid();
         var alias = await service.CreateAsync(userId, "test", "purpose", CancellationToken.None);
@@ -149,7 +150,8 @@ public class IngestAndTombstoneTests
 
         public Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) => Task.CompletedTask;
 
-        public Task<int> CountForwardedMessagesLast24HoursAsync(CancellationToken cancellationToken) => Task.FromResult(Messages.Count);
+        public Task<IReadOnlyDictionary<Guid, int>> CountForwardedMessagesPerUserAsync(DateTimeOffset receivedAfter, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, int>>(new Dictionary<Guid, int>());
 
         public Task<IReadOnlyList<Message>> ListMessagesAsync(
             Guid aliasId,

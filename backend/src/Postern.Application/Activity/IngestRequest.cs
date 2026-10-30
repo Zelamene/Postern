@@ -5,4 +5,6 @@ public sealed record IngestRequest(
     string? EnvelopeSender,
     string? FromHeader,
     string? Subject,
-    string? AuthenticationResult);
+    string? AuthenticationResult,
+    bool? Blocked = null,
+    string? Reason = null);

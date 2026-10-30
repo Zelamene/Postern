@@ -229,8 +229,8 @@ public sealed class IngestFlagLogicTests
             return Task.CompletedTask;
         }
 
-        public Task<int> CountForwardedMessagesLast24HoursAsync(CancellationToken cancellationToken) =>
-            Task.FromResult(Messages.Count);
+        public Task<IReadOnlyDictionary<Guid, int>> CountForwardedMessagesPerUserAsync(DateTimeOffset receivedAfter, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, int>>(new Dictionary<Guid, int>());
 
         public Task<IReadOnlyList<Message>> ListMessagesAsync(Guid aliasId, DateTimeOffset receivedAfter, DateTimeOffset? beforeReceivedAt, Guid? beforeId, int limit, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<Message>>(Messages

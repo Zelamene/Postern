@@ -4,6 +4,7 @@ using Postern.Application.Integrations;
 using Postern.Domain.Accounts;
 using Postern.Domain.Aliases;
 using Postern.Domain.Activity;
+using Postern.UnitTests.Fakes;
 
 namespace Postern.UnitTests;
 
@@ -26,7 +27,7 @@ public class AccountManagementTests
         var destinations = new InMemoryDestinationService();
         var kvWriter = new Fakes.InMemoryKvWriter();
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
-        var service = new AccountManagementService(accounts, destinations, kvWriter, timeProvider);
+        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
 
         var result = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
         Assert.True(result);
@@ -59,7 +60,7 @@ public class AccountManagementTests
         var destinations = new InMemoryDestinationService();
         var kvWriter = new Fakes.InMemoryKvWriter();
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
-        var service = new AccountManagementService(accounts, destinations, kvWriter, timeProvider);
+        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
 
         Assert.True(await service.ChangeForwardingAddressAsync(userId, "second@example.com", CancellationToken.None));
 
@@ -86,7 +87,7 @@ public class AccountManagementTests
         var destinations = new InMemoryDestinationService();
         var kvWriter = new Fakes.InMemoryKvWriter();
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
-        var service = new AccountManagementService(accounts, destinations, kvWriter, timeProvider);
+        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
 
         Assert.True(await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None));
 
@@ -103,7 +104,7 @@ public class AccountManagementTests
         var destinations = new InMemoryDestinationService();
         var kvWriter = new Fakes.InMemoryKvWriter();
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
-        var service = new AccountManagementService(accounts, destinations, kvWriter, timeProvider);
+        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
 
         var result = await service.ChangeForwardingAddressAsync(userId, "   ", CancellationToken.None);
         Assert.False(result);
@@ -143,7 +144,7 @@ public class AccountManagementTests
         var kvWriter = new Fakes.InMemoryKvWriter();
         kvWriter.PutAsync("test-abcd1234@postern.local", "{}", CancellationToken.None).GetAwaiter().GetResult();
         var timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 10, 28, 13, 0, 0, TimeSpan.Zero));
-        var service = new AccountManagementService(accounts, destinations, kvWriter, timeProvider);
+        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
 
         var result = await service.DeleteAccountAsync(userId, CancellationToken.None);
         Assert.True(result);
@@ -187,7 +188,7 @@ public class AccountManagementTests
         var destinations = new InMemoryDestinationService { ShouldFail = true };
         var kvWriter = new Fakes.InMemoryKvWriter { ShouldFail = true };
         var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
-        var service = new AccountManagementService(accounts, destinations, kvWriter, timeProvider);
+        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
 
         var result = await service.DeleteAccountAsync(userId, CancellationToken.None);
         Assert.True(result);
@@ -249,6 +250,22 @@ public class AccountManagementTests
             u.ForwardingAddress = newForwardingAddress;
             return Task.FromResult(true);
         }
+        public Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyCollection<Guid>>(
+                _users.Values.Where(u => u.Status == "suspended").Select(u => u.Id).ToList());
+
+        public Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken)
+        {
+            var user = _users.Values.SingleOrDefault(u => u.Id == userId);
+            if (user is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            user.Status = status;
+            return Task.FromResult(true);
+        }
+
         public Task<bool> DeleteAccountAsync(Guid userId, DateTimeOffset deletedAt, CancellationToken cancellationToken)
         {
             if (!_users.TryGetValue(userId, out var u)) return Task.FromResult(false);

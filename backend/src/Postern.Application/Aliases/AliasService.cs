@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Postern.Application.Accounts;
 using Postern.Application.Integrations;
 using Postern.Domain.Aliases;
 
@@ -7,15 +8,25 @@ namespace Postern.Application.Aliases;
 
 public sealed class AliasService(
     IAliasRepository aliases,
+    IAccountRepository accounts,
     TimeProvider timeProvider,
-    IKvWriter kvWriter)
+    IKvWriter kvWriter,
+    AliasPolicy policy)
 {
+    private const int AddressAttempts = 5;
+
     public async Task<Alias?> CreateAsync(
         Guid userId,
         string label,
         string purposeMetadata,
         CancellationToken cancellationToken)
     {
+        var user = await accounts.FindByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
         var safeLabel = string.IsNullOrWhiteSpace(label) ? "default" : label.Trim();
         if (safeLabel.Length > 64)
         {
@@ -27,45 +38,38 @@ public sealed class AliasService(
             return null;
         }
 
-        var suffix = Guid.NewGuid().ToString("N")[..8];
-        var address = $"{safeLabel}-{suffix}@postern.local";
-        var now = timeProvider.GetUtcNow();
-
-        var alias = new Alias
+        for (var attempt = 0; attempt < AddressAttempts; attempt++)
         {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Label = safeLabel,
-            RandomSuffix = suffix,
-            FullAddress = address,
-            FullAddressHash = HashAddress(address),
-            PurposeMetadata = string.IsNullOrWhiteSpace(purposeMetadata) ? null : purposeMetadata,
-            Category = "personal",
-            Status = AliasStatus.Active,
-            CreatedAt = now,
-            KvDirty = false
-        };
+            var suffix = GenerateSuffix(policy.SuffixLength);
+            var address = policy.BuildAddress(safeLabel, suffix);
+            var addressHash = HashAddress(address);
+            if (await aliases.IsAddressHashTombstonedAsync(addressHash, cancellationToken))
+            {
+                continue;
+            }
 
-        var created = await aliases.CreateAsync(alias, cancellationToken);
+            var now = timeProvider.GetUtcNow();
+            var alias = new Alias
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Label = safeLabel,
+                RandomSuffix = suffix,
+                FullAddress = address,
+                FullAddressHash = addressHash,
+                PurposeMetadata = string.IsNullOrWhiteSpace(purposeMetadata) ? null : purposeMetadata,
+                Category = "personal",
+                Status = AliasStatus.Active,
+                CreatedAt = now,
+                KvDirty = false
+            };
 
-        var kvValue = System.Text.Json.JsonSerializer.Serialize(new
-        {
-            destination = string.Empty,
-            status = "active",
-            userId = userId.ToString(),
-            blockedSenders = Array.Empty<string>()
-        });
-
-        try
-        {
-            await kvWriter.PutAsync(address.ToLowerInvariant(), kvValue, cancellationToken);
-        }
-        catch
-        {
-            await aliases.MarkKvDirtyAsync(created.Id, cancellationToken);
+            var created = await aliases.CreateAsync(alias, cancellationToken);
+            await PublishAsync(created, user.EffectiveForwardingAddress, "active", cancellationToken);
+            return created;
         }
 
-        return created;
+        return null;
     }
 
     public async Task<IReadOnlyCollection<Alias>> ListAsync(
@@ -79,30 +83,13 @@ public sealed class AliasService(
         CancellationToken cancellationToken)
     {
         var success = await aliases.UpdateStatusAsync(aliasId, userId, AliasStatus.Disabled, timeProvider.GetUtcNow(), cancellationToken);
-        if (success)
+        if (!success)
         {
-            var alias = await aliases.GetOwnedAliasAsync(aliasId, userId, cancellationToken);
-            if (alias?.FullAddress is not null)
-            {
-                var kvValue = System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    destination = string.Empty,
-                    status = "disabled",
-                    userId = userId.ToString(),
-                    blockedSenders = Array.Empty<string>()
-                });
-                try
-                {
-                    await kvWriter.PutAsync(alias.FullAddress.ToLowerInvariant(), kvValue, cancellationToken);
-                }
-                catch
-                {
-                    await aliases.MarkKvDirtyAsync(aliasId, cancellationToken);
-                }
-            }
+            return false;
         }
 
-        return success;
+        await PublishCurrentStateAsync(userId, aliasId, "disabled", cancellationToken);
+        return true;
     }
 
     public async Task<bool> DeleteAsync(
@@ -121,7 +108,7 @@ public sealed class AliasService(
             }
             catch
             {
-                // Tombstone is preserved in DB regardless of KV failure
+                // The tombstone is authoritative; the KV delete is retried by reconciliation.
             }
         }
 
@@ -135,30 +122,13 @@ public sealed class AliasService(
         CancellationToken cancellationToken)
     {
         var success = await aliases.MarkReplacedAsync(aliasId, userId, replacementAliasId, timeProvider.GetUtcNow(), cancellationToken);
-        if (success)
+        if (!success)
         {
-            var alias = await aliases.GetOwnedAliasAsync(aliasId, userId, cancellationToken);
-            if (alias?.FullAddress is not null)
-            {
-                var kvValue = System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    destination = string.Empty,
-                    status = "replaced",
-                    userId = userId.ToString(),
-                    blockedSenders = Array.Empty<string>()
-                });
-                try
-                {
-                    await kvWriter.PutAsync(alias.FullAddress.ToLowerInvariant(), kvValue, cancellationToken);
-                }
-                catch
-                {
-                    await aliases.MarkKvDirtyAsync(aliasId, cancellationToken);
-                }
-            }
+            return false;
         }
 
-        return success;
+        await PublishCurrentStateAsync(userId, aliasId, "replaced", cancellationToken);
+        return true;
     }
 
     public async Task<bool> IsAddressHashTombstonedAsync(
@@ -244,4 +214,52 @@ public sealed class AliasService(
 
     public static string HashAddress(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+
+    private async Task PublishCurrentStateAsync(
+        Guid userId,
+        Guid aliasId,
+        string status,
+        CancellationToken cancellationToken)
+    {
+        var alias = await aliases.GetOwnedAliasAsync(aliasId, userId, cancellationToken);
+        if (alias?.FullAddress is null)
+        {
+            return;
+        }
+
+        var user = await accounts.FindByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return;
+        }
+
+        await PublishAsync(alias, user.EffectiveForwardingAddress, status, cancellationToken);
+    }
+
+    private async Task PublishAsync(
+        Alias alias,
+        string destination,
+        string status,
+        CancellationToken cancellationToken)
+    {
+        if (alias.FullAddress is null || alias.UserId is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await kvWriter.PutAsync(
+                alias.FullAddress.ToLowerInvariant(),
+                AliasKvRecord.Serialize(destination, status, alias.UserId.Value),
+                cancellationToken);
+        }
+        catch
+        {
+            await aliases.MarkKvDirtyAsync(alias.Id, cancellationToken);
+        }
+    }
+
+    private static string GenerateSuffix(int length) =>
+        Guid.NewGuid().ToString("N")[..length];
 }

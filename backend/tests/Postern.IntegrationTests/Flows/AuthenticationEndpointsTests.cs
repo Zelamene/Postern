@@ -401,6 +401,22 @@ public sealed class AuthenticationEndpointsTests
             return Task.FromResult(true);
         }
 
+        public Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyCollection<Guid>>(
+                _users.Values.Where(user => user.Status == "suspended").Select(user => user.Id).ToList());
+
+        public Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken)
+        {
+            var user = _users.Values.SingleOrDefault(item => item.Id == userId);
+            if (user is null)
+            {
+                return Task.FromResult(false);
+            }
+
+            user.Status = status;
+            return Task.FromResult(true);
+        }
+
         private static string HashSecret(string value) =>
             Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     }
