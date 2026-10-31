@@ -6,6 +6,9 @@ namespace Postern.UnitTests.Fakes;
 public sealed class InMemoryAccountRepository : IAccountRepository
 {
     private readonly Dictionary<Guid, PosternUser> _users = new();
+    private readonly Dictionary<string, InviteCode> _invites = new(StringComparer.Ordinal);
+
+    public IReadOnlyCollection<InviteCode> Invites => _invites.Values;
 
     public string DefaultForwardingAddress { get; set; } = "inbox@example.test";
 
@@ -106,6 +109,12 @@ public sealed class InMemoryAccountRepository : IAccountRepository
                 .Where(user => user.Status == "suspended")
                 .Select(user => user.Id)
                 .ToList());
+
+    public Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken)
+    {
+        _invites[invite.CodeHash] = invite;
+        return Task.CompletedTask;
+    }
 
     public Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken)
     {

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test('loads the Postern app and reports API availability', async ({ page }) => {
-  await page.route('**/api/health', async (route) => {
+  await page.route('**/health', async (route) => {
     await route.fulfill({
       contentType: 'application/json',
       body: JSON.stringify({ status: 'ok' }),

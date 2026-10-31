@@ -54,7 +54,7 @@ public sealed class AuthenticationService(
         var result = await accounts.RegisterPendingUserAsync(
             user,
             legacyIdentities,
-            HashSecret(inviteCode.Trim()),
+            HashInviteCode(inviteCode),
             MaximumUsers,
             now,
             cancellationToken);
@@ -173,6 +173,9 @@ public sealed class AuthenticationService(
 
     public static string NormalizeEmail(string email) =>
         EmailAddressNormalizer.NormalizeIdentity(email);
+
+    public static string HashInviteCode(string inviteCode) =>
+        HashSecret(inviteCode.Trim());
 
     private static string NormalizeLegacyEmail(string email) => email.Trim().ToUpperInvariant();
 

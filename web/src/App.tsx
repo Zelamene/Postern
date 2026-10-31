@@ -9,7 +9,7 @@ function App() {
   useEffect(() => {
     let active = true
 
-    fetch(new URL('/api/health', window.location.origin))
+    fetch(new URL('/health', window.location.origin))
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Health check failed with status ${response.status}`)
