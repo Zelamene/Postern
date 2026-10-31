@@ -1,0 +1,1254 @@
+openapi: 3.1.0
+info:
+  title: Postern API
+  version: 1.0.0
+  summary: Single-purpose, auditable email alias platform.
+  description: |
+    HTTP contract for the Postern backend (`backend/src/Postern.Api`).
+
+    ## Authentication
+    Every `/api/*` endpoint except `/api/ingest` and `/api/dev/*` requires a session
+    cookie named `Postern.Auth`. The cookie is issued by `POST /api/auth/login` and is
+    `HttpOnly`, `SameSite=Strict`, `Secure` outside Development, with a 1-hour lifetime.
+    The token is a HS256 JWT; there is no bearer-token flow and no refresh endpoint.
+
+    ## Authorization
+    `403` means the caller is authenticated but lacks the required role (`admin`).
+    `401` means the caller is anonymous, the cookie is missing/expired, or the supplied
+    credentials were rejected.
+
+    ## Conventions
+    - All bodies are JSON (`application/json`); timestamps are ISO-8601 with offset.
+    - Errors are either `application/problem+json` (validation, via `Results.ValidationProblem`)
+      or a small `{ "error": "code" }` / `{ "status": "code" }` object. Both shapes are
+      modelled per operation, not globally.
+    - `204` responses carry no body.
+  license:
+    name: UNLICENSED
+    identifier: UNLICENSED
+servers:
+  - url: http://localhost:8080
+    description: docker-compose `api` service (env/api.env)
+  - url: http://localhost:5148
+    description: local `dotnet run` http profile (Development)
+tags:
+  - name: Health
+    description: Liveness probe. Never touches the database.
+  - name: Authentication
+    description: Signup, login, logout and password recovery over the `Postern.Auth` cookie.
+  - name: Development
+    description: Only mapped when `ASPNETCORE_ENVIRONMENT=Development`. Never exposed in production.
+  - name: Aliases
+    description: Alias creation, lifecycle (disable/delete/replace) and expected senders.
+  - name: Activity
+    description: Read-only message and blocked-message history.
+  - name: Ingest
+    description: Called by the Cloudflare Email Worker, not by the browser.
+  - name: Account
+    description: Forwarding-address changes and account deletion for the caller.
+  - name: Administration
+    description: Admin-only operations (role `admin`), all audit-logged.
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: Postern.Auth
+      description: HS256 JWT session cookie issued by `POST /api/auth/login`.
+    ingestSecret:
+      type: apiKey
+      in: header
+      name: X-Postern-Ingest-Secret
+      description: |
+        Shared secret matching `Ingest:SharedSecret`. Only enforced when that setting is
+        non-empty; an empty setting (Development only) accepts unauthenticated calls.
+  parameters:
+    AliasId:
+      name: aliasId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Domain:
+      name: domain
+      in: path
+      required: true
+      description: eTLD+1 domain to remove from the global blocklist.
+      schema:
+        type: string
+        maxLength: 253
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque cursor from a previous page's `nextCursor`. Malformed values return `400`.
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Page size. Values below 1 fall back to the default; values above 100 are clamped.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+  responses:
+    Unauthorized:
+      description: Missing, expired, or rejected credentials.
+    Forbidden:
+      description: Authenticated but not permitted (missing `admin` role).
+    NotFound:
+      description: The resource does not exist or does not belong to the caller.
+    NoContent:
+      description: Applied successfully; no body.
+    TooManyRequests:
+      description: Rate limit exceeded for the caller's IP address.
+    ValidationProblem:
+      description: Request validation failed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  schemas:
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: [string, 'null']
+        title:
+          type: [string, 'null']
+        status:
+          type: [integer, 'null']
+        detail:
+          type: [string, 'null']
+        instance:
+          type: [string, 'null']
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    ErrorCode:
+      type: object
+      description: Compact machine-readable error body.
+      required: [error]
+      properties:
+        error:
+          type: string
+          examples: [invalid_invite, registration_unavailable, user_limit_reached, reserved_or_invalid_label, cannot_create_replacement, unknown_action, invalid_cursor, verification_required]
+
+    StatusCode:
+      type: object
+      description: Compact machine-readable status body.
+      required: [status]
+      properties:
+        status:
+          type: string
+          examples: [ok, accepted, blocked, unknown_alias, dropped, pending_verification]
+
+    # -- auth
+    RegisterRequest:
+      type: object
+      required: [email, password, inviteCode]
+      properties:
+        email:
+          type: [string, 'null']
+          format: email
+          description: Login identity. May be EAI/IDN; normalized server-side.
+        password:
+          type: [string, 'null']
+          minLength: 12
+          maxLength: 128
+          description: Between 12 and 128 characters.
+        inviteCode:
+          type: [string, 'null']
+          description: Single-use invite code. Signup is capped at 199 accounts.
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: [string, 'null']
+        password:
+          type: [string, 'null']
+
+    LoginResponse:
+      type: object
+      required: [userId, email]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+        recoveryKey:
+          type: [string, 'null']
+          description: Present only when the account had no recovery key yet.
+
+    RecoveryRequest:
+      type: object
+      required: [recoveryKey, newPassword]
+      properties:
+        recoveryKey:
+          type: [string, 'null']
+        newPassword:
+          type: [string, 'null']
+          minLength: 12
+          maxLength: 128
+
+    RecoveryResponse:
+      type: object
+      required: [recoveryKey]
+      properties:
+        recoveryKey:
+          type: string
+          description: The next recovery key. The presented key is invalidated immediately.
+
+    CurrentAccountResponse:
+      type: object
+      required: [userId, email, forwardingAddress]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          description: Login identity. Never mutated.
+        forwardingAddress:
+          type: [string, 'null']
+          description: |
+            Address mail is actually forwarded to. Falls back to `email` when no explicit
+            forwarding address has been verified.
+
+    DevelopmentInviteResponse:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+
+    #  aliases
+    AliasStatus:
+      type: string
+      enum: [Active, Disabled, Replaced, Deleted]
+
+    AliasResponse:
+      type: object
+      required: [id, kvDirty, status, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: [string, 'null']
+          format: uuid
+        label:
+          type: [string, 'null']
+        randomSuffix:
+          type: [string, 'null']
+        fullAddress:
+          type: [string, 'null']
+          description: '`{label}.{random4}@{Alias:Domain}`'
+        purposeMetadata:
+          type: [string, 'null']
+        category:
+          type: [string, 'null']
+        status:
+          $ref: '#/components/schemas/AliasStatus'
+        replacedByAliasId:
+          type: [string, 'null']
+          format: uuid
+        kvDirty:
+          type: boolean
+          description: True when the KV write failed and the alias needs a retry.
+        createdAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: [string, 'null']
+          format: date-time
+
+    CreateAliasRequest:
+      type: object
+      properties:
+        label:
+          type: [string, 'null']
+          description: Trimmed and truncated server-side. Reserved labels are rejected.
+        purposeMetadata:
+          type: [string, 'null']
+
+    UpdateAliasRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [disable, delete]
+
+    ReplaceAliasRequest:
+      type: object
+      properties:
+        label:
+          type: [string, 'null']
+          description: Label for the replacement alias. Defaults to `replaced`.
+        purposeMetadata:
+          type: [string, 'null']
+
+    ExpectedSenderRequest:
+      type: object
+      required: [senderEtld1]
+      properties:
+        senderEtld1:
+          type: string
+          maxLength: 253
+          description: Normalized to eTLD+1 by the server.
+
+    ExpectedSenderResponse:
+      type: object
+      required: [id, senderEtld1, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        senderEtld1:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    # ----- activity
+    MessageResponse:
+      type: object
+      required: [id, aliasId, fromHeader, envelopeSender, receivedAt, authenticationResult, isFlagged]
+      properties:
+        id:
+          type: string
+          format: uuid
+        aliasId:
+          type: string
+          format: uuid
+        fromHeader:
+          type: string
+          description: RFC 2047 decoded, normalized to eTLD+1.
+        envelopeSender:
+          type: string
+        subject:
+          type: [string, 'null']
+          description: RFC 2047 decoded and truncated to 60 characters.
+        receivedAt:
+          type: string
+          format: date-time
+        authenticationResult:
+          type: string
+          examples: [pass, fail, none, unknown]
+        isFlagged:
+          type: boolean
+        flagReason:
+          type: [string, 'null']
+          examples: [unexpected_pass, unexpected_none, fail]
+
+    MessagePage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageResponse'
+        nextCursor:
+          type: [string, 'null']
+          description: Null on the last page. Newest-first, 90-day retention window.
+
+    BlockedMessageResponse:
+      type: object
+      required: [id, aliasId, fromHeader, receivedAt, reason]
+      properties:
+        id:
+          type: string
+          format: uuid
+        aliasId:
+          type: string
+          format: uuid
+        fromHeader:
+          type: string
+        subject:
+          type: [string, 'null']
+        receivedAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          description: Normalized reason, truncated to 32 characters (default `blocked`).
+
+    BlockedMessagePage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockedMessageResponse'
+        nextCursor:
+          type: [string, 'null']
+
+    # - ingest
+    IngestRequest:
+      type: object
+      description: Worker payload. Any missing string is treated as empty.
+      properties:
+        recipientAddress:
+          type: [string, 'null']
+          description: The `To:` address, i.e. the alias.
+        envelopeSender:
+          type: [string, 'null']
+          description: SMTP envelope sender (`message.from`).
+        fromHeader:
+          type: [string, 'null']
+          description: Raw `From:` header value.
+        subject:
+          type: [string, 'null']
+        authenticationResult:
+          type: [string, 'null']
+          default: unknown
+          description: Value of the `Authentication-Results` header.
+        blocked:
+          type: [boolean, 'null']
+          default: false
+          description: True when the worker dropped the message instead of forwarding it.
+        reason:
+          type: [string, 'null']
+          description: Block reason; only used when `blocked` is true.
+
+    #  account
+    ChangeForwardingAddressRequest:
+      type: object
+      required: [newForwardingAddress]
+      properties:
+        newForwardingAddress:
+          type: [string, 'null']
+          description: New verified Cloudflare destination; republished into every owned alias.
+
+    #  administration
+    SuspendUserRequest:
+      type: object
+      properties:
+        reason:
+          type: [string, 'null']
+
+    ResumeUserRequest:
+      type: object
+      properties:
+        reason:
+          type: [string, 'null']
+
+    BlockDomainRequest:
+      type: object
+      required: [domain]
+      properties:
+        domain:
+          type: [string, 'null']
+          description: Normalized to eTLD+1 before being stored and published to KV.
+        reason:
+          type: [string, 'null']
+
+    GlobalBlocklistResponse:
+      type: object
+      required: [domains]
+      properties:
+        domains:
+          type: array
+          description: Blocked domains, ordinal-sorted.
+          items:
+            type: string
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [Health]
+      summary: Liveness probe
+      description: Answers without touching the database.
+      security: []
+      responses:
+        '200':
+          description: The process is up.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusCode'
+
+  /api/auth/register:
+    post:
+      operationId: registerAccount
+      tags: [Authentication]
+      summary: Register a pending account
+      description: |
+        Creates an account in `pending` status and consumes the invite code. The account can
+        only log in after its forwarding destination is verified. Rate limited to 5 requests
+        per hour per IP.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '202':
+          description: Account created and awaiting destination verification.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusCode'
+        '400':
+          description: Invalid request, or an unknown/used/expired invite code.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+        '409':
+          description: |
+            `user_limit_reached` when the 199-account cap is hit, or
+            `registration_unavailable` when the email already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/login:
+    post:
+      operationId: login
+      tags: [Authentication]
+      summary: Log in and receive the session cookie
+      description: |
+        On success the `Postern.Auth` cookie is set and must be sent on every protected call.
+        Rate limited to 10 requests per 15 minutes per IP.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated; session cookie issued.
+          headers:
+            Set-Cookie:
+              description: '`Postern.Auth=<jwt>; HttpOnly; SameSite=Strict; Path=/`'
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: The destination is not verified yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/recovery:
+    post:
+      operationId: resetPasswordWithRecoveryKey
+      tags: [Authentication]
+      summary: Reset the password with a recovery key
+      description: |
+        Consumes the presented recovery key and returns the next one. Rate limited to 5
+        requests per 15 minutes per IP.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryRequest'
+      responses:
+        '200':
+          description: Password changed; a new recovery key was issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryResponse'
+        '401':
+          description: The recovery key is unknown, expired, or already used.
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/logout:
+    post:
+      operationId: logout
+      tags: [Authentication]
+      summary: Delete the session cookie
+      security:
+        - sessionCookie: []
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/me:
+    get:
+      operationId: getCurrentAccount
+      tags: [Authentication]
+      summary: Current account
+      description: 'Returns the login identity plus the effective forwarding address. Sent with `Cache-Control: no-store`.'
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: The authenticated account.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentAccountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/dev/destinations/{email}/verify:
+    post:
+      operationId: verifyDevelopmentDestination
+      tags: [Development]
+      summary: Mark a destination as verified (development only)
+      description: Local stand-in for the Cloudflare destination add/poll round trip.
+      security: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/dev/invites:
+    post:
+      operationId: createDevelopmentInvite
+      tags: [Development]
+      summary: Issue an invite code (development only)
+      description: Writes a new single-use invite code so local signup can be exercised.
+      security: []
+      responses:
+        '201':
+          description: Invite code created.
+          headers:
+            Location:
+              schema:
+                type: string
+                const: /api/dev/invites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevelopmentInviteResponse'
+
+  /api/aliases:
+    get:
+      operationId: listAliases
+      tags: [Aliases]
+      summary: List the caller's aliases
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: All aliases owned by the caller, including disabled, replaced and tombstoned ones.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AliasResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createAlias
+      tags: [Aliases]
+      summary: Create an alias
+      description: |
+        The suffix is server-generated; the address is checked against the tombstone table and
+        retried up to five times. The KV record is written immediately, falling back to
+        `kvDirty = true` when the write fails.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAliasRequest'
+      responses:
+        '201':
+          description: Alias created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AliasResponse'
+        '400':
+          description: Reserved or invalid label.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/aliases/{aliasId}:
+    patch:
+      operationId: updateAlias
+      tags: [Aliases]
+      summary: Disable or delete an alias
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAliasRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          description: Unknown action.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteAlias
+      tags: [Aliases]
+      summary: Delete an alias (tombstone)
+      description: Keeps `fullAddressHash`, clears personal columns, and removes the KV entry.
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/aliases/{aliasId}/disable:
+    patch:
+      operationId: disableAlias
+      tags: [Aliases]
+      summary: Disable an alias
+      description: Repeated disables are rejected by the lifecycle rules and surface as `404`.
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/aliases/{aliasId}/delete:
+    patch:
+      operationId: deleteAliasViaPatch
+      tags: [Aliases]
+      summary: Delete an alias (alias of `DELETE /api/aliases/{aliasId}`)
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/aliases/{aliasId}/replace:
+    post:
+      operationId: replaceAliasWithNew
+      tags: [Aliases]
+      summary: Replace an alias with a freshly created one
+      description: |
+        Creates the replacement, copies the expected senders, then marks the old alias
+        `replaced` with `replacedByAliasId` set.
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceAliasRequest'
+      responses:
+        '200':
+          description: The replacement alias.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AliasResponse'
+        '400':
+          description: The replacement alias could not be created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/aliases/{aliasId}/replace/{replacementAliasId}:
+    patch:
+      operationId: replaceAlias
+      tags: [Aliases]
+      summary: Replace an alias with an existing one
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+        - name: replacementAliasId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/aliases/{aliasId}/expected-senders:
+    get:
+      operationId: listExpectedSenders
+      tags: [Aliases]
+      summary: List expected senders
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+      responses:
+        '200':
+          description: Expected senders for the alias.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExpectedSenderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: addExpectedSender
+      tags: [Aliases]
+      summary: Add an expected sender
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpectedSenderRequest'
+      responses:
+        '201':
+          description: Expected sender stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpectedSenderResponse'
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/aliases/{aliasId}/mark-expected:
+    post:
+      operationId: markSenderExpected
+      tags: [Aliases]
+      summary: Mark a sender as expected
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpectedSenderRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          description: Missing or over-long sender domain, or the alias is not owned by the caller.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/aliases/{aliasId}/block-sender:
+    post:
+      operationId: blockSender
+      tags: [Aliases]
+      summary: Block a sender on one alias
+      description: Writes the eTLD+1 into the alias KV record's `blockedSenders` list.
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpectedSenderRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          description: Missing or over-long sender domain, or the alias is not owned by the caller.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/aliases/{aliasId}/messages:
+    get:
+      operationId: listAliasMessages
+      tags: [Activity]
+      summary: List forwarded messages for an alias
+      description: Newest first, cursor paginated, limited to the 90-day retention window.
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/AliasId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: One page of messages.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePage'
+        '400':
+          description: Malformed cursor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/messages/blocked:
+    get:
+      operationId: listBlockedMessages
+      tags: [Activity]
+      summary: List blocked messages
+      description: Scoped to the caller, optionally narrowed to one alias.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: aliasId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: One page of blocked messages.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockedMessagePage'
+        '400':
+          description: Malformed cursor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: The requested alias is not owned by the caller.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+
+  /api/ingest:
+    post:
+      operationId: ingestMessage
+      tags: [Ingest]
+      summary: Record a worker decision
+      description: |
+        Called by the Cloudflare Email Worker after it forwards or blocks a message. A successful
+        ingest also triggers a rate-limit map rebuild, which republishes `rate_limited_users`.
+        `Ingest:SharedSecret` is mandatory outside Development.
+      security:
+        - ingestSecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestRequest'
+      responses:
+        '202':
+          description: Message recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusCode'
+        '200':
+          description: Message recorded as blocked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusCode'
+        '400':
+          description: Payload rejected as dropped.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusCode'
+        '401':
+          description: Shared secret missing or mismatched.
+        '404':
+          description: Recipient address is not a known alias.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusCode'
+
+  /api/users/change-forwarding-address:
+    post:
+      operationId: changeForwardingAddress
+      tags: [Account]
+      summary: Change the forwarding (destination) address
+      description: |
+        Removes the old destination, adds the new one, updates only `forwarding_address`, and
+        republishes the destination into every owned alias's KV record.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeForwardingAddressRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          description: The address is empty, invalid, or could not be registered.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/me:
+    delete:
+      operationId: deleteAccount
+      tags: [Account]
+      summary: Delete the caller's account
+      description: |
+        Deletes the user, messages, expected senders and blocked messages; tombstones aliases
+        preserving their hashes; deletes KV entries; removes the destination.
+      security:
+        - sessionCookie: []
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/suspended-users/rebuild:
+    post:
+      operationId: rebuildSuspendedUsers
+      tags: [Administration]
+      summary: Republish the suspended-users KV key
+      security:
+        - sessionCookie: []
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/users/{userId}/suspend:
+    post:
+      operationId: suspendUser
+      tags: [Administration]
+      summary: Suspend a user
+      description: Sets the user status and republishes `suspended_users` so the worker drops their mail.
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspendUserRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          description: Invalid target.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/users/{userId}/resume:
+    post:
+      operationId: resumeUser
+      tags: [Administration]
+      summary: Resume a suspended user
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResumeUserRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          description: Invalid target.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/global-blocklist:
+    get:
+      operationId: listGloballyBlockedDomains
+      tags: [Administration]
+      summary: List globally blocked domains
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Blocked domains, ordinal-sorted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalBlocklistResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: blockDomain
+      tags: [Administration]
+      summary: Block a domain globally
+      description: Stores the eTLD+1 and republishes `__global_blocklist` for the worker.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockDomainRequest'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          description: Domain missing, invalid, or already blocked.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/global-blocklist/{domain}:
+    delete:
+      operationId: unblockDomain
+      tags: [Administration]
+      summary: Unblock a domain
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/Domain'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          description: Invalid domain.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'

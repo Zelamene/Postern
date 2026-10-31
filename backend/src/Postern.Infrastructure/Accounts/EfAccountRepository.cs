@@ -174,6 +174,12 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
             .Select(user => user.Id)
             .ToListAsync(cancellationToken);
 
+    public async Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken)
+    {
+        dbContext.InviteCodes.Add(invite);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<bool> SetStatusAsync(
         Guid userId,
         string status,
