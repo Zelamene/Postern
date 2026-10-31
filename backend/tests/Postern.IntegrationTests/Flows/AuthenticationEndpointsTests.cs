@@ -324,7 +324,7 @@ public sealed class AuthenticationEndpointsTests
                 "integration-test-key-material-at-least-thirty-two-bytes");
             builder.UseSetting(
                 "ConnectionStrings:Postgres",
-                "Host=localhost;Database=postern;Username=postern_app;Password=unused;Search Path=postern");
+                "Host=localhost;Database=postern;Username=postern_app;Password=unused;Search Path=postern"); // pragma: allowlist secret
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<IAccountRepository>();
