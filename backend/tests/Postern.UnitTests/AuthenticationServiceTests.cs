@@ -281,6 +281,12 @@ public sealed class AuthenticationServiceTests
             return Task.FromResult(true);
         }
 
+        public Task AddInviteAsync(Postern.Domain.Accounts.InviteCode invite, CancellationToken cancellationToken)
+        {
+            _invites[invite.CodeHash] = invite;
+            return Task.CompletedTask;
+        }
+
         public void AddInvite(string code)
         {
             var hash = HashSecret(code);

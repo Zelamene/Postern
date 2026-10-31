@@ -250,6 +250,9 @@ public class AccountManagementTests
             u.ForwardingAddress = newForwardingAddress;
             return Task.FromResult(true);
         }
+        public Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken) =>
+            throw new NotImplementedException();
+
         public Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyCollection<Guid>>(
                 _users.Values.Where(u => u.Status == "suspended").Select(u => u.Id).ToList());

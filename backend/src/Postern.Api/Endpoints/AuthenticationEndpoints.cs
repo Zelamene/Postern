@@ -1,8 +1,10 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Postern.Api.Security;
 using Postern.Application.Accounts;
+using Postern.Domain.Accounts;
 using Postern.Infrastructure.Integrations;
 
 namespace Postern.Api.Endpoints;
@@ -21,7 +23,7 @@ public static class AuthenticationEndpoints
             .RequireRateLimiting("recovery");
         group.MapPost("/logout", Logout)
             .RequireAuthorization();
-        group.MapGet("/me", GetCurrentAccount)
+        group.MapGet("/me", GetCurrentAccountAsync)
             .RequireAuthorization();
 
         return endpoints;
@@ -34,8 +36,33 @@ public static class AuthenticationEndpoints
             "/api/dev/destinations/{email}/verify",
             (string email, DevelopmentDestinationService destinations) =>
                 destinations.MarkVerified(email) ? Results.NoContent() : Results.NotFound());
+        endpoints.MapPost("/api/dev/invites", CreateDevelopmentInviteAsync);
         return endpoints;
     }
+
+    private static async Task<IResult> CreateDevelopmentInviteAsync(
+        IAccountRepository accounts,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken)
+    {
+        var code = $"postern_invite_{GenerateUrlSafeToken()}";
+        await accounts.AddInviteAsync(
+            new InviteCode
+            {
+                Id = Guid.NewGuid(),
+                CodeHash = AuthenticationService.HashInviteCode(code),
+                CreatedAt = timeProvider.GetUtcNow()
+            },
+            cancellationToken);
+
+        return Results.Created("/api/dev/invites", new DevelopmentInviteResponse(code));
+    }
+
+    private static string GenerateUrlSafeToken() =>
+        Convert.ToBase64String(RandomNumberGenerator.GetBytes(18))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
 
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
@@ -135,8 +162,13 @@ public static class AuthenticationEndpoints
         return Results.NoContent();
     }
 
-    private static IResult GetCurrentAccount(ClaimsPrincipal user)
+    private static async Task<IResult> GetCurrentAccountAsync(
+        ClaimsPrincipal user,
+        IAccountRepository accounts,
+        HttpContext context,
+        CancellationToken cancellationToken)
     {
+        context.Response.Headers.CacheControl = "no-store";
         var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
         var email = user.FindFirstValue(ClaimTypes.Email);
         if (!Guid.TryParse(userId, out var parsedUserId) || string.IsNullOrEmpty(email))
@@ -144,7 +176,12 @@ public static class AuthenticationEndpoints
             return Results.Unauthorized();
         }
 
-        return Results.Ok(new CurrentAccountResponse(parsedUserId, email));
+        var account = await accounts.FindByIdAsync(parsedUserId, cancellationToken);
+
+        return Results.Ok(new CurrentAccountResponse(
+            parsedUserId,
+            email,
+            account?.EffectiveForwardingAddress ?? email));
     }
 
     private static async Task<IResult> ResetPasswordAsync(
@@ -167,6 +204,7 @@ public static class AuthenticationEndpoints
     public sealed record LoginRequest(string? Email, string? Password);
     public sealed record RecoveryRequest(string? RecoveryKey, string? NewPassword);
     public sealed record LoginResponse(Guid UserId, string Email, string? RecoveryKey);
-    public sealed record CurrentAccountResponse(Guid UserId, string Email);
+    public sealed record CurrentAccountResponse(Guid UserId, string Email, string? ForwardingAddress);
+    public sealed record DevelopmentInviteResponse(string Code);
     public sealed record RecoveryResponse(string RecoveryKey);
 }

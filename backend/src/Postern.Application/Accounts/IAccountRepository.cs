@@ -46,4 +46,6 @@ public interface IAccountRepository
     Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken);
 
     Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken);
+
+    Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken);
 }

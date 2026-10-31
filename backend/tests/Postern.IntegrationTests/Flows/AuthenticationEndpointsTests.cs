@@ -249,6 +249,72 @@ public sealed class AuthenticationEndpointsTests
         Assert.Equal(HttpStatusCode.Unauthorized, unknownAccount.StatusCode);
     }
 
+    [Fact]
+    public async Task Me_ReturnsTheEffectiveForwardingAddress()
+    {
+        var repository = new InMemoryAccountRepository("test-invite");
+        using var factory = CreateFactory(repository);
+        using var client = factory.CreateClient();
+
+        await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "user@example.test",
+            password = "correct horse battery staple",
+            inviteCode = "test-invite"
+        });
+        await client.PostAsync(
+            $"/api/dev/destinations/{Uri.EscapeDataString("user@example.test")}/verify",
+            content: null);
+        var login = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = "user@example.test",
+            password = "correct horse battery staple"
+        });
+        client.DefaultRequestHeaders.Add(
+            "Cookie",
+            Assert.Single(login.Headers.GetValues("Set-Cookie")).Split(';', StringSplitOptions.TrimEntries)[0]);
+
+        var meResponse = await client.GetAsync("/api/auth/me");
+        Assert.True(meResponse.Headers.CacheControl?.NoStore);
+
+        var initial = await meResponse.Content.ReadFromJsonAsync<CurrentAccountResponse>();
+        Assert.Equal("user@example.test", initial!.ForwardingAddress);
+
+        repository.SetForwardingAddress("user@example.test", "inbox@elsewhere.test");
+
+        var updated = await client.GetFromJsonAsync<CurrentAccountResponse>("/api/auth/me");
+        Assert.Equal("inbox@elsewhere.test", updated!.ForwardingAddress);
+    }
+
+    [Fact]
+    public async Task DevelopmentInvite_CanBeUsedOnceToRegister()
+    {
+        var repository = new InMemoryAccountRepository();
+        using var factory = CreateFactory(repository);
+        using var client = factory.CreateClient();
+
+        var created = await client.PostAsync("/api/dev/invites", content: null);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var invite = await created.Content.ReadFromJsonAsync<DevelopmentInviteResponse>();
+        Assert.False(string.IsNullOrWhiteSpace(invite!.Code));
+
+        var register = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "invited@example.test",
+            password = "correct horse battery staple",
+            inviteCode = invite.Code
+        });
+        Assert.Equal(HttpStatusCode.Accepted, register.StatusCode);
+
+        var reuse = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = "second@example.test",
+            password = "correct horse battery staple",
+            inviteCode = invite.Code
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, reuse.StatusCode);
+    }
+
     private static WebApplicationFactory<Program> CreateFactory(InMemoryAccountRepository repository) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -267,6 +333,8 @@ public sealed class AuthenticationEndpointsTests
         });
 
     private sealed record LoginResponse(Guid UserId, string Email, string? RecoveryKey);
+    private sealed record CurrentAccountResponse(Guid UserId, string Email, string? ForwardingAddress);
+    private sealed record DevelopmentInviteResponse(string Code);
     private sealed record RecoveryResponse(string RecoveryKey);
     private sealed record ErrorBody(string? Error);
 
@@ -287,6 +355,19 @@ public sealed class AuthenticationEndpointsTests
                     CreatedAt = DateTimeOffset.UtcNow
                 });
             }
+        }
+
+        public Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken)
+        {
+            _invites[invite.CodeHash] = invite;
+            return Task.CompletedTask;
+        }
+
+        public void SetForwardingAddress(string normalizedEmail, string forwardingAddress)
+        {
+            var user = _users.Values.Single(item =>
+                string.Equals(item.NormalizedEmail, normalizedEmail, StringComparison.OrdinalIgnoreCase));
+            user.ForwardingAddress = forwardingAddress;
         }
 
         public Task<RegistrationResult> RegisterPendingUserAsync(
