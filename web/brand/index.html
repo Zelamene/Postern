@@ -27,10 +27,7 @@
           ?.setAttribute('content', dark ? '#151110' : '#fbf8f4');
       })();
     </script>
-    <link rel="stylesheet" href="/src/styles/tokens.css" />
-    <link rel="stylesheet" href="/src/styles/base.css" />
-    <link rel="stylesheet" href="/src/styles/components.css" />
-    <link rel="stylesheet" href="/src/styles/brand-guide.css" />
+    <link rel="stylesheet" href="/src/styles/brand.css" />
     <script>
       document.documentElement.classList.add('js');
     </script>
@@ -69,7 +66,7 @@
         <p class="rail__label">Contents</p>
         <ol class="rail__list">
           <li><a href="#story"><span>01</span> The Story</a></li>
-          <li><a href="#logo"><span>02</span> Logo</a></li>
+          <li><a href="#logo"><span>02</span> Logo &amp; Iconography</a></li>
           <li><a href="#colour"><span>03</span> Colour</a></li>
           <li><a href="#dark"><span>04</span> Dark mode</a></li>
           <li><a href="#type"><span>05</span> Typography</a></li>
@@ -220,8 +217,8 @@
         <section class="plate reveal" id="logo" aria-labelledby="logo-title">
           <header class="plate__head">
             <p class="plate__no">02</p>
-            <h2 id="logo-title">Logo</h2>
-            <p class="plate__deck">An arch with a smaller door cut into it. Nothing else.</p>
+            <h2 id="logo-title">Logo &amp; Iconography</h2>
+            <p class="plate__deck">An arch with a smaller door cut into it. Clear strokes and quiet symbols.</p>
           </header>
 
           <div class="logo-stage">
@@ -298,6 +295,31 @@
             <li>Replacing the wordmark with another typeface or with letter-spaced capitals</li>
             <li>Animating the mark in a loop; the only permitted animation is the one-time draw</li>
             <li>Using the mark as a bullet, an avatar, or inside body text</li>
+          </ul>
+
+          <h3>Iconography</h3>
+          <p class="lede-sm">
+            Icons are sourced from the <strong>Lucide</strong> library (ISC licence) and inlined as SVG.
+            Icons support text comprehension; they are never purely decorative, never colored in isolation,
+            and never substitute for an accessible label.
+          </p>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Icon sizing and stroke rules</caption>
+              <thead>
+                <tr><th scope="col">Role</th><th scope="col">Box size</th><th scope="col">Stroke weight</th><th scope="col">Example usage</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Inline / metadata</td><td class="tnum">16×16px</td><td class="tnum">2px</td><td>Status chips, input validation icons, tooltips</td></tr>
+                <tr><td>Action / button</td><td class="tnum">20×20px</td><td class="tnum">2px</td><td>Copy address, icon-only buttons, row actions</td></tr>
+                <tr><td>Feature / alert</td><td class="tnum">24×24px</td><td class="tnum">2px</td><td>Alert banners, dialog headers, empty states</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <ul class="rules rules--split">
+            <li><strong>Stroke &amp; caps:</strong> <code>stroke="currentColor"</code>, <code>stroke-width="2"</code>, <code>stroke-linecap="round"</code>, <code>stroke-linejoin="round"</code>.</li>
+            <li><strong>Optical alignment:</strong> Inlined icons sit on the cap height of adjacent text.</li>
+            <li><strong>Screen readers:</strong> Decorative icons use <code>aria-hidden="true"</code>; icon-only buttons carry an explicit <code>aria-label</code>.</li>
           </ul>
 
           <aside class="ledger-note">
@@ -892,8 +914,8 @@ function choose(next) {
 
           <div class="token-intro">
             <p>
-              Tokens are defined in <code>web/src/styles/tokens.css</code> and consumed by
-              <code>base.css</code> and <code>components.css</code>. There are two layers:
+              Tokens are declared in <code>web/src/styles/tokens.css</code> inside Tailwind's
+              <code>@theme</code>, so every token is also a utility. There are two layers:
               <strong>primitives</strong> named for what they are (<code>--maroon-700</code>),
               and <strong>semantics</strong> named for what they do
               (<code>--color-primary</code>). Components may only read the semantic layer — that
@@ -909,6 +931,50 @@ function choose(next) {
               </p>
             </div>
           </div>
+
+          <h3 class="group-label">Using the tokens in Tailwind</h3>
+          <p class="lede-sm">
+            Tailwind v4 is the styling engine. Tokens land in <code>@theme</code>, which generates
+            the utilities; nothing is duplicated in a config file.
+          </p>
+
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Token to utility mapping</caption>
+              <thead>
+                <tr><th scope="col">Token</th><th scope="col">Utility</th><th scope="col">Use</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>--color-bg</code></td><td><code>bg-bg</code></td><td>Page ground</td></tr>
+                <tr><td><code>--color-surface</code></td><td><code>bg-surface</code></td><td>Cards, dialogs, inputs</td></tr>
+                <tr><td><code>--color-text</code></td><td><code>text-text</code></td><td>Body copy — the role name is the utility name</td></tr>
+                <tr><td><code>--color-text-muted</code></td><td><code>text-text-muted</code></td><td>Helper text, metadata</td></tr>
+                <tr><td><code>--color-primary</code></td><td><code>bg-primary</code> <code>border-primary</code></td><td>Fills only</td></tr>
+                <tr><td><code>--color-link</code></td><td><code>text-link</code></td><td>Link and icon colour</td></tr>
+                <tr><td><code>--color-hairline</code></td><td><code>border-hairline</code></td><td>Dividers</td></tr>
+                <tr><td><code>--color-border</code></td><td><code>border-border</code></td><td>Control boundaries, 3:1</td></tr>
+                <tr><td><code>--radius-md</code></td><td><code>rounded-md</code></td><td>8px, controls</td></tr>
+                <tr><td><code>--shadow-md</code></td><td><code>shadow-md</code></td><td>Cards, popovers</td></tr>
+                <tr><td><code>--fs-h1</code> / <code>--lh-h1</code></td><td><code>text-h1</code></td><td>Size, leading and tracking in one class</td></tr>
+                <tr><td><code>--space-4</code></td><td><code>p-4</code> <code>gap-4</code></td><td>Same 4px base, same numbers</td></tr>
+                <tr><td><code>--container</code></td><td><code>max-w-page</code></td><td>72rem content limit</td></tr>
+                <tr><td><code>--ease-standard</code></td><td><code>ease-standard</code></td><td>Default easing</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code>&lt;output class="inline-flex items-center gap-2 rounded-full border border-hairline
+              bg-success-surface px-3 py-1 text-caption text-success-on-surface"&gt;
+  &lt;span class="size-2 rounded-full bg-success" aria-hidden="true"&gt;&lt;/span&gt;
+  Destination verified
+&lt;/output&gt;</code></pre>
+
+          <ul class="rules rules--split">
+            <li><strong>Utilities for layout, components for repetition.</strong> One-off spacing, flex, grid and colour go inline. Anything used twice becomes a class in <code>@layer components</code> — which is what this guide documents.</li>
+            <li><strong>Never a raw value in a class name.</strong> <code>bg-[#74172a]</code> is a bug: it opts out of dark mode and of the audit. Use the role.</li>
+            <li><strong>No <code>dark:</code> variants.</strong> Every colour is <code>light-dark()</code> already, so <code>dark:*</code> would double-handle the flip and ignore the user's toggle.</li>
+            <li><strong>Three layers, in order:</strong> <code>theme</code> (tokens), <code>base</code> (reset, elements), <code>components</code> (classes). Utilities sit above all three, so a one-off always wins.</li>
+          </ul>
 
           <h3 class="group-label">Spacing — 4px base</h3>
           <div class="scale-viz">
@@ -1788,6 +1854,8 @@ function choose(next) {
                     <tr><td><code>src/styles/tokens.css</code></td><td>Colour, type, space, radius, shadow, motion, layout, z-index</td></tr>
                     <tr><td><code>src/styles/base.css</code></td><td>Reset, headings, links, focus, reduced motion, skip link</td></tr>
                     <tr><td><code>src/styles/components.css</code></td><td>Every component class and its states</td></tr>
+                    <tr><td><code>src/index.css</code></td><td>Tailwind entry: layer order, theme and utilities imports, the <code>shell</code> utility</td></tr>
+                    <tr><td><code>src/styles/brand.css</code></td><td>This document's stylesheet entry — imports the app tokens, then the guide layout</td></tr>
                     <tr><td><code>src/styles/brand-guide.css</code></td><td>This document's layout only — never product styles</td></tr>
                     <tr><td><code>brand/index.html</code></td><td>This page</td></tr>
                     <tr><td><code>scripts/contrast-audit.mjs</code></td><td>Every published pair, measured in both themes; exits non-zero on a regression</td></tr>

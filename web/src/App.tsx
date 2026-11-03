@@ -1,63 +1,34 @@
 import { useEffect, useState } from 'react'
-import './App.css'
+import type { ThemeMode } from './components/common/Navbar'
+import { HomePage } from './pages/HomePage'
 
-type ApiStatus = 'checking' | 'available' | 'unavailable'
+const STORAGE_KEY = 'postern-theme'
+
+function preferredTheme(): ThemeMode {
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (stored === 'light' || stored === 'dark') {
+    return stored
+  }
+
+  const prefersDark =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+
+  return prefersDark ? 'dark' : 'light'
+}
 
 function App() {
-  const [apiStatus, setApiStatus] = useState<ApiStatus>('checking')
+  const [theme, setTheme] = useState<ThemeMode>(preferredTheme)
 
   useEffect(() => {
-    let active = true
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem(STORAGE_KEY, theme)
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'dark' ? '#151110' : '#fbf8f4')
+  }, [theme])
 
-    fetch(new URL('/health', window.location.origin))
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Health check failed with status ${response.status}`)
-        }
-
-        return response.json() as Promise<{ status: string }>
-      })
-      .then(({ status }) => {
-        if (active) {
-          setApiStatus(status === 'ok' ? 'available' : 'unavailable')
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setApiStatus('unavailable')
-        }
-      })
-
-    return () => {
-      active = false
-    }
-  }, [])
-
-  const statusText = {
-    checking: 'Checking API connection…',
-    available: 'API is available',
-    unavailable: 'API is unavailable',
-  }[apiStatus]
-
-  return (
-    <main className="app-shell">
-      <header className="brand">
-        <img src="/postern.svg" alt="" width="44" height="44" />
-        <span>Postern</span>
-      </header>
-      <section className="welcome" aria-labelledby="welcome-heading">
-        <p className="eyebrow">Private email aliases</p>
-        <h1 id="welcome-heading">Your inbox, on your terms.</h1>
-        <p className="intro">
-          The local development environment is ready for the Postern application.
-        </p>
-        <output className={`api-status api-status--${apiStatus}`}>
-          <span className="status-indicator" aria-hidden="true" />
-          {statusText}
-        </output>
-      </section>
-    </main>
-  )
+  return <HomePage theme={theme} onThemeChange={setTheme} />
 }
 
 export default App
