@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Postern">
+  <title>Postern mark</title>
+  <g fill="none" stroke="#74172A" stroke-linecap="butt">
+    <path d="M6.5 30V15a9.5 9.5 0 0 1 19 0v15" stroke-width="3"/>
+    <path d="M16.8 30v-7.4a2.7 2.7 0 0 1 5.4 0V30" stroke-width="2"/>
+  </g>
+</svg>

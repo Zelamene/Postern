@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react'
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -13,8 +14,8 @@ export default defineConfig({
         name: 'Postern',
         short_name: 'Postern',
         description: 'A single-purpose, auditable email alias platform.',
-        theme_color: '#17253f',
-        background_color: '#f7f8fb',
+        theme_color: '#74172a',
+        background_color: '#fbf8f4',
         display: 'standalone',
         icons: [
           {
@@ -31,6 +32,14 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      input: {
+        app: resolve(import.meta.dirname, 'index.html'),
+        brand: resolve(import.meta.dirname, 'brand/index.html'),
+      },
+    },
+  },
   server: {
     proxy: {
       '/api': {
