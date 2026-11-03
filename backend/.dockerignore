@@ -1,0 +1,9 @@
+**
+!src/
+!src/**/
+!src/**/*.cs
+!src/**/*.csproj
+!src/Postern.Api/appsettings.json
+!src/Postern.Api/appsettings.Development.json
+src/**/bin/
+src/**/obj/

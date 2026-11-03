@@ -38,11 +38,21 @@ ScaffoldingReadMe.txt
 
 # dotenv environment variables file
 .env
+env/*.env
 
 # Others
 ~$*
 *~
 CodeCoverage/
+
+# Frontend
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
 
 # MSBuild Binary and Structured Log
 *.binlog
