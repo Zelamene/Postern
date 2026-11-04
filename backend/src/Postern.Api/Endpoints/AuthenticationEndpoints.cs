@@ -17,6 +17,11 @@ public static class AuthenticationEndpoints
 
         group.MapPost("/register", RegisterAsync)
             .RequireRateLimiting("registration");
+        group.MapPost("/invite-details", GetInviteDetailsAsync)
+            .RequireRateLimiting("registration")
+            .WithSummary("Resolve the recipient for a valid invitation")
+            .Produces<InviteDetailsResponse>()
+            .Produces(StatusCodes.Status404NotFound);
         group.MapPost("/login", LoginAsync)
             .RequireRateLimiting("login");
         group.MapPost("/recovery", ResetPasswordAsync)
@@ -29,6 +34,19 @@ public static class AuthenticationEndpoints
         return endpoints;
     }
 
+    private static async Task<IResult> GetInviteDetailsAsync(
+        InviteDetailsRequest request,
+        InviteManagementService invites,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        var recipient = await invites.FindValidRecipientAsync(request.InviteCode, cancellationToken);
+        return recipient is null
+            ? Results.NotFound(new { error = "invalid_invite" })
+            : Results.Ok(new InviteDetailsResponse(recipient));
+    }
+
     public static IEndpointRouteBuilder MapDevelopmentDestinationEndpoints(
         this IEndpointRouteBuilder endpoints)
     {
@@ -37,27 +55,63 @@ public static class AuthenticationEndpoints
             (string email, DevelopmentDestinationService destinations) =>
                 destinations.MarkVerified(email) ? Results.NoContent() : Results.NotFound());
         endpoints.MapPost("/api/dev/invites", CreateDevelopmentInviteAsync);
+        endpoints.MapGet("/api/dev/invites", ListDevelopmentInvitesAsync);
         return endpoints;
     }
 
+    private static async Task<IResult> ListDevelopmentInvitesAsync(
+        InviteManagementService invites,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        var pendingInvites = await invites.ListPendingDevelopmentInvitesAsync(cancellationToken);
+        return Results.Ok(new
+        {
+            invites = pendingInvites.Select(invite => new
+            {
+                invite.Id,
+                invite.Email,
+                invite.Code,
+                RegistrationPath = $"/invite/{Uri.EscapeDataString(invite.Code)}",
+                invite.ExpiresAt
+            })
+        });
+    }
+
     private static async Task<IResult> CreateDevelopmentInviteAsync(
+        DevelopmentInviteRequest request,
         IAccountRepository accounts,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
+        if (!EmailAddressNormalizer.TryNormalize(request.Email, out var email))
+        {
+            return Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["email"] = ["Enter a valid email address."]
+            });
+        }
+
         var code = $"postern_invite_{GenerateUrlSafeToken()}";
         await accounts.AddInviteAsync(
             new InviteCode
             {
                 Id = Guid.NewGuid(),
-                Email = string.Empty,
-                EmailNormalized = string.Empty,
+                Email = email,
+                EmailNormalized = EmailAddressNormalizer.NormalizeIdentity(email),
                 CodeHash = AuthenticationService.HashInviteCode(code),
-                CreatedAt = timeProvider.GetUtcNow()
+                CreatedAt = timeProvider.GetUtcNow(),
+                ExpiresAt = timeProvider.GetUtcNow().AddDays(7)
             },
             cancellationToken);
 
-        return Results.Created("/api/dev/invites", new DevelopmentInviteResponse(code));
+        return Results.Created(
+            "/api/dev/invites",
+            new DevelopmentInviteResponse(
+                code,
+                email,
+                $"/invite/{Uri.EscapeDataString(code)}"));
     }
 
     private static string GenerateUrlSafeToken() =>
@@ -69,12 +123,23 @@ public static class AuthenticationEndpoints
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
         AuthenticationService authentication,
+        InviteManagementService invites,
         HttpContext context,
         CancellationToken cancellationToken)
     {
         context.Response.Headers.CacheControl = "no-store";
+        var email = request.Email;
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            email = await invites.FindValidRecipientAsync(request.InviteCode, cancellationToken);
+            if (email is null)
+            {
+                return Results.BadRequest(new { error = "invalid_invite" });
+            }
+        }
+
         var result = await authentication.RegisterAsync(
-            request.Email,
+            email,
             request.Password,
             request.InviteCode,
             cancellationToken);
@@ -202,11 +267,18 @@ public static class AuthenticationEndpoints
             : Results.Ok(new RecoveryResponse(nextRecoveryKey));
     }
 
+    /// <summary>Request payload for resolving the recipient tied to an invitation.</summary>
+    public sealed record InviteDetailsRequest(string? InviteCode);
+
+    /// <summary>Recipient email associated with a valid invitation.</summary>
+    public sealed record InviteDetailsResponse(string Email);
+
     public sealed record RegisterRequest(string? Email, string? Password, string? InviteCode);
     public sealed record LoginRequest(string? Email, string? Password);
     public sealed record RecoveryRequest(string? RecoveryKey, string? NewPassword);
     public sealed record LoginResponse(Guid UserId, string Email, string? RecoveryKey);
     public sealed record CurrentAccountResponse(Guid UserId, string Email, string? ForwardingAddress);
-    public sealed record DevelopmentInviteResponse(string Code);
+    public sealed record DevelopmentInviteRequest(string? Email);
+    public sealed record DevelopmentInviteResponse(string Code, string Email, string RegistrationPath);
     public sealed record RecoveryResponse(string RecoveryKey);
 }

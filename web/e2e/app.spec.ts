@@ -35,7 +35,14 @@ test('selected text keeps a high-contrast foreground in both themes', async ({ p
 })
 
 test('invite link opens branded registration and submits the invite code', async ({ page }) => {
-  let registrationBody: { email: string; password: string; inviteCode: string } | undefined
+  let registrationBody: { password: string; inviteCode: string } | undefined
+  await page.route('**/api/auth/invite-details', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ email: 'person@example.test' }),
+    })
+  })
   await page.route('**/api/auth/register', async (route) => {
     registrationBody = route.request().postDataJSON()
     await route.fulfill({ status: 202, contentType: 'application/json', body: '{"status":"pending_verification"}' })
@@ -43,19 +50,26 @@ test('invite link opens branded registration and submits the invite code', async
 
   await page.goto('/invite/postern_invite_example')
   await expect(page.getByRole('heading', { name: 'Create your Postern account' })).toBeVisible()
-  await page.getByLabel('Email address').fill('person@example.test')
+  await expect(page.getByLabel('Invited email address')).toHaveValue('person@example.test')
+  await expect(page.getByLabel('Invited email address')).toHaveAttribute('readonly')
   await page.getByLabel('Password').fill('a long secure password')
   await page.getByRole('button', { name: 'Accept invitation' }).click()
 
   await expect(page.getByRole('status')).toContainText('Your account is ready')
   expect(registrationBody).toEqual({
-    email: 'person@example.test',
     password: 'a long secure password',
     inviteCode: 'postern_invite_example',
   })
 })
 
 test('invite pages suppress referrers so codes are not leaked to other sites', async ({ page }) => {
+  await page.route('**/api/auth/invite-details', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ email: 'person@example.test' }),
+    })
+  })
   await page.goto('/invite/postern_invite_example')
 
   await expect(page.getByRole('heading', { name: 'Create your Postern account' })).toBeVisible()

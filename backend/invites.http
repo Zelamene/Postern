@@ -2,6 +2,23 @@
 @requestId = 00000000-0000-0000-0000-000000000000
 @inviteId = 00000000-0000-0000-0000-000000000000
 
+### Resolve the recipient for a valid invite code (no-store response)
+POST {{baseUrl}}/api/auth/invite-details
+Content-Type: application/json
+
+{
+  "inviteCode": "postern_invite_replace-with-code"
+}
+
+### Register using the email bound to the invite (registration does not accept an email override)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "password": "replace-with-a-long-password",
+  "inviteCode": "postern_invite_replace-with-code"
+}
+
 ### Publicly request an invite (no email is sent until approval)
 POST {{baseUrl}}/api/invite-requests
 Content-Type: application/json

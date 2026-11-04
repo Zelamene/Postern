@@ -1,29 +1,83 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface InviteRegistrationPageProps {
   inviteCode: string
 }
 
 interface RegistrationState {
-  email: string
+  email: string | null
   password: string
   error: string | null
   complete: boolean
+  loadingInvite: boolean
   submitting: boolean
 }
 
 export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrationPageProps>) {
   const [state, setState] = useState<RegistrationState>({
-    email: '',
+    email: null,
     password: '',
     error: null,
     complete: false,
+    loadingInvite: true,
     submitting: false,
   })
 
+  useEffect(() => {
+    let active = true
+
+    const resolveInvite = async () => {
+      try {
+        const response = await fetch('/api/auth/invite-details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inviteCode }),
+          credentials: 'include',
+        })
+        if (!response.ok) {
+          throw new Error(`Invite lookup failed with status ${response.status}.`)
+        }
+
+        const body: unknown = await response.json()
+        if (typeof body !== 'object' || body === null || !('email' in body)) {
+          throw new Error('Invite lookup returned an invalid response.')
+        }
+        const email = body.email
+        if (typeof email !== 'string') {
+          throw new Error('Invite lookup returned an invalid response.')
+        }
+
+        if (active) {
+          setState((current) => ({
+            ...current,
+            email,
+            error: null,
+            loadingInvite: false,
+          }))
+        }
+      } catch (error) {
+        if (!active) {
+          return
+        }
+        console.error('Invite lookup failed', error)
+        setState((current) => ({
+          ...current,
+          email: null,
+          error: 'We could not verify this invitation. Check the link or request a new invite.',
+          loadingInvite: false,
+        }))
+      }
+    }
+
+    void resolveInvite()
+    return () => {
+      active = false
+    }
+  }, [inviteCode])
+
   const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (state.submitting) {
+    if (state.submitting || state.email === null) {
       return
     }
 
@@ -33,7 +87,6 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: state.email,
           password: state.password,
           inviteCode,
         }),
@@ -103,8 +156,7 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
                 Create your Postern account
               </h1>
               <p className="text-sm leading-relaxed text-text-secondary">
-                Choose the email address this invitation was sent to and create a password to
-                continue.
+                This invitation is linked to the email address below. Set a password to continue.
               </p>
             </div>
 
@@ -114,59 +166,64 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
               </p>
             )}
 
-            <form onSubmit={handleSubmit} className="mt-7 space-y-5">
-              <div>
-                <label htmlFor="registration-email" className="mb-1.5 block text-sm font-semibold">
-                  Email address
-                </label>
-                <input
-                  id="registration-email"
-                  type="text"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  required
-                  spellCheck={false}
-                  value={state.email}
-                  disabled={state.submitting}
-                  onChange={(event) =>
-                    setState({ ...state, email: event.target.value, error: null })
-                  }
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+            {state.loadingInvite ? (
+              <p role="status" className="mt-7 text-sm text-text-muted">
+                Verifying your invitation…
+              </p>
+            ) : state.email !== null ? (
+              <form onSubmit={handleSubmit} className="mt-7 space-y-5">
+                <div>
+                  <label htmlFor="registration-email" className="mb-1.5 block text-sm font-semibold">
+                    Invited email address
+                  </label>
+                  <input
+                    id="registration-email"
+                    type="text"
+                    autoComplete="email"
+                    value={state.email}
+                    readOnly
+                    aria-readonly="true"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
 
-              <div>
-                <label htmlFor="registration-password" className="mb-1.5 block text-sm font-semibold">
-                  Password
-                </label>
-                <input
-                  id="registration-password"
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={12}
-                  maxLength={128}
-                  required
-                  value={state.password}
-                  disabled={state.submitting}
-                  onChange={(event) =>
-                    setState({ ...state, password: event.target.value, error: null })
-                  }
-                  aria-describedby="password-help"
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-                <p id="password-help" className="mt-1.5 text-xs text-text-muted">
-                  Use 12–128 characters.
-                </p>
-              </div>
+                <div>
+                  <label htmlFor="registration-password" className="mb-1.5 block text-sm font-semibold">
+                    Password
+                  </label>
+                  <input
+                    id="registration-password"
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={12}
+                    maxLength={128}
+                    required
+                    value={state.password}
+                    disabled={state.submitting}
+                    onChange={(event) =>
+                      setState({ ...state, password: event.target.value, error: null })
+                    }
+                    aria-describedby="password-help"
+                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <p id="password-help" className="mt-1.5 text-xs text-text-muted">
+                    Use 12–128 characters.
+                  </p>
+                </div>
 
-              <button
-                type="submit"
-                disabled={state.submitting}
-                className="btn btn--primary w-full"
-              >
-                {state.submitting ? 'Creating account…' : 'Accept invitation'}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={state.submitting}
+                  className="btn btn--primary w-full"
+                >
+                  {state.submitting ? 'Creating account…' : 'Accept invitation'}
+                </button>
+              </form>
+            ) : (
+              <a href="/" className="btn btn--secondary mt-7 inline-flex">
+                Back to Postern
+              </a>
+            )}
 
             <p className="mt-5 text-xs leading-relaxed text-text-muted">
               By creating an account, you agree to use Postern responsibly. This invitation is

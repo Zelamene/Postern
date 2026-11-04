@@ -9,6 +9,38 @@ namespace Postern.Infrastructure.Accounts;
 
 public sealed class EfInviteRepository(PosternDbContext dbContext) : IInviteRepository
 {
+    public Task<string?> FindValidRecipientAsync(
+        string codeHash,
+        DateTimeOffset now,
+        CancellationToken cancellationToken) =>
+        dbContext.InviteCodes
+            .AsNoTracking()
+            .Where(invite =>
+                invite.CodeHash == codeHash
+                && invite.UsedAt == null
+                && invite.RevokedAt == null
+                && invite.ExpiresAt > now
+                && invite.EmailNormalized != string.Empty)
+            .Select(invite => invite.Email)
+            .SingleOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<InviteEmailOutboxMessage>> ListPendingOutboxMessagesAsync(
+        DateTimeOffset now,
+        CancellationToken cancellationToken) =>
+        await dbContext.InviteEmailOutbox
+            .AsNoTracking()
+            .Where(message =>
+                message.Status == "pending"
+                && message.ExpiresAt > now
+                && dbContext.InviteCodes.Any(invite =>
+                    invite.Id == message.InviteId
+                    && invite.UsedAt == null
+                    && invite.RevokedAt == null
+                    && invite.ExpiresAt > now))
+            .OrderBy(message => message.CreatedAt)
+            .Take(100)
+            .ToListAsync(cancellationToken);
+
     public async Task AddRequestAsync(InviteRequest request, CancellationToken cancellationToken)
     {
         dbContext.InviteRequests.Add(request);

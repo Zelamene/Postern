@@ -4,6 +4,13 @@ namespace Postern.Application.Accounts;
 
 public interface IInviteRepository
 {
+    Task<string?> FindValidRecipientAsync(
+        string codeHash,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
+    Task<IReadOnlyList<InviteEmailOutboxMessage>> ListPendingOutboxMessagesAsync(
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
     Task AddRequestAsync(InviteRequest request, CancellationToken cancellationToken);
     Task<IReadOnlyList<InviteRequest>> ListPendingRequestsAsync(CancellationToken cancellationToken);
     Task<bool> ApproveRequestAsync(

@@ -24,6 +24,7 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
     private readonly string? _ingestSecret;
     private readonly string? _resendWebhookSecret;
     private readonly bool _enableInviteWorker;
+    private readonly bool _configureInviteWorker;
     private readonly IInviteEmailSender? _inviteEmailSender;
 
     public PosternApiFactory(
@@ -32,13 +33,15 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
         string? ingestSecret = null,
         string? resendWebhookSecret = null,
         bool enableInviteWorker = false,
-        IInviteEmailSender? inviteEmailSender = null)
+        IInviteEmailSender? inviteEmailSender = null,
+        bool configureInviteWorker = false)
     {
         _fixture = fixture;
         _kvWriter = kvWriter ?? new NoOpKvWriter();
         _ingestSecret = ingestSecret;
         _resendWebhookSecret = resendWebhookSecret;
         _enableInviteWorker = enableInviteWorker;
+        _configureInviteWorker = configureInviteWorker;
         _inviteEmailSender = inviteEmailSender;
     }
 
@@ -47,19 +50,33 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Development");
+        builder.UseEnvironment(_enableInviteWorker ? "Production" : "Development");
         builder.UseSetting("Authentication:SigningKey", SigningKey);
         builder.UseSetting("Authentication:Issuer", Issuer);
         builder.UseSetting("Authentication:Audience", Audience);
         builder.UseSetting("ConnectionStrings:Postgres", _fixture.ConnectionString);
-        builder.UseSetting("Invites:WorkerEnabled", _enableInviteWorker.ToString());
+        builder.UseSetting(
+            "Invites:WorkerEnabled",
+            (_enableInviteWorker || _configureInviteWorker).ToString());
         builder.UseSetting("Resend:From", "Postern <invites@example.test>");
-        builder.UseSetting("Invites:PublicBaseUrl", "http://localhost:5173");
+        builder.UseSetting(
+            "Invites:PublicBaseUrl",
+            _enableInviteWorker ? "https://postern.example.test" : "http://localhost:5173");
+        if (_enableInviteWorker)
+        {
+            builder.UseSetting("Ingest:SharedSecret", "integration-test-ingest-secret");
+            builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
+            builder.UseSetting(
+                "DataProtection:KeysPath",
+                Path.Combine(Path.GetTempPath(), $"postern-api-test-keys-{Environment.ProcessId}"));
+        }
         if (_ingestSecret is not null)
         {
             builder.UseSetting("Ingest:SharedSecret", _ingestSecret);
         }
-        builder.UseSetting("Resend:ApiKey", _enableInviteWorker ? "integration-test-api-key" : string.Empty);
+        builder.UseSetting(
+            "Resend:ApiKey",
+            _enableInviteWorker || _configureInviteWorker ? "integration-test-api-key" : string.Empty);
         if (_resendWebhookSecret is not null)
         {
             builder.UseSetting("Resend:WebhookSecret", _resendWebhookSecret);

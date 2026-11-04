@@ -6,10 +6,14 @@ import { InviteRegistrationPage } from './InviteRegistrationPage'
 import { server } from '../test/server'
 
 describe('InviteRegistrationPage', () => {
-  it('submits the invitation code with the account registration details', async () => {
+  it('resolves the invite email and submits it with the password', async () => {
     const user = userEvent.setup()
     let submitted: Record<string, unknown> | undefined
     server.use(
+      http.post('*/api/auth/invite-details', async ({ request }) => {
+        expect(await request.json()).toEqual({ inviteCode: 'postern_invite_secret' })
+        return HttpResponse.json({ email: 'person@example.test' })
+      }),
       http.post('*/api/auth/register', async ({ request }) => {
         submitted = (await request.json()) as Record<string, unknown>
         return new HttpResponse(null, { status: 202 })
@@ -17,13 +21,13 @@ describe('InviteRegistrationPage', () => {
     )
 
     render(<InviteRegistrationPage inviteCode="postern_invite_secret" />)
-    await user.type(screen.getByLabelText('Email address'), 'person@example.test')
+    expect(await screen.findByLabelText('Invited email address')).toHaveValue('person@example.test')
+    expect(screen.getByLabelText('Invited email address')).toHaveAttribute('readonly')
     await user.type(screen.getByLabelText('Password'), 'a long secure password')
     await user.click(screen.getByRole('button', { name: 'Accept invitation' }))
 
     expect(await screen.findByRole('status')).toHaveTextContent('Your account is ready')
     expect(submitted).toEqual({
-      email: 'person@example.test',
       password: 'a long secure password',
       inviteCode: 'postern_invite_secret',
     })
@@ -31,17 +35,18 @@ describe('InviteRegistrationPage', () => {
 
   it('explains when an invitation is no longer valid', async () => {
     server.use(
+      http.post('*/api/auth/invite-details', () =>
+        HttpResponse.json({ error: 'invalid_invite' }, { status: 404 }),
+      ),
       http.post('*/api/auth/register', () =>
         HttpResponse.json({ error: 'invalid_invite' }, { status: 400 }),
       ),
     )
-    const user = userEvent.setup()
-
     render(<InviteRegistrationPage inviteCode="expired-code" />)
-    await user.type(screen.getByLabelText('Email address'), 'person@example.test')
-    await user.type(screen.getByLabelText('Password'), 'a long secure password')
-    await user.click(screen.getByRole('button', { name: 'Accept invitation' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('invalid, expired, or has already been used')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'We could not verify this invitation.',
+    )
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument()
   })
 })

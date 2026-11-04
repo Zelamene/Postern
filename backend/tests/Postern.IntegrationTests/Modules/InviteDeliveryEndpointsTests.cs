@@ -110,6 +110,99 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
     }
 
     [Fact]
+    public async Task InviteDetailsResolveBoundRecipientWithoutCaching()
+    {
+        var code = $"postern_invite_{Guid.NewGuid():N}";
+        var email = $"resolve-{Guid.NewGuid():N}@example.test";
+        await using (var db = fixture.CreateContext())
+        {
+            db.InviteCodes.Add(new InviteCode
+            {
+                Id = Guid.NewGuid(),
+                CodeHash = AuthenticationService.HashInviteCode(code),
+                Email = email,
+                EmailNormalized = NormalizeIdentity(email),
+                CreatedAt = DateTimeOffset.UtcNow,
+                ExpiresAt = DateTimeOffset.UtcNow.AddDays(1)
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/invite-details",
+            new { inviteCode = code });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        using var body = await System.Text.Json.JsonDocument.ParseAsync(
+            await response.Content.ReadAsStreamAsync());
+        Assert.Equal(email, body.RootElement.GetProperty("email").GetString());
+    }
+
+    [Fact]
+    public async Task InviteDetailsDoNotResolveInvalidOrUnboundInvites()
+    {
+        using var client = _factory.CreateClient();
+
+        var invalidResponse = await client.PostAsJsonAsync(
+            "/api/auth/invite-details",
+            new { inviteCode = "unknown-code" });
+        Assert.Equal(HttpStatusCode.NotFound, invalidResponse.StatusCode);
+        Assert.Equal("no-store", invalidResponse.Headers.CacheControl?.ToString());
+
+        var unboundCode = $"postern_invite_{Guid.NewGuid():N}";
+        await using (var db = fixture.CreateContext())
+        {
+            db.InviteCodes.Add(new InviteCode
+            {
+                Id = Guid.NewGuid(),
+                CodeHash = AuthenticationService.HashInviteCode(unboundCode),
+                Email = string.Empty,
+                EmailNormalized = string.Empty,
+                CreatedAt = DateTimeOffset.UtcNow,
+                ExpiresAt = DateTimeOffset.UtcNow.AddDays(1)
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var unboundResponse = await client.PostAsJsonAsync(
+            "/api/auth/invite-details",
+            new { inviteCode = unboundCode });
+        Assert.Equal(HttpStatusCode.NotFound, unboundResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task RegistrationUsesInviteBoundEmailWhenClientSubmitsOnlyPasswordAndCode()
+    {
+        var code = $"postern_invite_{Guid.NewGuid():N}";
+        var email = $"register-bound-{Guid.NewGuid():N}@example.test";
+        await using (var db = fixture.CreateContext())
+        {
+            db.InviteCodes.Add(new InviteCode
+            {
+                Id = Guid.NewGuid(),
+                CodeHash = AuthenticationService.HashInviteCode(code),
+                Email = email,
+                EmailNormalized = NormalizeIdentity(email),
+                CreatedAt = DateTimeOffset.UtcNow,
+                ExpiresAt = DateTimeOffset.UtcNow.AddDays(1)
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            new { password = "a long secure password", inviteCode = code });
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        await using var reloadedDb = fixture.CreateContext();
+        var user = await reloadedDb.Users.SingleAsync(item => item.Email == email);
+        Assert.Equal("pending", user.Status);
+    }
+
+    [Fact]
     public async Task OutboxWorkerSendsQueuedInviteAndStoresProviderStatus()
     {
         await using (var cleanupDb = fixture.CreateContext())
@@ -173,6 +266,46 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
         var sentEmail = Assert.Single(sender.SentEmails);
         Assert.Equal(email, sentEmail.RecipientEmail);
         Assert.StartsWith("postern_invite_", sentEmail.InviteCode);
+    }
+
+    [Fact]
+    public async Task DevelopmentNeverStartsEmailWorkerEvenWhenResendIsConfigured()
+    {
+        using var developmentFactory = new PosternApiFactory(
+            fixture,
+            resendWebhookSecret: WebhookSecret,
+            configureInviteWorker: true);
+        using var client = developmentFactory.CreateClient();
+
+        var worker = developmentFactory.Services
+            .GetServices<Microsoft.Extensions.Hosting.IHostedService>()
+            .OfType<Postern.Api.Workers.InviteEmailOutboxWorker>();
+        Assert.Empty(worker);
+        Assert.Null(developmentFactory.Services.GetService<IInviteEmailSender>());
+
+        var admin = await fixture.AUserAsync(isAdmin: true);
+        var email = $"local-queue-{Guid.NewGuid():N}@example.test";
+        var request = await client.PostAsJsonAsync(
+            "/api/invite-requests",
+            new { email });
+        Assert.Equal(HttpStatusCode.Accepted, request.StatusCode);
+
+        await using var db = fixture.CreateContext();
+        var inviteRequest = await db.InviteRequests.SingleAsync(
+            item => item.EmailNormalized == NormalizeIdentity(email));
+        using var adminClient = developmentFactory.CreateAuthenticatedClient(
+            admin.Id,
+            admin.Email,
+            isAdmin: true);
+        var approval = await adminClient.PostAsync(
+            $"/api/admin/invite-requests/{inviteRequest.Id}/approve",
+            content: null);
+        Assert.Equal(HttpStatusCode.Accepted, approval.StatusCode);
+
+        var queuedInvites = await client.GetFromJsonAsync<DevelopmentInvitesResponse>("/api/dev/invites");
+        var localInvite = Assert.Single(queuedInvites!.Invites, item => item.Email == email);
+        Assert.StartsWith("postern_invite_", localInvite.Code);
+        Assert.Equal($"/invite/{Uri.EscapeDataString(localInvite.Code)}", localInvite.RegistrationPath);
     }
 
     [Fact]
@@ -381,6 +514,14 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
             Status = "pending",
             CreatedAt = now
         };
+
+    private sealed record DevelopmentInvitesResponse(IReadOnlyList<DevelopmentInviteResponse> Invites);
+    private sealed record DevelopmentInviteResponse(
+        Guid Id,
+        string Email,
+        string Code,
+        string RegistrationPath,
+        DateTimeOffset ExpiresAt);
 
     private sealed class RecordingHttpMessageHandler : HttpMessageHandler
     {

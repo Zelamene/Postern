@@ -16,7 +16,7 @@ USER 10001:10001
 
 EXPOSE 8080
 
-CMD ["dotnet", "watch", "--project", "src/Postern.Api/Postern.Api.csproj", "run", "--no-launch-profile", "--urls", "http://0.0.0.0:8080"]
+CMD ["dotnet", "watch", "--no-hot-reload", "--project", "src/Postern.Api/Postern.Api.csproj", "run", "--no-launch-profile", "--urls", "http://0.0.0.0:8080"]
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 

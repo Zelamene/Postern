@@ -293,10 +293,14 @@ public sealed class AuthenticationEndpointsTests
         using var factory = CreateFactory(repository);
         using var client = factory.CreateClient();
 
-        var created = await client.PostAsync("/api/dev/invites", content: null);
+        var created = await client.PostAsJsonAsync(
+            "/api/dev/invites",
+            new { email = "invited@example.test" });
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var invite = await created.Content.ReadFromJsonAsync<DevelopmentInviteResponse>();
         Assert.False(string.IsNullOrWhiteSpace(invite!.Code));
+        Assert.Equal("invited@example.test", invite.Email);
+        Assert.Equal($"/invite/{Uri.EscapeDataString(invite.Code)}", invite.RegistrationPath);
 
         var register = await client.PostAsJsonAsync("/api/auth/register", new
         {
@@ -334,7 +338,7 @@ public sealed class AuthenticationEndpointsTests
 
     private sealed record LoginResponse(Guid UserId, string Email, string? RecoveryKey);
     private sealed record CurrentAccountResponse(Guid UserId, string Email, string? ForwardingAddress);
-    private sealed record DevelopmentInviteResponse(string Code);
+    private sealed record DevelopmentInviteResponse(string Code, string Email, string RegistrationPath);
     private sealed record RecoveryResponse(string RecoveryKey);
     private sealed record ErrorBody(string? Error);
 

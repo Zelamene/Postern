@@ -53,8 +53,9 @@ var resendWebhookSecret =
 var resendFrom = builder.Configuration["Resend:From"];
 var publicInviteBaseUrl = builder.Configuration["Invites:PublicBaseUrl"];
 var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
-var inviteWorkerEnabled = builder.Configuration.GetValue<bool?>("Invites:WorkerEnabled")
-    ?? !string.IsNullOrWhiteSpace(resendApiKey);
+var inviteWorkerEnabled = !builder.Environment.IsDevelopment()
+    && (builder.Configuration.GetValue<bool?>("Invites:WorkerEnabled")
+        ?? !string.IsNullOrWhiteSpace(resendApiKey));
 if (!builder.Environment.IsDevelopment()
     && (string.IsNullOrWhiteSpace(resendApiKey)
         || string.IsNullOrWhiteSpace(resendWebhookSecret)
@@ -124,13 +125,13 @@ builder.Services.AddHttpClient("resend-email", client =>
     client.BaseAddress = new Uri("https://api.resend.com/");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
-builder.Services.AddTransient<IInviteEmailSender>(services =>
-    new ResendEmailSender(
-        services.GetRequiredService<IHttpClientFactory>().CreateClient("resend-email"),
-        resendApiKey ?? string.Empty,
-        resendFrom ?? throw new InvalidOperationException("Resend:From is not configured.")));
 if (inviteWorkerEnabled)
 {
+    builder.Services.AddTransient<IInviteEmailSender>(services =>
+        new ResendEmailSender(
+            services.GetRequiredService<IHttpClientFactory>().CreateClient("resend-email"),
+            resendApiKey ?? string.Empty,
+            resendFrom ?? throw new InvalidOperationException("Resend:From is not configured.")));
     builder.Services.AddHostedService<InviteEmailOutboxWorker>();
 }
 builder.Services.AddScoped<IAliasRepository, EfAliasRepository>();

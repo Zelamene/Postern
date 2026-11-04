@@ -4,6 +4,7 @@ using Postern.Domain.Accounts;
 namespace Postern.Application.Accounts;
 
 public sealed record PendingInviteRequest(Guid Id, string Email, DateTimeOffset RequestedAt);
+public sealed record DevelopmentInvite(Guid Id, string Email, string Code, DateTimeOffset ExpiresAt);
 
 public sealed class InviteManagementService(
     IInviteRepository invites,
@@ -28,6 +29,37 @@ public sealed class InviteManagementService(
                 RequestedAt = timeProvider.GetUtcNow()
             },
             cancellationToken);
+    }
+
+    public Task<string?> FindValidRecipientAsync(
+        string? inviteCode,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(inviteCode) || inviteCode.Length > 128)
+        {
+            return Task.FromResult<string?>(null);
+        }
+
+        return invites.FindValidRecipientAsync(
+            AuthenticationService.HashInviteCode(inviteCode),
+            timeProvider.GetUtcNow(),
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<DevelopmentInvite>> ListPendingDevelopmentInvitesAsync(
+        CancellationToken cancellationToken)
+    {
+        var messages = await invites.ListPendingOutboxMessagesAsync(
+            timeProvider.GetUtcNow(),
+            cancellationToken);
+
+        return messages
+            .Select(message => new DevelopmentInvite(
+                message.InviteId,
+                message.RecipientEmail,
+                codeProtector.Unprotect(message.ProtectedInviteCode),
+                message.ExpiresAt))
+            .ToArray();
     }
 
     public async Task<IReadOnlyList<PendingInviteRequest>> ListPendingRequestsAsync(

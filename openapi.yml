@@ -8,7 +8,8 @@ info:
 
     ## Authentication
     Every `/api/*` endpoint except `/api/ingest`, `/api/dev/*`, `POST /api/invite-requests`,
-    and `POST /api/webhooks/resend` requires a session cookie named `Postern.Auth`. The cookie is issued by `POST /api/auth/login` and is
+    `POST /api/auth/invite-details`, `POST /api/auth/register`, and `POST /api/webhooks/resend`
+    requires a session cookie named `Postern.Auth`. The cookie is issued by `POST /api/auth/login` and is
     `HttpOnly`, `SameSite=Strict`, `Secure` outside Development, with a 1-hour lifetime.
     The token is a HS256 JWT; there is no bearer-token flow and no refresh endpoint.
 
@@ -168,12 +169,14 @@ components:
     # -- auth
     RegisterRequest:
       type: object
-      required: [email, password, inviteCode]
+      required: [password, inviteCode]
       properties:
         email:
           type: [string, 'null']
           format: email
-          description: Login identity. May be EAI/IDN; normalized server-side.
+          description: |
+            Optional for legacy clients. When omitted, the API derives the login identity from
+            the invite; if provided, it must match the email bound to that invite.
         password:
           type: [string, 'null']
           minLength: 12
@@ -182,6 +185,22 @@ components:
         inviteCode:
           type: [string, 'null']
           description: Single-use invite code. Signup is capped at 199 accounts.
+
+    InviteDetailsRequest:
+      type: object
+      required: [inviteCode]
+      properties:
+        inviteCode:
+          type: string
+          description: Single-use invitation code.
+
+    InviteDetailsResponse:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          description: Email address the invitation is bound to.
 
     LoginRequest:
       type: object
@@ -242,10 +261,48 @@ components:
 
     DevelopmentInviteResponse:
       type: object
-      required: [code]
+      required: [code, email, registrationPath]
       properties:
         code:
           type: string
+        email:
+          type: string
+          format: email
+        registrationPath:
+          type: string
+          description: Local web path where the invitation can be accepted.
+
+    DevelopmentInviteRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    DevelopmentInviteListResponse:
+      type: object
+      required: [invites]
+      properties:
+        invites:
+          type: array
+          items:
+            type: object
+            required: [id, email, code, registrationPath, expiresAt]
+            properties:
+              id:
+                type: string
+                format: uuid
+              email:
+                type: string
+                format: email
+              code:
+                type: string
+              registrationPath:
+                type: string
+              expiresAt:
+                type: string
+                format: date-time
 
     #  aliases
     AliasStatus:
@@ -502,7 +559,8 @@ paths:
       tags: [Authentication]
       summary: Register a pending account
       description: |
-        Creates an account in `pending` status and consumes the invite code. The account can
+        Creates an account in `pending` status using the email bound to the invite and consumes
+        the invite code. `email` may be omitted; if supplied, it must match the invited address. The account can
         only log in after its forwarding destination is verified. Rate limited to 5 requests
         per hour per IP.
       security: []
@@ -532,6 +590,43 @@ paths:
           description: |
             `user_limit_reached` when the 199-account cap is hit, or
             `registration_unavailable` when the email already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/invite-details:
+    post:
+      operationId: resolveInviteDetails
+      tags: [Authentication]
+      summary: Resolve the email address bound to an invitation
+      description: |
+        Returns the recipient address for a valid, unused invitation. The response is
+        `no-store`; the invitation code is sent in the request body rather than the URL.
+        Rate limited using the registration limit.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteDetailsRequest'
+      responses:
+        '200':
+          description: Invitation recipient.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteDetailsResponse'
+        '404':
+          description: Invitation is unknown, unbound, expired, used, or revoked.
           content:
             application/json:
               schema:
@@ -665,8 +760,14 @@ paths:
       operationId: createDevelopmentInvite
       tags: [Development]
       summary: Issue an invite code (development only)
-      description: Writes a new single-use invite code so local signup can be exercised.
+      description: Creates a recipient-bound single-use invite for local testing. No email is sent.
       security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevelopmentInviteRequest'
       responses:
         '201':
           description: Invite code created.
@@ -679,6 +780,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DevelopmentInviteResponse'
+    get:
+      operationId: listDevelopmentInvites
+      tags: [Development]
+      summary: List locally queued invitations (development only)
+      description: Returns unexpired invite codes queued by local admin approvals. Never sends email.
+      security: []
+      responses:
+        '200':
+          description: Locally queued invite codes.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevelopmentInviteListResponse'
 
   /api/aliases:
     get:
