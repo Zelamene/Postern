@@ -10,7 +10,6 @@ export function Footer() {
           </div>
           <span className="font-bold text-text">Postern</span>
           <span className="text-hairline/80">·</span>
-          <span className="text-text-muted">Southern Cross Solutions</span>
         </div>
 
         <nav aria-label="Footer navigation" className="flex items-center gap-6">
