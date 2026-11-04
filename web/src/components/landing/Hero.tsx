@@ -102,8 +102,6 @@ export function Hero() {
 
       <div className="shell grid items-center gap-12 py-12 sm:py-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:py-16">
         <div className="max-w-xl">
-          <span className="chip chip--primary chip--sm">Private email aliases</span>
-
           <h1 id="hero-title" className="mt-5 text-display font-black text-text">
             Your inbox,
             <br />
