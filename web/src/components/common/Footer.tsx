@@ -29,7 +29,6 @@ export function Footer() {
           </a>
         </nav>
 
-        <p className="text-caption text-text-muted">COS 301 Capstone 2026</p>
       </div>
     </footer>
   )
