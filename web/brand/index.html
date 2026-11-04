@@ -561,6 +561,7 @@
                 <tr><td>Warning</td><td><code>--color-warning</code></td><td>Unexpected sender that passed auth, KV propagating, approaching the 500/day cap</td></tr>
                 <tr><td>Error</td><td><code>--color-danger</code></td><td>Validation messages, failed authentication, blocked-message reasons</td></tr>
                 <tr><td>Informational</td><td><code>--color-info</code></td><td>Retention notices, onboarding, cold-start explanation</td></tr>
+                <tr><td>Text selection</td><td><code>--color-primary</code> / <code>--color-text-on-primary</code></td><td>Selected text uses the primary fill with a high-contrast light foreground</td></tr>
                 <tr><td>Surfaces</td><td><code>--color-surface</code> <code>--color-surface-sunken</code></td><td>Cards and dialogs on white; wells, zebra rows and code on sunken paper</td></tr>
               </tbody>
             </table>
@@ -591,6 +592,7 @@
                 <tr><td>Link</td><td><code>--maroon-700</code> on <code>--paper-50</code></td><td class="tnum">10.45:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
                 <tr><td>Focus ring</td><td><code>--maroon-700</code> on <code>--paper-50</code></td><td class="tnum">10.45:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
                 <tr><td>Focus ring on primary</td><td><code>--paper-50</code> on <code>--maroon-700</code></td><td class="tnum">10.45:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Selected text</td><td><code>--color-text-on-primary</code> on <code>--color-primary</code></td><td class="tnum">11.06:1 light · 5.49:1 dark</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
                 <tr><td>Control border</td><td><code>--ink-300</code> on <code>--paper-50</code></td><td class="tnum">3.03:1</td><td><span class="chip chip--info chip--sm">AA non-text</span></td></tr>
                 <tr><td>Control border on card</td><td><code>--ink-300</code> on <code>--paper-0</code></td><td class="tnum">3.21:1</td><td><span class="chip chip--info chip--sm">AA non-text</span></td></tr>
                 <tr><td>Success text</td><td><code>--green-700</code> on <code>--paper-50</code></td><td class="tnum">7.14:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
@@ -946,6 +948,7 @@ function choose(next) {
                 <tr><td><code>--color-text</code></td><td><code>text-text</code></td><td>Body copy — the role name is the utility name</td></tr>
                 <tr><td><code>--color-text-muted</code></td><td><code>text-text-muted</code></td><td>Helper text, metadata</td></tr>
                 <tr><td><code>--color-primary</code></td><td><code>bg-primary</code> <code>border-primary</code></td><td>Fills only</td></tr>
+                <tr><td><code>--color-text-on-primary</code></td><td><code>text-text-on-primary</code></td><td>Text on primary fills and selected text</td></tr>
                 <tr><td><code>--color-link</code></td><td><code>text-link</code></td><td>Link and icon colour</td></tr>
                 <tr><td><code>--color-hairline</code></td><td><code>border-hairline</code></td><td>Dividers</td></tr>
                 <tr><td><code>--color-border</code></td><td><code>border-border</code></td><td>Control boundaries, 3:1</td></tr>

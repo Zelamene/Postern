@@ -31,8 +31,9 @@
     font-variant-ligatures: common-ligatures;
   }
 
-  ::selection {
-    background-color: var(--color-link);
+  ::selection,
+  *::selection {
+    background-color: var(--color-primary);
     color: var(--color-text-on-primary);
   }
 

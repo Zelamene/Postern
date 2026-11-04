@@ -17,7 +17,7 @@ interface HomePageProps {
 
 export function HomePage({ theme, onThemeChange }: Readonly<HomePageProps>) {
   return (
-    <div className="min-h-screen bg-bg text-text antialiased selection:bg-primary-surface selection:text-primary">
+    <div className="min-h-screen bg-bg text-text antialiased">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[var(--z-toast)] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-on-inverse focus:shadow-md"

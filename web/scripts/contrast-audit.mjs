@@ -30,7 +30,7 @@ export const light = {
   primary: '#74172a',
   primaryHover: '#5c1022',
   primaryActive: '#430b19',
-  onPrimary: '#fbf8f4',
+  onPrimary: '#ffffff',
   link: '#74172a',
   linkHover: '#5c1022',
   focus: '#74172a',
@@ -43,7 +43,7 @@ export const light = {
   dangerSurface: '#fbe9e5',
   infoSurface: '#e7eef1',
   selection: '#74172a',
-  onSelection: '#fbf8f4',
+  onSelection: '#ffffff',
 };
 
 export const dark = {
@@ -60,7 +60,7 @@ export const dark = {
   primary: '#b04554',
   primaryHover: '#b04a58',
   primaryActive: '#8c2434',
-  onPrimary: '#fbf8f4',
+  onPrimary: '#ffffff',
   link: '#e7a0aa',
   linkHover: '#f2b8c0',
   focus: '#e7a0aa',
@@ -72,8 +72,8 @@ export const dark = {
   warningSurface: '#2a2214',
   dangerSurface: '#2a1815',
   infoSurface: '#14212a',
-  selection: '#a63a47',
-  onSelection: '#fbf8f4',
+  selection: '#b04554',
+  onSelection: '#ffffff',
 };
 
 const pairs = (t) => [
