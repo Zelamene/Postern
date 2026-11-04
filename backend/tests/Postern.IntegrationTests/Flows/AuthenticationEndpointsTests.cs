@@ -352,6 +352,8 @@ public sealed class AuthenticationEndpointsTests
                 {
                     Id = Guid.NewGuid(),
                     CodeHash = hash,
+                    Email = string.Empty,
+                    EmailNormalized = string.Empty,
                     CreatedAt = DateTimeOffset.UtcNow
                 });
             }
@@ -361,6 +363,26 @@ public sealed class AuthenticationEndpointsTests
         {
             _invites[invite.CodeHash] = invite;
             return Task.CompletedTask;
+        }
+
+        public Task<InviteCode> CreateInviteAsync(
+            string email,
+            string emailNormalized,
+            CancellationToken cancellationToken)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var invite = new InviteCode
+            {
+                Id = Guid.NewGuid(),
+                CodeHash = AuthenticationService.HashInviteCode(
+                    $"postern_invite_{AuthenticationService.GenerateUrlSafeToken()}"),
+                Email = email,
+                EmailNormalized = emailNormalized,
+                CreatedAt = now,
+                ExpiresAt = now.AddDays(7)
+            };
+            _invites[invite.CodeHash] = invite;
+            return Task.FromResult(invite);
         }
 
         public void SetForwardingAddress(string normalizedEmail, string forwardingAddress)

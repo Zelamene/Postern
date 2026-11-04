@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
+using System.Security.Cryptography;
 using Postern.Application.Accounts;
 using Postern.Domain.Accounts;
 using Postern.Infrastructure.Persistence;
@@ -24,9 +25,28 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
             $"SELECT pg_advisory_xact_lock({RegistrationLockId})",
             cancellationToken);
 
+        // --- cap check at issue time: outstanding unexpired invites ≤ 199 − (pending + active) ---
+        var outstandingInvites = await dbContext.InviteCodes
+            .CountAsync(
+                item => item.UsedAt == null && (item.ExpiresAt == null || item.ExpiresAt > now),
+                cancellationToken);
+        var pendingUsers = await dbContext.Users.CountAsync(
+            item => item.Status == "pending",
+            cancellationToken);
+        var activeUsers = await dbContext.Users.CountAsync(
+            item => item.Status == "active",
+            cancellationToken);
+        var seatCap = maximumUsers - pendingUsers - activeUsers;
+        if (outstandingInvites > seatCap)
+        {
+            return RegistrationResult.UserLimitReached;
+        }
+        // --- find invite matching code hash AND email normalisation ---
         var invite = await dbContext.InviteCodes
             .SingleOrDefaultAsync(
-                item => item.CodeHash == inviteCodeHash
+                item =>
+                    item.CodeHash == inviteCodeHash
+                    && item.EmailNormalized == user.NormalizedEmail
                     && item.UsedAt == null
                     && (item.ExpiresAt == null || item.ExpiresAt > now),
                 cancellationToken);
@@ -34,7 +54,7 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
         {
             return RegistrationResult.InvalidInvite;
         }
-
+        // --- idempotent: if this email is already registered under another invite, reject ---
         if (await dbContext.Users.AnyAsync(
                 item => item.NormalizedEmail == user.NormalizedEmail
                     || legacyNormalizedEmails.Contains(item.NormalizedEmail),
@@ -42,12 +62,10 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
         {
             return RegistrationResult.EmailAlreadyRegistered;
         }
-
         if (await dbContext.Users.CountAsync(cancellationToken) >= maximumUsers)
         {
             return RegistrationResult.UserLimitReached;
         }
-
         user.InviteCodeUsedId = invite.Id;
         invite.UsedAt = now;
         invite.UsedByUserId = user.Id;
@@ -179,6 +197,30 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
         dbContext.InviteCodes.Add(invite);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<InviteCode> CreateInviteAsync(string email, string emailNormalized, CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var expiresAt = now.AddDays(7);
+        var invite = new InviteCode
+        {
+            Id = Guid.NewGuid(),
+            CodeHash = AuthenticationService.HashInviteCode($"postern_invite_{GenerateUrlSafeToken()}"),
+            Email = email,
+            EmailNormalized = emailNormalized,
+            CreatedAt = now,
+            ExpiresAt = expiresAt,
+        };
+        dbContext.InviteCodes.Add(invite);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return invite;
+    }
+
+    private static string GenerateUrlSafeToken() =>
+        Convert.ToBase64String(RandomNumberGenerator.GetBytes(18))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
 
     public async Task<bool> SetStatusAsync(
         Guid userId,

@@ -48,4 +48,6 @@ public interface IAccountRepository
     Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken);
 
     Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken);
+
+    Task<InviteCode> CreateInviteAsync(string email, string emailNormalized, CancellationToken cancellationToken);
 }

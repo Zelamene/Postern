@@ -1,4 +1,5 @@
-import { IconArrowRight, IconCheck, IconInbox, IconMail, IconPosternLogo } from '../common/Icons'
+import { IconCheck, IconInbox, IconMail, IconPosternLogo } from '../common/Icons'
+import { RequestInvite } from '../user/RequestInvite'
 
 const TRUST = [
   'No message bodies stored',
@@ -116,10 +117,7 @@ export function Hero() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <a href="#demo" className="btn btn--primary btn--lg">
-              Try the live demo
-              <IconArrowRight size={18} />
-            </a>
+            <RequestInvite />
             <a href="#how-it-works" className="btn btn--secondary btn--lg">
               See how it works
             </a>

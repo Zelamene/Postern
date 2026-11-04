@@ -226,6 +226,7 @@ public class AccountManagementTests
     private sealed class InMemoryAccountRepository : IAccountRepository
     {
         private readonly Dictionary<Guid, PosternUser> _users = new();
+        private readonly Dictionary<string, InviteCode> _invites = new(StringComparer.Ordinal);
         private readonly List<ExpectedSender> _expectedSenders = [];
         private readonly List<Domain.Activity.Message> _messages = [];
         private readonly List<BlockedMessage> _blockedMessages = [];
@@ -252,6 +253,26 @@ public class AccountManagementTests
         }
         public Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken) =>
             throw new NotImplementedException();
+
+        public Task<InviteCode> CreateInviteAsync(
+            string email,
+            string emailNormalized,
+            CancellationToken cancellationToken)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var invite = new InviteCode
+            {
+                Id = Guid.NewGuid(),
+                CodeHash = AuthenticationService.HashInviteCode(
+                    $"postern_invite_{AuthenticationService.GenerateUrlSafeToken()}"),
+                Email = email,
+                EmailNormalized = emailNormalized,
+                CreatedAt = now,
+                ExpiresAt = now.AddDays(7)
+            };
+            _invites[invite.CodeHash] = invite;
+            return Task.FromResult(invite);
+        }
 
         public Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyCollection<Guid>>(

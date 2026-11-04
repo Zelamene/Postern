@@ -116,6 +116,26 @@ public sealed class InMemoryAccountRepository : IAccountRepository
         return Task.CompletedTask;
     }
 
+    public Task<InviteCode> CreateInviteAsync(
+        string email,
+        string emailNormalized,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var invite = new InviteCode
+        {
+            Id = Guid.NewGuid(),
+            CodeHash = AuthenticationService.HashInviteCode(
+                $"postern_invite_{AuthenticationService.GenerateUrlSafeToken()}"),
+            Email = email,
+            EmailNormalized = emailNormalized,
+            CreatedAt = now,
+            ExpiresAt = now.AddDays(7)
+        };
+        _invites[invite.CodeHash] = invite;
+        return Task.FromResult(invite);
+    }
+
     public Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken)
     {
         var user = Find(userId);

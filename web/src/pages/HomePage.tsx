@@ -1,12 +1,14 @@
-import { Footer } from '../components/common/Footer'
-import { Navbar, type ThemeMode } from '../components/common/Navbar'
-import { GuaranteesSection } from '../components/landing/GuaranteesSection'
 import { Hero } from '../components/landing/Hero'
-import { HowItWorksSection } from '../components/landing/HowItWorksSection'
-import { InteractiveDemo } from '../components/landing/InteractiveDemo'
 import { ProblemSection } from '../components/landing/ProblemSection'
 import { SolutionSection } from '../components/landing/SolutionSection'
+import { HowItWorksSection } from '../components/landing/HowItWorksSection'
+import { InteractiveDemo } from '../components/landing/InteractiveDemo'
 import { WhoItsForSection } from '../components/landing/WhoItsForSection'
+import { GuaranteesSection } from '../components/landing/GuaranteesSection'
+import { Footer } from '../components/common/Footer'
+import { Navbar } from '../components/common/Navbar'
+
+type ThemeMode = 'light' | 'dark'
 
 interface HomePageProps {
   theme: ThemeMode

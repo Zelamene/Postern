@@ -50,6 +50,8 @@ public static class AuthenticationEndpoints
             new InviteCode
             {
                 Id = Guid.NewGuid(),
+                Email = string.Empty,
+                EmailNormalized = string.Empty,
                 CodeHash = AuthenticationService.HashInviteCode(code),
                 CreatedAt = timeProvider.GetUtcNow()
             },

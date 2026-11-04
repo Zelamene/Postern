@@ -287,6 +287,26 @@ public sealed class AuthenticationServiceTests
             return Task.CompletedTask;
         }
 
+        public Task<Postern.Domain.Accounts.InviteCode> CreateInviteAsync(
+            string email,
+            string emailNormalized,
+            CancellationToken cancellationToken)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var invite = new Postern.Domain.Accounts.InviteCode
+            {
+                Id = Guid.NewGuid(),
+                CodeHash = AuthenticationService.HashInviteCode(
+                    $"postern_invite_{AuthenticationService.GenerateUrlSafeToken()}"),
+                Email = email,
+                EmailNormalized = emailNormalized,
+                CreatedAt = now,
+                ExpiresAt = now.AddDays(7)
+            };
+            _invites[invite.CodeHash] = invite;
+            return Task.FromResult(invite);
+        }
+
         public void AddInvite(string code)
         {
             var hash = HashSecret(code);
@@ -294,6 +314,8 @@ public sealed class AuthenticationServiceTests
             {
                 Id = Guid.NewGuid(),
                 CodeHash = hash,
+                Email = string.Empty,
+                EmailNormalized = string.Empty,
                 CreatedAt = DateTimeOffset.UtcNow
             });
         }

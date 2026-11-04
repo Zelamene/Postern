@@ -109,4 +109,4 @@ The solution contains API, application, domain, and infrastructure projects, plu
 
 ## Progressive Web App
 
-The Vite frontend is configured with `vite-plugin-pwa`, a web app manifest, generated service-worker registration, and install icons. The service worker is produced during the production build; development mode uses Vite’s normal dev server.
+The Vite frontend serves a web app manifest and a first-party service worker with install icons. The worker caches the app shell and static assets for offline use, and never caches API responses.
