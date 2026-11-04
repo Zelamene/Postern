@@ -1,10 +1,12 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Postern.Api.Endpoints;
 using Postern.Api.Security;
+using Postern.Api.Workers;
 using Postern.Application.Accounts;
 using Postern.Application.Activity;
 using Postern.Application.Administration;
@@ -45,6 +47,42 @@ if (!builder.Environment.IsDevelopment()
         "Ingest:SharedSecret must be configured outside Development so the worker endpoint is authenticated.");
 }
 
+var resendApiKey = builder.Configuration["Resend:ApiKey"] ?? builder.Configuration["RESEND_API_KEY"];
+var resendWebhookSecret =
+    builder.Configuration["Resend:WebhookSecret"] ?? builder.Configuration["RESEND_WEBHOOK_SECRET"];
+var resendFrom = builder.Configuration["Resend:From"];
+var publicInviteBaseUrl = builder.Configuration["Invites:PublicBaseUrl"];
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+var inviteWorkerEnabled = builder.Configuration.GetValue<bool?>("Invites:WorkerEnabled")
+    ?? !string.IsNullOrWhiteSpace(resendApiKey);
+if (!builder.Environment.IsDevelopment()
+    && (string.IsNullOrWhiteSpace(resendApiKey)
+        || string.IsNullOrWhiteSpace(resendWebhookSecret)
+        || string.IsNullOrWhiteSpace(resendFrom)
+        || string.IsNullOrWhiteSpace(publicInviteBaseUrl)
+        || string.IsNullOrWhiteSpace(dataProtectionKeysPath)))
+{
+    throw new InvalidOperationException(
+        "Production invite delivery requires Resend credentials, Resend:From, Invites:PublicBaseUrl, and a persistent DataProtection:KeysPath.");
+}
+
+if (inviteWorkerEnabled
+    && (string.IsNullOrWhiteSpace(resendApiKey)
+        || string.IsNullOrWhiteSpace(resendFrom)
+        || string.IsNullOrWhiteSpace(publicInviteBaseUrl)))
+{
+    throw new InvalidOperationException(
+        "Invite delivery requires Resend:ApiKey, Resend:From, and Invites:PublicBaseUrl.");
+}
+
+if (!string.IsNullOrWhiteSpace(publicInviteBaseUrl)
+    && (!Uri.TryCreate(publicInviteBaseUrl, UriKind.Absolute, out var inviteBaseUri)
+        || (!builder.Environment.IsDevelopment() && inviteBaseUri.Scheme != Uri.UriSchemeHttps)))
+{
+    throw new InvalidOperationException(
+        "Invites:PublicBaseUrl must be an absolute URL and use HTTPS outside Development.");
+}
+
 var aliasDomain = builder.Configuration["Alias:Domain"];
 if (string.IsNullOrWhiteSpace(aliasDomain))
 {
@@ -67,7 +105,34 @@ var aliasPolicy = new AliasPolicy(aliasDomain, suffixLength);
 
 builder.Services.AddDbContext<PosternDbContext>(options =>
     PosternDbContext.ConfigureNpgsql(options, connectionString));
-builder.Services.AddScoped<IAccountRepository, EfAccountRepository>();
+builder.Services.AddScoped<IAccountRepository>(services =>
+    new EfAccountRepository(
+        services.GetRequiredService<PosternDbContext>(),
+        builder.Environment.IsDevelopment()));
+builder.Services.AddScoped<IInviteRepository, EfInviteRepository>();
+builder.Services.AddScoped<InviteManagementService>();
+builder.Services.AddSingleton<IInviteCodeProtector, DataProtectionInviteCodeProtector>();
+builder.Services.AddSingleton<ResendWebhookSignatureVerifier>();
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("Postern");
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    Directory.CreateDirectory(dataProtectionKeysPath);
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+}
+builder.Services.AddHttpClient("resend-email", client =>
+{
+    client.BaseAddress = new Uri("https://api.resend.com/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddTransient<IInviteEmailSender>(services =>
+    new ResendEmailSender(
+        services.GetRequiredService<IHttpClientFactory>().CreateClient("resend-email"),
+        resendApiKey ?? string.Empty,
+        resendFrom ?? throw new InvalidOperationException("Resend:From is not configured.")));
+if (inviteWorkerEnabled)
+{
+    builder.Services.AddHostedService<InviteEmailOutboxWorker>();
+}
 builder.Services.AddScoped<IAliasRepository, EfAliasRepository>();
 builder.Services.AddScoped<IActivityRepository, EfActivityRepository>();
 builder.Services.AddScoped<AuthenticationService>();
@@ -129,6 +194,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("registration", context => CreateRateLimit(context, 5, TimeSpan.FromHours(1)));
     options.AddPolicy("login", context => CreateRateLimit(context, 10, TimeSpan.FromMinutes(15)));
     options.AddPolicy("recovery", context => CreateRateLimit(context, 5, TimeSpan.FromMinutes(15)));
+    options.AddPolicy("invite-request", context => CreateRateLimit(context, 5, TimeSpan.FromHours(1)));
 });
 builder.Services.AddSingleton<JwtTokenIssuer>();
 
@@ -154,6 +220,7 @@ if (app.Environment.IsDevelopment())
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapAuthenticationEndpoints();
 app.MapAccountManagementEndpoints();
+app.MapInviteEndpoints();
 app.MapAliasEndpoints();
 app.MapActivityEndpoints();
 app.MapIngestEndpoints();

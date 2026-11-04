@@ -8,7 +8,9 @@ using Postern.Infrastructure.Persistence;
 
 namespace Postern.Infrastructure.Accounts;
 
-public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRepository
+public sealed class EfAccountRepository(
+    PosternDbContext dbContext,
+    bool allowUnboundDevelopmentInvites) : IAccountRepository
 {
     private const long RegistrationLockId = 7243910081;
 
@@ -46,8 +48,10 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
             .SingleOrDefaultAsync(
                 item =>
                     item.CodeHash == inviteCodeHash
-                    && item.EmailNormalized == user.NormalizedEmail
+                    && (item.EmailNormalized == user.NormalizedEmail
+                        || (allowUnboundDevelopmentInvites && item.EmailNormalized == string.Empty))
                     && item.UsedAt == null
+                    && item.RevokedAt == null
                     && (item.ExpiresAt == null || item.ExpiresAt > now),
                 cancellationToken);
         if (invite is null)
@@ -69,6 +73,15 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
         user.InviteCodeUsedId = invite.Id;
         invite.UsedAt = now;
         invite.UsedByUserId = user.Id;
+        invite.DeliveryStatus = InviteDeliveryStatus.Accepted;
+        invite.DeliveryUpdatedAt = now;
+        dbContext.AdminAuditLog.Add(new Postern.Domain.Administration.AdminAuditLogEntry
+        {
+            Id = Guid.NewGuid(),
+            Action = "invite.accepted",
+            TargetId = invite.Id.ToString(),
+            CreatedAt = now
+        });
         dbContext.Users.Add(user);
 
         try

@@ -14,6 +14,9 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
     public DbSet<ExpectedSender> ExpectedSenders => Set<ExpectedSender>();
     public DbSet<BlockedMessage> BlockedMessages => Set<BlockedMessage>();
     public DbSet<InviteCode> InviteCodes => Set<InviteCode>();
+    public DbSet<InviteRequest> InviteRequests => Set<InviteRequest>();
+    public DbSet<InviteEmailOutboxMessage> InviteEmailOutbox => Set<InviteEmailOutboxMessage>();
+    public DbSet<ResendWebhookEvent> ResendWebhookEvents => Set<ResendWebhookEvent>();
     public DbSet<AdminAuditLogEntry> AdminAuditLog => Set<AdminAuditLogEntry>();
     public DbSet<GlobalBlockedDomain> GlobalBlocklist => Set<GlobalBlockedDomain>();
 
@@ -50,15 +53,105 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
 
         modelBuilder.Entity<InviteCode>(entity =>
         {
-            entity.ToTable("invite_codes");
+            entity.ToTable("invite_codes", table =>
+                table.HasCheckConstraint(
+                    "ck_invite_codes_delivery_status",
+                    "delivery_status IN ('pending', 'sent', 'delivered', 'bounced', 'complained', 'accepted', 'revoked', 'failed')"));
             entity.HasKey(invite => invite.Id);
             entity.Property(invite => invite.Id).HasColumnName("id");
             entity.Property(invite => invite.CodeHash).HasColumnName("code_hash").HasMaxLength(128).IsRequired();
+            entity.Property(invite => invite.Email).HasColumnName("email").HasMaxLength(320).IsRequired();
+            entity.Property(invite => invite.EmailNormalized).HasColumnName("email_normalized").HasMaxLength(320).IsRequired();
             entity.Property(invite => invite.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(invite => invite.ExpiresAt).HasColumnName("expires_at").HasColumnType("timestamp with time zone");
             entity.Property(invite => invite.UsedAt).HasColumnName("used_at").HasColumnType("timestamp with time zone");
             entity.Property(invite => invite.UsedByUserId).HasColumnName("used_by_user_id");
+            entity.Property(invite => invite.DeliveryStatus)
+                .HasColumnName("delivery_status")
+                .HasMaxLength(16)
+                .HasDefaultValue(InviteDeliveryStatus.Pending)
+                .IsRequired();
+            entity.Property(invite => invite.DeliveryMessageId).HasColumnName("delivery_message_id").HasMaxLength(128);
+            entity.Property(invite => invite.DeliveryUpdatedAt).HasColumnName("delivery_updated_at").HasColumnType("timestamp with time zone");
+            entity.Property(invite => invite.RevokedAt).HasColumnName("revoked_at").HasColumnType("timestamp with time zone");
             entity.HasIndex(invite => invite.CodeHash).IsUnique().HasDatabaseName("ux_invite_codes_code_hash");
+            entity.HasIndex(invite => invite.DeliveryMessageId)
+                .IsUnique()
+                .HasFilter("delivery_message_id IS NOT NULL")
+                .HasDatabaseName("ux_invite_codes_delivery_message_id");
+        });
+
+        modelBuilder.Entity<InviteRequest>(entity =>
+        {
+            entity.ToTable("invite_requests", table =>
+                table.HasCheckConstraint(
+                    "ck_invite_requests_status",
+                    "status IN ('pending', 'approved', 'rejected')"));
+            entity.HasKey(request => request.Id);
+            entity.Property(request => request.Id).HasColumnName("id");
+            entity.Property(request => request.Email).HasColumnName("email").HasMaxLength(320).IsRequired();
+            entity.Property(request => request.EmailNormalized).HasColumnName("email_normalized").HasMaxLength(320).IsRequired();
+            entity.Property(request => request.RequestedAt).HasColumnName("requested_at").HasColumnType("timestamp with time zone");
+            entity.Property(request => request.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
+            entity.Property(request => request.ReviewedAt).HasColumnName("reviewed_at").HasColumnType("timestamp with time zone");
+            entity.Property(request => request.ReviewedByUserId).HasColumnName("reviewed_by_user_id");
+            entity.Property(request => request.InviteId).HasColumnName("invite_id");
+            entity.HasIndex(request => request.EmailNormalized)
+                .IsUnique()
+                .HasFilter("status = 'pending'")
+                .HasDatabaseName("ux_invite_requests_pending_email");
+            entity.HasIndex(request => request.RequestedAt).HasDatabaseName("ix_invite_requests_requested_at");
+            entity.HasOne<PosternUser>()
+                .WithMany()
+                .HasForeignKey(request => request.ReviewedByUserId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_invite_requests_users_reviewed_by_user_id");
+            entity.HasOne<InviteCode>()
+                .WithMany()
+                .HasForeignKey(request => request.InviteId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_invite_requests_invite_codes_invite_id");
+        });
+
+        modelBuilder.Entity<InviteEmailOutboxMessage>(entity =>
+        {
+            entity.ToTable("invite_email_outbox", table =>
+                table.HasCheckConstraint(
+                    "ck_invite_email_outbox_status",
+                    "status IN ('pending', 'processing', 'sent', 'failed', 'cancelled')"));
+            entity.HasKey(message => message.Id);
+            entity.Property(message => message.Id).HasColumnName("id");
+            entity.Property(message => message.InviteId).HasColumnName("invite_id");
+            entity.Property(message => message.RecipientEmail).HasColumnName("recipient_email").HasMaxLength(320).IsRequired();
+            entity.Property(message => message.ProtectedInviteCode).HasColumnName("protected_invite_code").IsRequired();
+            entity.Property(message => message.InviterName).HasColumnName("inviter_name").HasMaxLength(100).IsRequired();
+            entity.Property(message => message.ExpiresAt).HasColumnName("expires_at").HasColumnType("timestamp with time zone");
+            entity.Property(message => message.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone");
+            entity.Property(message => message.NextAttemptAt).HasColumnName("next_attempt_at").HasColumnType("timestamp with time zone");
+            entity.Property(message => message.LeaseExpiresAt).HasColumnName("lease_expires_at").HasColumnType("timestamp with time zone");
+            entity.Property(message => message.SentAt).HasColumnName("sent_at").HasColumnType("timestamp with time zone");
+            entity.Property(message => message.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
+            entity.Property(message => message.AttemptCount).HasColumnName("attempt_count");
+            entity.Property(message => message.LastError).HasColumnName("last_error").HasMaxLength(500);
+            entity.Property(message => message.ProviderMessageId).HasColumnName("provider_message_id").HasMaxLength(128);
+            entity.HasIndex(message => new { message.Status, message.NextAttemptAt, message.CreatedAt })
+                .HasDatabaseName("ix_invite_email_outbox_pending");
+            entity.HasOne<InviteCode>()
+                .WithMany()
+                .HasForeignKey(message => message.InviteId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_invite_email_outbox_invite_codes_invite_id");
+        });
+
+        modelBuilder.Entity<ResendWebhookEvent>(entity =>
+        {
+            entity.ToTable("resend_webhook_events");
+            entity.HasKey(webhookEvent => webhookEvent.Id);
+            entity.Property(webhookEvent => webhookEvent.Id).HasColumnName("id").HasMaxLength(256);
+            entity.Property(webhookEvent => webhookEvent.EventType).HasColumnName("event_type").HasMaxLength(64).IsRequired();
+            entity.Property(webhookEvent => webhookEvent.ProviderMessageId).HasColumnName("provider_message_id").HasMaxLength(128);
+            entity.Property(webhookEvent => webhookEvent.ReceivedAt).HasColumnName("received_at").HasColumnType("timestamp with time zone");
+            entity.HasIndex(webhookEvent => webhookEvent.ReceivedAt).HasDatabaseName("ix_resend_webhook_events_received_at");
         });
 
         modelBuilder.Entity<Alias>(entity =>

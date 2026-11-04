@@ -1,7 +1,5 @@
 import { useRef, useState } from 'react'
 
-const isValidEmail = (email: string) => /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email.trim())
-
 export interface RequestInviteState {
   email: string
   error: string | null
@@ -9,11 +7,7 @@ export interface RequestInviteState {
   submitting: boolean
 }
 
-export interface RequestInviteProps {
-  onInviteRequested?: (id: string, expiresAt: string, inviteUrl: string) => void
-}
-
-export function RequestInvite({ onInviteRequested }: Readonly<RequestInviteProps>) {
+export function RequestInvite() {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [state, setState] = useState<RequestInviteState>({
     email: '',
@@ -28,13 +22,13 @@ export function RequestInvite({ onInviteRequested }: Readonly<RequestInviteProps
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const { email, submitting } = state
-    if (submitting || !isValidEmail(email)) {
+    if (submitting) {
       return
     }
     setState({ ...state, submitting: true, error: null, success: null })
 
     try {
-      const result = await fetch('/api/admin/invites', {
+      const result = await fetch('/api/invite-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -55,15 +49,12 @@ export function RequestInvite({ onInviteRequested }: Readonly<RequestInviteProps
         return
       }
 
-      const { id, expiresAt, inviteUrl } = await result.json()
       setState({
         email: '',
         submitting: false,
         error: null,
-        success: 'Your invite request has been sent. An admin will review it and activate your invite.',
+        success: 'Your request has been recorded. An admin will review it, and we’ll email you if it’s approved.',
       })
-
-      onInviteRequested?.(id, expiresAt, inviteUrl)
     } catch (error) {
       console.error('Invite request failed', error)
       setState({
@@ -132,18 +123,20 @@ export function RequestInvite({ onInviteRequested }: Readonly<RequestInviteProps
                 </label>
                 <input
                   id="invite-email"
-                  type="email"
+                  type="text"
                   value={state.email}
                   onChange={handleChange}
                   disabled={state.submitting}
                   required
+                  autoCapitalize="none"
+                  spellCheck={false}
                   className="w-full rounded-md border border-hairline px-3 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   placeholder="you@example.com"
                   autoComplete="email"
                   aria-describedby="invite-email-help"
                 />
                 <p id="invite-email-help" className="mt-1 text-xs text-text-muted">
-                  We’ll send an invite code to this address.
+                  We’ll email you if your request is approved.
                 </p>
               </div>
               <button

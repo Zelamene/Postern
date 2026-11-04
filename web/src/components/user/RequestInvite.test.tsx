@@ -28,16 +28,12 @@ describe('RequestInvite', () => {
     let requestedEmail = ''
 
     server.use(
-      http.post('*/api/admin/invites', async ({ request }) => {
+      http.post('*/api/invite-requests', async ({ request }) => {
         const body = (await request.json()) as { email: string }
         requestedEmail = body.email
         return HttpResponse.json(
-          {
-            id: 'invite-1',
-            expiresAt: '2026-11-05T00:00:00Z',
-            inviteUrl: '/invite/invite-1',
-          },
-          { status: 201 },
+          { message: 'If eligible, your request has been recorded for review.' },
+          { status: 202 },
         )
       }),
     )
@@ -52,7 +48,7 @@ describe('RequestInvite', () => {
     await user.click(screen.getByRole('button', { name: 'Send request' }))
 
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'Your invite request has been sent.',
+      'Your request has been recorded.',
     )
     expect(requestedEmail).toBe('person@example.com')
 
@@ -60,9 +56,34 @@ describe('RequestInvite', () => {
     expect(dialog).not.toHaveAttribute('open')
   })
 
+  it('submits internationalized email addresses for backend validation', async () => {
+    const user = userEvent.setup()
+    let requestedEmail = ''
+
+    server.use(
+      http.post('*/api/invite-requests', async ({ request }) => {
+        const body = (await request.json()) as { email: string }
+        requestedEmail = body.email
+        return HttpResponse.json({ message: 'Recorded.' }, { status: 202 })
+      }),
+    )
+
+    render(<RequestInvite />)
+    await user.click(screen.getByRole('button', { name: 'Request an invite' }))
+    const emailInput = screen.getByLabelText('Email address')
+    expect(emailInput).toHaveAttribute('type', 'text')
+    await user.type(emailInput, 'δοκιμή@παράδειγμα.ελ')
+    await user.click(screen.getByRole('button', { name: 'Send request' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Your request has been recorded.',
+    )
+    expect(requestedEmail).toBe('δοκιμή@παράδειγμα.ελ')
+  })
+
   it('shows an error when the request cannot be sent', async () => {
     server.use(
-      http.post('*/api/admin/invites', () =>
+      http.post('*/api/invite-requests', () =>
         HttpResponse.json({ error: 'Invite requests are closed.' }, { status: 403 }),
       ),
     )

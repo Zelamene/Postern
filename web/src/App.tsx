@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ThemeMode } from './components/common/Navbar'
 import { HomePage } from './pages/HomePage'
+import { InviteRegistrationPage } from './pages/InviteRegistrationPage'
 
 const STORAGE_KEY = 'postern-theme'
 
@@ -27,6 +28,11 @@ function App() {
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute('content', theme === 'dark' ? '#151110' : '#fbf8f4')
   }, [theme])
+
+  const inviteMatch = window.location.pathname.match(/^\/invite\/([^/]+)\/?$/)
+  if (inviteMatch) {
+    return <InviteRegistrationPage inviteCode={decodeURIComponent(inviteMatch[1])} />
+  }
 
   return <HomePage theme={theme} onThemeChange={setTheme} />
 }

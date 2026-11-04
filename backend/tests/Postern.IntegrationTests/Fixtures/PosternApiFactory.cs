@@ -22,15 +22,24 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
     private readonly PosternFixture _fixture;
     private readonly IKvWriter _kvWriter;
     private readonly string? _ingestSecret;
+    private readonly string? _resendWebhookSecret;
+    private readonly bool _enableInviteWorker;
+    private readonly IInviteEmailSender? _inviteEmailSender;
 
     public PosternApiFactory(
         PosternFixture fixture,
         IKvWriter? kvWriter = null,
-        string? ingestSecret = null)
+        string? ingestSecret = null,
+        string? resendWebhookSecret = null,
+        bool enableInviteWorker = false,
+        IInviteEmailSender? inviteEmailSender = null)
     {
         _fixture = fixture;
         _kvWriter = kvWriter ?? new NoOpKvWriter();
         _ingestSecret = ingestSecret;
+        _resendWebhookSecret = resendWebhookSecret;
+        _enableInviteWorker = enableInviteWorker;
+        _inviteEmailSender = inviteEmailSender;
     }
 
     public DevelopmentDestinationService Destinations =>
@@ -43,9 +52,17 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Authentication:Issuer", Issuer);
         builder.UseSetting("Authentication:Audience", Audience);
         builder.UseSetting("ConnectionStrings:Postgres", _fixture.ConnectionString);
+        builder.UseSetting("Invites:WorkerEnabled", _enableInviteWorker.ToString());
+        builder.UseSetting("Resend:From", "Postern <invites@example.test>");
+        builder.UseSetting("Invites:PublicBaseUrl", "http://localhost:5173");
         if (_ingestSecret is not null)
         {
             builder.UseSetting("Ingest:SharedSecret", _ingestSecret);
+        }
+        builder.UseSetting("Resend:ApiKey", _enableInviteWorker ? "integration-test-api-key" : string.Empty);
+        if (_resendWebhookSecret is not null)
+        {
+            builder.UseSetting("Resend:WebhookSecret", _resendWebhookSecret);
         }
 
         builder.ConfigureTestServices(services =>
@@ -57,6 +74,11 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
             services.AddSingleton(_kvWriter);
             services.RemoveAll<IDestinationService>();
             services.AddSingleton<IDestinationService>(new DevelopmentDestinationService());
+            if (_inviteEmailSender is not null)
+            {
+                services.RemoveAll<IInviteEmailSender>();
+                services.AddSingleton(_inviteEmailSender);
+            }
         });
     }
 

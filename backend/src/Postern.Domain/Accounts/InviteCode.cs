@@ -10,4 +10,8 @@ public sealed class InviteCode
     public DateTimeOffset? ExpiresAt { get; set; }
     public DateTimeOffset? UsedAt { get; set; }
     public Guid? UsedByUserId { get; set; }
+    public string DeliveryStatus { get; set; } = InviteDeliveryStatus.Pending;
+    public string? DeliveryMessageId { get; set; }
+    public DateTimeOffset? DeliveryUpdatedAt { get; set; }
+    public DateTimeOffset? RevokedAt { get; set; }
 }
