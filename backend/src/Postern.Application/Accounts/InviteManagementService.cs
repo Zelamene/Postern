@@ -110,6 +110,12 @@ public sealed class InviteManagementService(
         string inviterName,
         CancellationToken cancellationToken)
     {
+        var request = await invites.GetPendingRequestAsync(requestId, cancellationToken);
+        if (request is null)
+        {
+            return false;
+        }
+
         var now = timeProvider.GetUtcNow();
         var expiresAt = now.Add(InviteLifetime);
         var inviteCode = GenerateInviteCode();
@@ -117,8 +123,8 @@ public sealed class InviteManagementService(
         {
             Id = Guid.NewGuid(),
             CodeHash = AuthenticationService.HashInviteCode(inviteCode),
-            Email = string.Empty,
-            EmailNormalized = string.Empty,
+            Email = request.Email,
+            EmailNormalized = request.EmailNormalized,
             CreatedAt = now,
             ExpiresAt = expiresAt,
             DeliveryStatus = InviteDeliveryStatus.Pending
@@ -127,7 +133,7 @@ public sealed class InviteManagementService(
         {
             Id = Guid.NewGuid(),
             InviteId = invite.Id,
-            RecipientEmail = string.Empty,
+            RecipientEmail = request.Email,
             ProtectedInviteCode = codeProtector.Protect(inviteCode),
             InviterName = NormalizeInviterName(inviterName),
             ExpiresAt = expiresAt,

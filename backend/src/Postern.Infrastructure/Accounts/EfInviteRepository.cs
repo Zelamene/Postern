@@ -89,6 +89,15 @@ public sealed class EfInviteRepository(PosternDbContext dbContext) : IInviteRepo
             .Take(500)
             .ToListAsync(cancellationToken);
 
+    public async Task<InviteRequest?> GetPendingRequestAsync(
+        Guid requestId,
+        CancellationToken cancellationToken) =>
+        await dbContext.InviteRequests
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                request => request.Id == requestId && request.Status == "pending",
+                cancellationToken);
+
     public async Task<bool> ApproveRequestAsync(
         Guid requestId,
         Guid adminUserId,

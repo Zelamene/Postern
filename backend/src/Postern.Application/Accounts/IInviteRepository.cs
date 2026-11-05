@@ -30,6 +30,7 @@ public interface IInviteRepository
         CancellationToken cancellationToken);
     Task AddRequestAsync(InviteRequest request, CancellationToken cancellationToken);
     Task<IReadOnlyList<InviteRequest>> ListPendingRequestsAsync(CancellationToken cancellationToken);
+    Task<InviteRequest?> GetPendingRequestAsync(Guid requestId, CancellationToken cancellationToken);
     Task<bool> ApproveRequestAsync(
         Guid requestId,
         Guid adminUserId,
