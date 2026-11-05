@@ -3,6 +3,7 @@ import type { ThemeMode } from '../components/common/Navbar'
 import { IconMoon, IconPosternLogo, IconSun } from '../components/common/Icons'
 import { ConfirmationDialog } from '../components/common/ConfirmationDialog'
 import { RecoveryKeyNotice } from '../components/common/RecoveryKeyNotice'
+import { TotpQrCode } from '../components/common/TotpQrCode'
 import { useAdminRealtime } from '../hooks/useAdminRealtime'
 
 interface AdminPageProps {
@@ -384,6 +385,7 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
             {mfaStep === 'setup' && mfaSetup && (
               <div className="mt-5 space-y-3 rounded-xl border border-hairline bg-surface-sunken/50 p-4">
                 <p className="text-sm font-semibold">Add Postern to your authenticator app</p>
+                <TotpQrCode authenticatorUri={mfaSetup.authenticatorUri} />
                 <a
                   href={mfaSetup.authenticatorUri}
                   className="text-sm font-semibold"

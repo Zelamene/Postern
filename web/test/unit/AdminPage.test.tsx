@@ -81,6 +81,7 @@ describe('AdminPage', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(await screen.findByText('JBSWY3DPEHPK3PXP')).toBeVisible()
+    expect(await screen.findByRole('img', { name: 'Authenticator setup QR code' })).toBeVisible()
     await user.type(screen.getByLabelText('Authenticator code'), '123456')
     await user.click(screen.getByRole('button', { name: 'Enable and continue' }))
 
