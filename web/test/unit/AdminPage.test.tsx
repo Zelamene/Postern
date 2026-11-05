@@ -1,13 +1,30 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { AdminPage } from '../../src/pages/AdminPage'
 import { server } from '../server'
 
 vi.mock('../../src/hooks/useAdminRealtime', () => ({
   useAdminRealtime: () => undefined,
 }))
+
+const originalShowModal = HTMLDialogElement.prototype.showModal
+const originalClose = HTMLDialogElement.prototype.close
+
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '')
+  }
+  HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute('open')
+  }
+})
+
+afterAll(() => {
+  HTMLDialogElement.prototype.showModal = originalShowModal
+  HTMLDialogElement.prototype.close = originalClose
+})
 
 const dashboard = {
   invites: [
@@ -147,5 +164,56 @@ describe('AdminPage', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(await screen.findByRole('heading', { name: 'Admin access required' })).toBeVisible()
+  })
+
+  it('requires confirmation before rejecting an invite request', async () => {
+    const user = userEvent.setup()
+    let inviteDashboardRequests = 0
+    let rejectRequests = 0
+    let pendingRequests = [{ id: 'request-1', email: 'person@example.test', requestedAt: '2026-11-01T12:00:00Z' }]
+
+    server.use(
+      http.get('*/api/admin/invites', () => {
+        inviteDashboardRequests += 1
+        return inviteDashboardRequests === 1
+          ? HttpResponse.json({ error: 'unauthorized' }, { status: 401 })
+          : HttpResponse.json(dashboard)
+      }),
+      http.get('*/api/admin/invite-requests', () =>
+        HttpResponse.json({ requests: pendingRequests }),
+      ),
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json({ userId: 'admin-id', email: 'admin@example.test' }),
+      ),
+      http.post('*/api/admin/invite-requests/request-1/reject', () => {
+        rejectRequests += 1
+        pendingRequests = []
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    render(<AdminPage theme="light" onThemeChange={() => undefined} />)
+
+    await user.type(await screen.findByLabelText('Email address'), 'admin@example.test')
+    await user.type(screen.getByLabelText('Password'), 'secure-password')
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+    await screen.findByRole('heading', { name: 'Admin dashboard' })
+
+    await user.click(screen.getByRole('button', { name: 'Reject' }))
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveAttribute('open')
+    expect(dialog).toHaveTextContent('person@example.test')
+    expect(dialog).toHaveTextContent('cannot be undone')
+    expect(rejectRequests).toBe(0)
+
+    await user.click(screen.getByRole('button', { name: 'Keep request' }))
+    expect(dialog).not.toHaveAttribute('open')
+    expect(rejectRequests).toBe(0)
+
+    await user.click(screen.getByRole('button', { name: 'Reject' }))
+    await user.click(screen.getByRole('button', { name: 'Reject invite request' }))
+
+    await waitFor(() => expect(rejectRequests).toBe(1))
+    await waitFor(() => expect(screen.getByText('No pending invite requests.')).toBeVisible())
   })
 })

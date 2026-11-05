@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { ThemeMode } from '../components/common/Navbar'
 import { IconMoon, IconPosternLogo, IconSun } from '../components/common/Icons'
+import { ConfirmationDialog } from '../components/common/ConfirmationDialog'
+import { RecoveryKeyNotice } from '../components/common/RecoveryKeyNotice'
 import { useAdminRealtime } from '../hooks/useAdminRealtime'
 
 interface AdminPageProps {
@@ -98,6 +100,7 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
   const [access, setAccess] = useState<AccessState>('checking')
   const [dashboard, setDashboard] = useState<InviteDashboard | null>(null)
   const [requests, setRequests] = useState<InviteRequest[]>([])
+  const [requestToReject, setRequestToReject] = useState<InviteRequest | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
@@ -449,13 +452,7 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
               </button>
               </form>
             )}
-            {recoveryKey && (
-              <section className="mt-5 rounded-xl border border-warning/40 bg-warning-surface p-4" aria-labelledby="admin-recovery-key-heading">
-                <h2 id="admin-recovery-key-heading" className="text-sm font-bold text-warning-on-surface">Save your recovery key</h2>
-                <p className="mt-1 text-xs text-warning-on-surface">This key is shown once. Store it somewhere safe.</p>
-                <code className="mt-2 block break-all rounded-lg bg-surface px-3 py-2 text-sm text-text">{recoveryKey}</code>
-              </section>
-            )}
+            {recoveryKey && <RecoveryKeyNotice recoveryKey={recoveryKey} className="mt-5" />}
             <a href="/" className="mt-5 inline-block text-sm font-semibold no-underline">Back to Postern</a>
           </section>
         )}
@@ -493,14 +490,11 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
             </div>
 
             {recoveryKey && (
-              <section className="rounded-xl border border-warning/40 bg-warning-surface p-5" aria-labelledby="recovery-key-heading">
-                <h2 id="recovery-key-heading" className="text-base font-bold text-warning-on-surface">Save your recovery key</h2>
-                <p className="mt-1 text-sm text-warning-on-surface">This key is shown once. Store it somewhere safe before leaving this page.</p>
-                <code className="mt-3 block overflow-x-auto rounded-lg bg-surface px-3 py-2 text-sm text-text">{recoveryKey}</code>
-                <button type="button" className="btn btn--ghost btn--sm mt-3" onClick={() => setRecoveryKey(null)}>
-                  I’ve saved it
-                </button>
-              </section>
+              <RecoveryKeyNotice
+                recoveryKey={recoveryKey}
+                onDismiss={() => setRecoveryKey(null)}
+                className="p-5"
+              />
             )}
 
             {loadError && <p role="alert" className="rounded-lg bg-danger-surface px-4 py-3 text-sm text-danger-on-surface">{loadError}</p>}
@@ -545,11 +539,11 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
                         </button>
                         <button
                           type="button"
-                          className="btn btn--secondary btn--sm"
+                          className="btn btn--danger btn--sm"
                           disabled={busyAction !== null}
-                          onClick={() => void runAction(`reject-${request.id}`, `/api/admin/invite-requests/${request.id}/reject`, 'POST')}
+                          onClick={() => setRequestToReject(request)}
                         >
-                          {busyAction === `reject-${request.id}` ? 'Rejecting…' : 'Reject'}
+                          Reject
                         </button>
                       </div>
                     </li>
@@ -624,6 +618,31 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
           </div>
         )}
       </main>
+      <ConfirmationDialog
+        open={requestToReject !== null}
+        title="Reject this invite request?"
+        description={
+          requestToReject
+            ? `Reject the request from ${requestToReject.email}? It will be removed from pending review, and this action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Reject invite request"
+        busy={requestToReject !== null && busyAction === `reject-${requestToReject.id}`}
+        onCancel={() => setRequestToReject(null)}
+        onConfirm={() => {
+          if (!requestToReject) {
+            return
+          }
+
+          const rejectedRequest = requestToReject
+          setRequestToReject(null)
+          void runAction(
+            `reject-${rejectedRequest.id}`,
+            `/api/admin/invite-requests/${rejectedRequest.id}/reject`,
+            'POST',
+          )
+        }}
+      />
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { RecoveryKeyNotice } from '../components/common/RecoveryKeyNotice'
 
 interface LoginResult {
   email?: string | null
@@ -88,22 +89,7 @@ export function LoginPage() {
             <p role="status" className="text-sm leading-relaxed text-text-secondary">
               Signed in as {signedInEmail}.
             </p>
-            {recoveryKey && (
-              <section
-                className="rounded-xl border border-warning/40 bg-warning-surface p-4"
-                aria-labelledby="recovery-key-title"
-              >
-                <h2 id="recovery-key-title" className="text-sm font-bold text-warning-on-surface">
-                  Save your recovery key
-                </h2>
-                <p className="mt-1 text-xs text-warning-on-surface">
-                  This key is shown once. Store it somewhere safe.
-                </p>
-                <code className="mt-2 block break-all rounded-lg bg-surface px-3 py-2 text-sm text-text">
-                  {recoveryKey}
-                </code>
-              </section>
-            )}
+            {recoveryKey && <RecoveryKeyNotice recoveryKey={recoveryKey} />}
             <a href="/" className="btn btn--primary inline-flex">
               Continue to Postern
             </a>
