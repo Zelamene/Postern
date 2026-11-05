@@ -5,6 +5,18 @@ namespace Postern.Application.Accounts;
 
 public sealed record PendingInviteRequest(Guid Id, string Email, DateTimeOffset RequestedAt);
 public sealed record DevelopmentInvite(Guid Id, string Email, string Code, DateTimeOffset ExpiresAt);
+public sealed record AdminInvite(
+    Guid Id,
+    string Email,
+    string Status,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? ExpiresAt,
+    bool CanResend,
+    bool CanRevoke);
+public sealed record AdminInviteDashboard(
+    IReadOnlyList<AdminInvite> Invites,
+    int SeatsFree,
+    int OutstandingInvites);
 
 public sealed class InviteManagementService(
     IInviteRepository invites,
@@ -12,6 +24,30 @@ public sealed class InviteManagementService(
     TimeProvider timeProvider)
 {
     private static readonly TimeSpan InviteLifetime = TimeSpan.FromDays(7);
+
+    public async Task<AdminInviteDashboard> GetAdminDashboardAsync(
+        CancellationToken cancellationToken)
+    {
+        var now = timeProvider.GetUtcNow();
+        var data = await invites.GetAdminDashboardAsync(now, cancellationToken);
+        var items = data.Invites
+            .Select(invite => new AdminInvite(
+                invite.Id,
+                invite.Email,
+                GetAdminStatus(invite, now),
+                invite.CreatedAt,
+                invite.ExpiresAt,
+                invite.UsedAt is null && invite.RevokedAt is null,
+                invite.UsedAt is null && invite.RevokedAt is null))
+            .ToArray();
+
+        return new AdminInviteDashboard(
+            items,
+            Math.Max(0, AuthenticationService.MaximumUsers
+                - data.RegisteredUsers
+                - data.OutstandingInvites),
+            data.OutstandingInvites);
+    }
 
     public async Task RequestInviteAsync(string? email, CancellationToken cancellationToken)
     {
@@ -160,6 +196,26 @@ public sealed class InviteManagementService(
 
     private static string GenerateInviteCode() =>
         $"postern_invite_{Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).TrimEnd('=').Replace('+', '-').Replace('/', '_')}";
+
+    private static string GetAdminStatus(AdminInviteRecord invite, DateTimeOffset now)
+    {
+        if (invite.RevokedAt is not null)
+        {
+            return InviteDeliveryStatus.Revoked;
+        }
+
+        if (invite.UsedAt is not null)
+        {
+            return InviteDeliveryStatus.Accepted;
+        }
+
+        if (invite.ExpiresAt <= now)
+        {
+            return "expired";
+        }
+
+        return invite.DeliveryStatus;
+    }
 
     private static string NormalizeInviterName(string inviterName) =>
         string.IsNullOrWhiteSpace(inviterName) ? "An admin" : inviterName.Trim()[..Math.Min(inviterName.Trim().Length, 100)];

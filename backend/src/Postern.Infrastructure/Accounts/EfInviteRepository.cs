@@ -24,6 +24,32 @@ public sealed class EfInviteRepository(PosternDbContext dbContext) : IInviteRepo
             .Select(invite => invite.Email)
             .SingleOrDefaultAsync(cancellationToken);
 
+    public async Task<AdminInviteDashboardData> GetAdminDashboardAsync(
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var inviteRecords = await dbContext.InviteCodes
+            .AsNoTracking()
+            .OrderByDescending(invite => invite.CreatedAt)
+            .Select(invite => new AdminInviteRecord(
+                invite.Id,
+                invite.Email,
+                invite.DeliveryStatus,
+                invite.CreatedAt,
+                invite.ExpiresAt,
+                invite.UsedAt,
+                invite.RevokedAt))
+            .ToListAsync(cancellationToken);
+        var registeredUsers = await dbContext.Users.CountAsync(cancellationToken);
+        var outstandingInvites = await dbContext.InviteCodes.CountAsync(
+            invite => invite.UsedAt == null
+                && invite.RevokedAt == null
+                && (invite.ExpiresAt == null || invite.ExpiresAt > now),
+            cancellationToken);
+
+        return new AdminInviteDashboardData(inviteRecords, registeredUsers, outstandingInvites);
+    }
+
     public async Task<IReadOnlyList<InviteEmailOutboxMessage>> ListPendingOutboxMessagesAsync(
         DateTimeOffset now,
         CancellationToken cancellationToken) =>

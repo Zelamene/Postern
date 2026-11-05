@@ -92,14 +92,17 @@ public sealed class HealthEndpointTests
     {
         using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.UseEnvironment("Development");
+            builder.UseEnvironment("Production");
             builder.UseSetting(
                 "Authentication:SigningKey",
                 "integration-test-key-material-at-least-thirty-two-bytes");
             builder.UseSetting("ConnectionStrings:Postgres", ApiTestConfiguration.UnusedConnectionString);
+            builder.UseSetting("Ingest:SharedSecret", ApiTestConfiguration.IngestSecret);
             builder.UseSetting("Resend:ApiKey", "integration-test-resend-key");
+            builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
             builder.UseSetting("Resend:From", "Postern <invites@example.test>");
             builder.UseSetting("Invites:WorkerEnabled", "true");
+            builder.UseSetting("DataProtection:KeysPath", Path.Combine(Path.GetTempPath(), "postern-api-test-keys"));
         });
 
         Assert.ThrowsAny<Exception>(() => factory.CreateClient());

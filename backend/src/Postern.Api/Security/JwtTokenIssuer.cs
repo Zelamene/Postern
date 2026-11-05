@@ -10,6 +10,10 @@ public sealed class JwtTokenIssuer(IConfiguration configuration, TimeProvider ti
 {
     public const string CookieName = "Postern.Auth";
     public static readonly TimeSpan Lifetime = TimeSpan.FromHours(1);
+    public static readonly TimeSpan AdminLifetime = TimeSpan.FromMinutes(15);
+
+    public static TimeSpan LifetimeFor(AuthenticatedAccount account) =>
+        account.IsAdmin ? AdminLifetime : Lifetime;
 
     public string Issue(AuthenticatedAccount account)
     {
@@ -27,14 +31,18 @@ public sealed class JwtTokenIssuer(IConfiguration configuration, TimeProvider ti
         if (account.IsAdmin)
         {
             claims.Add(new Claim(ClaimTypes.Role, "admin"));
+            claims.Add(new Claim(ClaimTypes.AuthenticationMethod, "totp"));
+            claims.Add(new Claim("amr_time", now.ToUnixTimeMilliseconds().ToString(
+                System.Globalization.CultureInfo.InvariantCulture)));
         }
 
+        var lifetime = LifetimeFor(account);
         var token = new JwtSecurityToken(
             issuer,
             audience,
             claims,
             now.UtcDateTime,
-            now.Add(Lifetime).UtcDateTime,
+            now.Add(lifetime).UtcDateTime,
             new SigningCredentials(
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
                 SecurityAlgorithms.HmacSha256));

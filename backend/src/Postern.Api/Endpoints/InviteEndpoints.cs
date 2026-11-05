@@ -18,7 +18,8 @@ public static class InviteEndpoints
             .WithDescription("Stores an invitation request for administrator review. It does not send an email.");
 
         var admin = endpoints.MapGroup("/api/admin")
-            .RequireAuthorization(policy => policy.RequireRole("admin"));
+            .RequireAuthorization("admin");
+        admin.MapGet("/invites", GetAdminDashboardAsync);
         admin.MapGet("/invite-requests", ListInviteRequestsAsync);
         admin.MapPost("/invite-requests/{requestId:guid}/approve", ApproveInviteRequestAsync);
         admin.MapPost("/invite-requests/{requestId:guid}/reject", RejectInviteRequestAsync);
@@ -30,6 +31,16 @@ public static class InviteEndpoints
             .WithSummary("Receive Resend delivery events")
             .WithDescription("Verifies Resend's Svix signature before recording delivery, bounce, or complaint events.");
         return endpoints;
+    }
+
+    private static async Task<IResult> GetAdminDashboardAsync(
+        InviteManagementService service,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        var dashboard = await service.GetAdminDashboardAsync(cancellationToken);
+        return Results.Ok(dashboard);
     }
 
     private static async Task<IResult> RequestInviteAsync(
@@ -55,8 +66,10 @@ public static class InviteEndpoints
 
     private static async Task<IResult> ListInviteRequestsAsync(
         InviteManagementService service,
+        HttpContext context,
         CancellationToken cancellationToken)
     {
+        context.Response.Headers.CacheControl = "no-store";
         var requests = await service.ListPendingRequestsAsync(cancellationToken);
         return Results.Ok(new { requests });
     }

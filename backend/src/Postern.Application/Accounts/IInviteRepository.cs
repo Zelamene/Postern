@@ -2,10 +2,27 @@ using Postern.Domain.Accounts;
 
 namespace Postern.Application.Accounts;
 
+public sealed record AdminInviteRecord(
+    Guid Id,
+    string Email,
+    string DeliveryStatus,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? ExpiresAt,
+    DateTimeOffset? UsedAt,
+    DateTimeOffset? RevokedAt);
+
+public sealed record AdminInviteDashboardData(
+    IReadOnlyList<AdminInviteRecord> Invites,
+    int RegisteredUsers,
+    int OutstandingInvites);
+
 public interface IInviteRepository
 {
     Task<string?> FindValidRecipientAsync(
         string codeHash,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
+    Task<AdminInviteDashboardData> GetAdminDashboardAsync(
         DateTimeOffset now,
         CancellationToken cancellationToken);
     Task<IReadOnlyList<InviteEmailOutboxMessage>> ListPendingOutboxMessagesAsync(

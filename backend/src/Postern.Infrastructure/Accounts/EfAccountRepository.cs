@@ -30,7 +30,9 @@ public sealed class EfAccountRepository(
         // --- cap check at issue time: outstanding unexpired invites ≤ 199 − (pending + active) ---
         var outstandingInvites = await dbContext.InviteCodes
             .CountAsync(
-                item => item.UsedAt == null && (item.ExpiresAt == null || item.ExpiresAt > now),
+                item => item.UsedAt == null
+                    && item.RevokedAt == null
+                    && (item.ExpiresAt == null || item.ExpiresAt > now),
                 cancellationToken);
         var pendingUsers = await dbContext.Users.CountAsync(
             item => item.Status == "pending",
@@ -111,6 +113,17 @@ public sealed class EfAccountRepository(
             .Include(user => user.Aliases)
             .SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
 
+    public Task<PosternUser?> FindByAdminMfaChallengeAsync(
+        string challengeHash,
+        string purpose,
+        DateTimeOffset now,
+        CancellationToken cancellationToken) =>
+        dbContext.Users.SingleOrDefaultAsync(
+            user => user.AdminMfaChallengeHash == challengeHash
+                && user.AdminMfaChallengePurpose == purpose
+                && user.AdminMfaChallengeExpiresAt > now,
+            cancellationToken);
+
     public async Task<bool> ActivatePendingUserAsync(Guid userId, CancellationToken cancellationToken) =>
         await dbContext.Users
             .Where(user => user.Id == userId && user.Status == "pending")
@@ -129,6 +142,87 @@ public sealed class EfAccountRepository(
                 && user.RecoveryKeyHash == null)
             .ExecuteUpdateAsync(
                 setters => setters.SetProperty(user => user.RecoveryKeyHash, recoveryKeyHash),
+                cancellationToken) == 1;
+
+    public async Task<bool> SetAdminMfaChallengeAsync(
+        Guid userId,
+        string challengeHash,
+        string purpose,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .Where(user => user.Id == userId && user.IsAdmin && user.Status == "active")
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(user => user.AdminMfaChallengeHash, challengeHash)
+                    .SetProperty(user => user.AdminMfaChallengePurpose, purpose)
+                    .SetProperty(user => user.AdminMfaChallengeExpiresAt, expiresAt),
+                cancellationToken) == 1;
+
+    public async Task<bool> SetAdminTotpSecretAsync(
+        Guid userId,
+        string protectedSecret,
+        CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .Where(user =>
+                user.Id == userId
+                && user.IsAdmin
+                && user.Status == "active"
+                && user.AdminTotpEnabledAt == null
+                && user.AdminTotpSecretProtected == null)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(user => user.AdminTotpSecretProtected, protectedSecret),
+                cancellationToken) == 1;
+
+    public async Task<bool> CompleteAdminTotpEnrollmentAsync(
+        Guid userId,
+        string challengeHash,
+        string protectedSecret,
+        long timeStep,
+        DateTimeOffset now,
+        CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .Where(user =>
+                user.Id == userId
+                && user.IsAdmin
+                && user.Status == "active"
+                && user.AdminTotpEnabledAt == null
+                && user.AdminTotpSecretProtected == protectedSecret
+                && user.AdminMfaChallengeHash == challengeHash
+                && user.AdminMfaChallengePurpose == "setup"
+                && user.AdminMfaChallengeExpiresAt > now
+                && (user.AdminTotpLastUsedStep == null || user.AdminTotpLastUsedStep < timeStep))
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(user => user.AdminTotpEnabledAt, now)
+                    .SetProperty(user => user.AdminTotpLastUsedStep, timeStep)
+                    .SetProperty(user => user.AdminMfaChallengeHash, (string?)null)
+                    .SetProperty(user => user.AdminMfaChallengePurpose, (string?)null)
+                    .SetProperty(user => user.AdminMfaChallengeExpiresAt, (DateTimeOffset?)null),
+                cancellationToken) == 1;
+
+    public async Task<bool> CompleteAdminMfaLoginAsync(
+        Guid userId,
+        string challengeHash,
+        long timeStep,
+        DateTimeOffset now,
+        CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .Where(user =>
+                user.Id == userId
+                && user.IsAdmin
+                && user.Status == "active"
+                && user.AdminTotpEnabledAt != null
+                && user.AdminMfaChallengeHash == challengeHash
+                && user.AdminMfaChallengePurpose == "login"
+                && user.AdminMfaChallengeExpiresAt > now
+                && (user.AdminTotpLastUsedStep == null || user.AdminTotpLastUsedStep < timeStep))
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(user => user.AdminTotpLastUsedStep, timeStep)
+                    .SetProperty(user => user.AdminMfaChallengeHash, (string?)null)
+                    .SetProperty(user => user.AdminMfaChallengePurpose, (string?)null)
+                    .SetProperty(user => user.AdminMfaChallengeExpiresAt, (DateTimeOffset?)null),
                 cancellationToken) == 1;
 
     public async Task<bool> RotateRecoveryCredentialsAsync(

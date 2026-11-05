@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ThemeMode } from './components/common/Navbar'
+import { AdminPage } from './pages/AdminPage'
 import { HomePage } from './pages/HomePage'
 import { InviteRegistrationPage } from './pages/InviteRegistrationPage'
 
@@ -32,6 +33,10 @@ function App() {
   const inviteMatch = window.location.pathname.match(/^\/invite\/([^/]+)\/?$/)
   if (inviteMatch) {
     return <InviteRegistrationPage inviteCode={decodeURIComponent(inviteMatch[1])} />
+  }
+
+  if (/^\/admin\/?$/.test(window.location.pathname)) {
+    return <AdminPage theme={theme} onThemeChange={setTheme} />
   }
 
   return <HomePage theme={theme} onThemeChange={setTheme} />

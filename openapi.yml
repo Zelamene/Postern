@@ -8,10 +8,16 @@ info:
 
     ## Authentication
     Every `/api/*` endpoint except `/api/ingest`, `/api/dev/*`, `POST /api/invite-requests`,
-    `POST /api/auth/invite-details`, `POST /api/auth/register`, and `POST /api/webhooks/resend`
-    requires a session cookie named `Postern.Auth`. The cookie is issued by `POST /api/auth/login` and is
-    `HttpOnly`, `SameSite=Strict`, `Secure` outside Development, with a 1-hour lifetime.
+    `POST /api/auth/invite-details`, `POST /api/auth/register`, `POST /api/auth/login`,
+    `/api/auth/admin-mfa/*`, and `POST /api/webhooks/resend` requires a session cookie named
+    `Postern.Auth`. The cookie is issued by `POST /api/auth/login` for standard accounts, or after
+    an admin completes the TOTP step, and is
+    `HttpOnly`, `SameSite=Strict`, `Secure` outside Development; standard sessions last 1 hour,
+    admin sessions last 15 minutes.
     The token is a HS256 JWT; there is no bearer-token flow and no refresh endpoint.
+    Admin MFA endpoints instead require a short-lived HttpOnly `Postern.AdminMfa` challenge cookie.
+    Admin-only authorization requires an `amr=totp` claim issued after MFA setup, and checks
+    the claim time against the current enrollment. Pre-MFA and superseded admin cookies are rejected.
 
     ## Authorization
     `403` means the caller is authenticated but lacks the required role (`admin`).
@@ -48,7 +54,7 @@ tags:
   - name: Account
     description: Forwarding-address changes and account deletion for the caller.
   - name: Administration
-    description: Admin-only operations (role `admin`), all audit-logged.
+    description: Admin-only operations require a current TOTP-verified admin session; operations are audit-logged.
   - name: Invitations
     description: Public invitation requests, administrator review, invite delivery and signed Resend webhooks.
 components:
@@ -58,6 +64,11 @@ components:
       in: cookie
       name: Postern.Auth
       description: HS256 JWT session cookie issued by `POST /api/auth/login`.
+    adminMfaChallenge:
+      type: apiKey
+      in: cookie
+      name: Postern.AdminMfa
+      description: Short-lived, HttpOnly cookie issued after admin password verification.
     ingestSecret:
       type: apiKey
       in: header
@@ -213,16 +224,42 @@ components:
 
     LoginResponse:
       type: object
-      required: [userId, email]
+      required: [userId, email, recoveryKey, mfaRequired, mfaSetupRequired]
       properties:
         userId:
-          type: string
+          type: [string, 'null']
           format: uuid
         email:
-          type: string
+          type: [string, 'null']
         recoveryKey:
           type: [string, 'null']
           description: Present only when the account had no recovery key yet.
+        mfaRequired:
+          type: boolean
+          description: Admin login requires a TOTP verification step.
+        mfaSetupRequired:
+          type: boolean
+          description: The provisioned admin must enroll TOTP before receiving a session.
+
+    AdminMfaCodeRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: [string, 'null']
+          pattern: '^[0-9]{6}$'
+
+    AdminTotpSetup:
+      type: object
+      required: [secret, authenticatorUri]
+      properties:
+        secret:
+          type: string
+          description: One-time TOTP secret for manual entry in the administrator's authenticator.
+        authenticatorUri:
+          type: string
+          format: uri
+          description: otpauth URI containing the TOTP enrollment secret.
 
     RecoveryRequest:
       type: object
@@ -638,10 +675,11 @@ paths:
     post:
       operationId: login
       tags: [Authentication]
-      summary: Log in and receive the session cookie
+      summary: Verify password and begin login
       description: |
-        On success the `Postern.Auth` cookie is set and must be sent on every protected call.
-        Rate limited to 10 requests per 15 minutes per IP.
+        Standard accounts receive `Postern.Auth` immediately. Admin accounts instead receive a
+        short-lived `Postern.AdminMfa` challenge cookie and must enroll or verify TOTP before a
+        session is issued. Rate limited to 10 requests per 15 minutes per IP.
       security: []
       requestBody:
         required: true
@@ -651,10 +689,10 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Authenticated; session cookie issued.
+          description: Standard account authenticated, or an admin MFA challenge started.
           headers:
             Set-Cookie:
-              description: '`Postern.Auth=<jwt>; HttpOnly; SameSite=Strict; Path=/`'
+              description: '`Postern.Auth=<jwt>` for standard accounts; `Postern.AdminMfa=<opaque>; HttpOnly; SameSite=Strict` for admins.'
               schema:
                 type: string
           content:
@@ -669,6 +707,78 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorCode'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/admin-mfa/setup:
+    post:
+      operationId: getAdminTotpSetup
+      tags: [Authentication]
+      summary: Get the initial admin authenticator setup
+      security:
+        - adminMfaChallenge: []
+      responses:
+        '200':
+          description: TOTP secret and authenticator URI. Response is no-store.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTotpSetup'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/admin-mfa/enable:
+    post:
+      operationId: enableAdminTotp
+      tags: [Authentication]
+      summary: Verify initial TOTP code and enable admin MFA
+      security:
+        - adminMfaChallenge: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminMfaCodeRequest'
+      responses:
+        '204':
+          description: TOTP enabled and authenticated admin session cookie issued.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/admin-mfa/verify:
+    post:
+      operationId: verifyAdminTotp
+      tags: [Authentication]
+      summary: Complete admin login with TOTP
+      security:
+        - adminMfaChallenge: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminMfaCodeRequest'
+      responses:
+        '204':
+          description: TOTP verified and authenticated admin session cookie issued.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
@@ -1303,6 +1413,58 @@ paths:
                         requestedAt:
                           type: string
                           format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/invites:
+    get:
+      operationId: getAdminInviteDashboard
+      tags: [Invitations]
+      summary: List issued invitations and available seat counts
+      description: Returns all invite records and computes free seats after registered users and valid outstanding invitations.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Admin invitation dashboard. The response is not cacheable.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [invites, seatsFree, outstandingInvites]
+                properties:
+                  seatsFree:
+                    type: integer
+                    minimum: 0
+                  outstandingInvites:
+                    type: integer
+                    minimum: 0
+                  invites:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, email, status, createdAt, canResend, canRevoke]
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        email:
+                          type: string
+                        status:
+                          type: string
+                          enum: [pending, sent, delivered, bounced, complained, accepted, revoked, failed, expired]
+                        createdAt:
+                          type: string
+                          format: date-time
+                        expiresAt:
+                          type: [string, 'null']
+                          format: date-time
+                        canResend:
+                          type: boolean
+                        canRevoke:
+                          type: boolean
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

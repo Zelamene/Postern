@@ -253,6 +253,33 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTimeOffset?>("AdminMfaChallengeExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("admin_mfa_challenge_expires_at");
+
+                    b.Property<string>("AdminMfaChallengeHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("admin_mfa_challenge_hash");
+
+                    b.Property<string>("AdminMfaChallengePurpose")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("admin_mfa_challenge_purpose");
+
+                    b.Property<DateTimeOffset?>("AdminTotpEnabledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("admin_totp_enabled_at");
+
+                    b.Property<long?>("AdminTotpLastUsedStep")
+                        .HasColumnType("bigint")
+                        .HasColumnName("admin_totp_last_used_step");
+
+                    b.Property<string>("AdminTotpSecretProtected")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("admin_totp_secret_protected");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -304,6 +331,11 @@ namespace Postern.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("InviteCodeUsedId");
+
+                    b.HasIndex("IsAdmin")
+                        .IsUnique()
+                        .HasDatabaseName("ux_users_single_admin")
+                        .HasFilter("is_admin = TRUE");
 
                     b.HasIndex("NormalizedEmail")
                         .IsUnique()

@@ -10,7 +10,7 @@ public static class AdministrationEndpoints
     public static IEndpointRouteBuilder MapAdministrationEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/admin")
-            .RequireAuthorization(policy => policy.RequireRole("admin"));
+            .RequireAuthorization("admin");
 
         group.MapPost("/suspended-users/rebuild", RebuildSuspendedUsersAsync);
         group.MapPost("/users/{userId:guid}/suspend", SuspendUserAsync);

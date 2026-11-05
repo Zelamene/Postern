@@ -10,6 +10,8 @@ namespace Postern.IntegrationTests.Fixtures;
 
 public sealed class PosternFixture : IAsyncLifetime
 {
+    private static readonly SemaphoreSlim AdminUserLock = new(1, 1);
+
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
         .WithImage("postgres:18")
         .Build();
@@ -40,20 +42,52 @@ public sealed class PosternFixture : IAsyncLifetime
         string status = "active",
         bool isAdmin = false)
     {
-        await using var db = CreateContext();
-        var user = new PosternUser
+        if (isAdmin)
         {
-            Id = Guid.NewGuid(),
-            Email = email ?? $"user-{Guid.NewGuid():N}@example.test",
-            NormalizedEmail = (email ?? $"user-{Guid.NewGuid():N}@example.test").ToUpperInvariant(),
-            PasswordHash = "hash",
-            IsAdmin = isAdmin,
-            Status = status,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-        db.Users.Add(user);
-        await db.SaveChangesAsync();
-        return user;
+            await AdminUserLock.WaitAsync();
+        }
+
+        try
+        {
+            await using var db = CreateContext();
+            if (isAdmin)
+            {
+                var existingAdmin = await db.Users.SingleOrDefaultAsync(user => user.IsAdmin);
+                if (existingAdmin is not null)
+                {
+                    if (existingAdmin.AdminTotpEnabledAt is null)
+                    {
+                        existingAdmin.AdminTotpEnabledAt = DateTimeOffset.UtcNow.AddMinutes(-1);
+                        await db.SaveChangesAsync();
+                    }
+
+                    return existingAdmin;
+                }
+            }
+
+            var userEmail = email ?? $"user-{Guid.NewGuid():N}@example.test";
+            var user = new PosternUser
+            {
+                Id = Guid.NewGuid(),
+                Email = userEmail,
+                NormalizedEmail = userEmail.ToUpperInvariant(),
+                PasswordHash = "hash",
+                IsAdmin = isAdmin,
+                AdminTotpEnabledAt = isAdmin ? DateTimeOffset.UtcNow.AddMinutes(-1) : null,
+                Status = status,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+            return user;
+        }
+        finally
+        {
+            if (isAdmin)
+            {
+                AdminUserLock.Release();
+            }
+        }
     }
 
     public async Task<Alias> AnAliasAsync(

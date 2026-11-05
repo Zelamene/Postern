@@ -1,6 +1,8 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -53,6 +55,10 @@ var resendWebhookSecret =
 var resendFrom = builder.Configuration["Resend:From"];
 var publicInviteBaseUrl = builder.Configuration["Invites:PublicBaseUrl"];
 var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    dataProtectionKeysPath = Path.Combine(builder.Environment.ContentRootPath, ".keys");
+}
 var inviteWorkerEnabled = !builder.Environment.IsDevelopment()
     && (builder.Configuration.GetValue<bool?>("Invites:WorkerEnabled")
         ?? !string.IsNullOrWhiteSpace(resendApiKey));
@@ -137,6 +143,7 @@ if (inviteWorkerEnabled)
 builder.Services.AddScoped<IAliasRepository, EfAliasRepository>();
 builder.Services.AddScoped<IActivityRepository, EfActivityRepository>();
 builder.Services.AddScoped<AuthenticationService>();
+builder.Services.AddScoped<AdminMfaService>();
 builder.Services.AddScoped<AccountManagementService>();
 builder.Services.AddScoped<AliasService>();
 builder.Services.AddScoped<IngestService>();
@@ -188,12 +195,19 @@ builder.Services
             }
         };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+    options.AddPolicy("admin", policy =>
+    {
+        policy.RequireRole("admin").RequireClaim(ClaimTypes.AuthenticationMethod, "totp");
+        policy.AddRequirements(new AdminTotpSessionRequirement());
+    }));
+builder.Services.AddScoped<IAuthorizationHandler, AdminTotpSessionHandler>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddPolicy("registration", context => CreateRateLimit(context, 5, TimeSpan.FromHours(1)));
     options.AddPolicy("login", context => CreateRateLimit(context, 10, TimeSpan.FromMinutes(15)));
+    options.AddPolicy("admin-mfa", context => CreateRateLimit(context, 5, TimeSpan.FromMinutes(15)));
     options.AddPolicy("recovery", context => CreateRateLimit(context, 5, TimeSpan.FromMinutes(15)));
     options.AddPolicy("invite-request", context => CreateRateLimit(context, 5, TimeSpan.FromHours(1)));
 });

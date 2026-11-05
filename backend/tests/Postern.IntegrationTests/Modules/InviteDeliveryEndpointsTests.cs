@@ -55,6 +55,117 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
     }
 
     [Fact]
+    public async Task AdminDashboardListsInviteStatesAndCalculatesAvailableSeats()
+    {
+        int existingOutstandingInvites;
+        await using (var baselineDb = fixture.CreateContext())
+        {
+            existingOutstandingInvites = await baselineDb.InviteCodes.CountAsync(
+                invite => invite.UsedAt == null
+                    && invite.RevokedAt == null
+                    && (invite.ExpiresAt == null || invite.ExpiresAt > DateTimeOffset.UtcNow));
+        }
+
+        var admin = await fixture.AUserAsync(isAdmin: true);
+        await fixture.AUserAsync();
+        await using var usersDb = fixture.CreateContext();
+        var usersAfterAdditionalAccounts = await usersDb.Users.CountAsync();
+        var now = DateTimeOffset.UtcNow;
+        var pendingEmail = $"pending-{Guid.NewGuid():N}@example.test";
+        var revokedEmail = $"revoked-{Guid.NewGuid():N}@example.test";
+        var acceptedEmail = $"accepted-{Guid.NewGuid():N}@example.test";
+        var expiredEmail = $"expired-{Guid.NewGuid():N}@example.test";
+        var pendingInvite = new InviteCode
+        {
+            Id = Guid.NewGuid(),
+            CodeHash = $"hash-{Guid.NewGuid():N}",
+            Email = pendingEmail,
+            EmailNormalized = pendingEmail.ToUpperInvariant(),
+            CreatedAt = now,
+            ExpiresAt = now.AddDays(3),
+            DeliveryStatus = InviteDeliveryStatus.Pending
+        };
+        var revokedInvite = new InviteCode
+        {
+            Id = Guid.NewGuid(),
+            CodeHash = $"hash-{Guid.NewGuid():N}",
+            Email = revokedEmail,
+            EmailNormalized = revokedEmail.ToUpperInvariant(),
+            CreatedAt = now,
+            ExpiresAt = now.AddDays(3),
+            RevokedAt = now,
+            DeliveryStatus = InviteDeliveryStatus.Revoked
+        };
+        var acceptedInvite = new InviteCode
+        {
+            Id = Guid.NewGuid(),
+            CodeHash = $"hash-{Guid.NewGuid():N}",
+            Email = acceptedEmail,
+            EmailNormalized = acceptedEmail.ToUpperInvariant(),
+            CreatedAt = now,
+            ExpiresAt = now.AddDays(3),
+            UsedAt = now,
+            DeliveryStatus = InviteDeliveryStatus.Accepted
+        };
+        var expiredInvite = new InviteCode
+        {
+            Id = Guid.NewGuid(),
+            CodeHash = $"hash-{Guid.NewGuid():N}",
+            Email = expiredEmail,
+            EmailNormalized = expiredEmail.ToUpperInvariant(),
+            CreatedAt = now.AddDays(-8),
+            ExpiresAt = now.AddDays(-1),
+            DeliveryStatus = InviteDeliveryStatus.Pending
+        };
+
+        await using (var db = fixture.CreateContext())
+        {
+            db.InviteCodes.AddRange(pendingInvite, revokedInvite, acceptedInvite, expiredInvite);
+            await db.SaveChangesAsync();
+        }
+
+        using var adminClient = _factory.CreateAuthenticatedClient(admin.Id, admin.Email, isAdmin: true);
+        using var response = await adminClient.GetAsync("/api/admin/invites");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        using var body = await System.Text.Json.JsonDocument.ParseAsync(
+            await response.Content.ReadAsStreamAsync());
+        var root = body.RootElement;
+        Assert.Equal(existingOutstandingInvites + 1, root.GetProperty("outstandingInvites").GetInt32());
+        Assert.Equal(
+            AuthenticationService.MaximumUsers
+                - usersAfterAdditionalAccounts
+                - existingOutstandingInvites
+                - 1,
+            root.GetProperty("seatsFree").GetInt32());
+        var invites = root.GetProperty("invites").EnumerateArray().ToArray();
+        Assert.Contains(invites, invite =>
+            invite.GetProperty("id").GetGuid() == pendingInvite.Id
+            && invite.GetProperty("status").GetString() == InviteDeliveryStatus.Pending
+            && invite.GetProperty("canResend").GetBoolean()
+            && invite.GetProperty("canRevoke").GetBoolean());
+        Assert.Contains(invites, invite =>
+            invite.GetProperty("id").GetGuid() == revokedInvite.Id
+            && invite.GetProperty("status").GetString() == InviteDeliveryStatus.Revoked
+            && !invite.GetProperty("canResend").GetBoolean());
+        Assert.Contains(invites, invite =>
+            invite.GetProperty("id").GetGuid() == acceptedInvite.Id
+            && invite.GetProperty("status").GetString() == InviteDeliveryStatus.Accepted);
+        Assert.Contains(invites, invite =>
+            invite.GetProperty("id").GetGuid() == expiredInvite.Id
+            && invite.GetProperty("status").GetString() == "expired");
+
+        using var requestsResponse = await adminClient.GetAsync("/api/admin/invite-requests");
+        Assert.Equal(HttpStatusCode.OK, requestsResponse.StatusCode);
+        Assert.Equal("no-store", requestsResponse.Headers.CacheControl?.ToString());
+
+        using var nonAdminClient = _factory.CreateAuthenticatedClient(Guid.NewGuid());
+        using var forbidden = await nonAdminClient.GetAsync("/api/admin/invites");
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+    }
+
+    [Fact]
     public async Task AdminApprovalCreatesProtectedOutboxAndResendRotatesInvite()
     {
         var admin = await fixture.AUserAsync(isAdmin: true);
@@ -365,6 +476,75 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
                 CancellationToken.None);
             Assert.Equal(RegistrationResult.InvalidInvite, result);
         }
+    }
+
+    [Fact]
+    public async Task RevokedInvitesDoNotReserveRegistrationCapacity()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var email = $"revoked-capacity-{Guid.NewGuid():N}@example.test";
+        var inviteCodeHash = $"valid-{Guid.NewGuid():N}";
+        int existingRegisteredUsers;
+        int existingEligibleUsers;
+        int existingOutstandingInvites;
+        await using (var baselineDb = fixture.CreateContext())
+        {
+            existingRegisteredUsers = await baselineDb.Users.CountAsync();
+            existingEligibleUsers = await baselineDb.Users.CountAsync(
+                user => user.Status == "active" || user.Status == "pending");
+            existingOutstandingInvites = await baselineDb.InviteCodes.CountAsync(
+                invite => invite.UsedAt == null
+                    && invite.RevokedAt == null
+                    && (invite.ExpiresAt == null || invite.ExpiresAt > now));
+        }
+
+        for (var index = existingEligibleUsers; index < existingRegisteredUsers; index++)
+        {
+            await fixture.AUserAsync();
+        }
+
+        await using var updatedBaselineDb = fixture.CreateContext();
+        var eligibleUsers = await updatedBaselineDb.Users.CountAsync(
+            user => user.Status == "active" || user.Status == "pending");
+
+        await using (var seedDb = fixture.CreateContext())
+        {
+            var revokedEmail = $"revoked-{Guid.NewGuid():N}@example.test";
+            seedDb.InviteCodes.AddRange(
+                new InviteCode
+                {
+                    Id = Guid.NewGuid(),
+                    CodeHash = $"revoked-{Guid.NewGuid():N}",
+                    Email = revokedEmail,
+                    EmailNormalized = revokedEmail.ToUpperInvariant(),
+                    CreatedAt = now,
+                    ExpiresAt = now.AddDays(1),
+                    RevokedAt = now,
+                    DeliveryStatus = InviteDeliveryStatus.Revoked
+                },
+                new InviteCode
+                {
+                    Id = Guid.NewGuid(),
+                    CodeHash = inviteCodeHash,
+                    Email = email,
+                    EmailNormalized = NormalizeIdentity(email),
+                    CreatedAt = now,
+                    ExpiresAt = now.AddDays(1)
+                });
+            await seedDb.SaveChangesAsync();
+        }
+
+        await using var db = fixture.CreateContext();
+        var repository = new EfAccountRepository(db, allowUnboundDevelopmentInvites: false);
+        var result = await repository.RegisterPendingUserAsync(
+            CreatePendingUser(email, now),
+            [],
+            inviteCodeHash,
+            maximumUsers: eligibleUsers + existingOutstandingInvites + 1,
+            now,
+            CancellationToken.None);
+
+        Assert.Equal(RegistrationResult.Created, result);
     }
 
     [Fact]

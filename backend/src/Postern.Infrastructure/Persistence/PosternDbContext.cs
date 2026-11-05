@@ -36,6 +36,12 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
             entity.Property(user => user.PasswordHash).HasColumnName("password_hash").HasMaxLength(512).IsRequired();
             entity.Property(user => user.RecoveryKeyHash).HasColumnName("recovery_key_hash").HasMaxLength(256);
             entity.Property(user => user.IsAdmin).HasColumnName("is_admin");
+            entity.Property(user => user.AdminTotpSecretProtected).HasColumnName("admin_totp_secret_protected").HasMaxLength(1024);
+            entity.Property(user => user.AdminTotpEnabledAt).HasColumnName("admin_totp_enabled_at").HasColumnType("timestamp with time zone");
+            entity.Property(user => user.AdminTotpLastUsedStep).HasColumnName("admin_totp_last_used_step");
+            entity.Property(user => user.AdminMfaChallengeHash).HasColumnName("admin_mfa_challenge_hash").HasMaxLength(64);
+            entity.Property(user => user.AdminMfaChallengePurpose).HasColumnName("admin_mfa_challenge_purpose").HasMaxLength(8);
+            entity.Property(user => user.AdminMfaChallengeExpiresAt).HasColumnName("admin_mfa_challenge_expires_at").HasColumnType("timestamp with time zone");
             entity.Property(user => user.Status).HasColumnName("status").HasMaxLength(16).IsRequired();
             entity.Property(user => user.InviteCodeUsedId).HasColumnName("invite_code_used_id");
             entity.Property(user => user.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -44,6 +50,10 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
                 .IsUnique()
                 .HasFilter("recovery_key_hash IS NOT NULL")
                 .HasDatabaseName("ux_users_recovery_key_hash");
+            entity.HasIndex(user => user.IsAdmin)
+                .IsUnique()
+                .HasFilter("is_admin = TRUE")
+                .HasDatabaseName("ux_users_single_admin");
             entity.HasOne<InviteCode>()
                 .WithMany()
                 .HasForeignKey(user => user.InviteCodeUsedId)

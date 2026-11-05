@@ -1,6 +1,12 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { http, HttpResponse } from 'msw'
+import { afterEach, describe, expect, it } from 'vitest'
 import App from './App'
+import { server } from './test/server'
+
+afterEach(() => {
+  window.history.pushState({}, '', '/')
+})
 
 describe('Postern app shell', () => {
   it('renders the product heading', () => {
@@ -14,5 +20,22 @@ describe('Postern app shell', () => {
     const howItWorks = screen.getByRole('link', { name: 'See how it works' })
 
     expect(requestInvite.parentElement).toBe(howItWorks.parentElement)
+    expect(screen.queryByRole('link', { name: 'Admin sign-in' })).not.toBeInTheDocument()
+  })
+
+  it('routes administrators to the admin sign-in screen', async () => {
+    server.use(
+      http.get('*/api/admin/invites', () =>
+        HttpResponse.json({ error: 'unauthorized' }, { status: 401 }),
+      ),
+      http.get('*/api/admin/invite-requests', () =>
+        HttpResponse.json({ error: 'unauthorized' }, { status: 401 }),
+      ),
+    )
+    window.history.pushState({}, '', '/admin')
+
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Admin sign in' })).toBeVisible()
   })
 })

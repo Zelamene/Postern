@@ -24,6 +24,12 @@ public static class AuthenticationEndpoints
             .Produces(StatusCodes.Status404NotFound);
         group.MapPost("/login", LoginAsync)
             .RequireRateLimiting("login");
+        group.MapPost("/admin-mfa/setup", GetAdminMfaSetupAsync)
+            .RequireRateLimiting("admin-mfa");
+        group.MapPost("/admin-mfa/enable", EnableAdminMfaAsync)
+            .RequireRateLimiting("admin-mfa");
+        group.MapPost("/admin-mfa/verify", VerifyAdminMfaAsync)
+            .RequireRateLimiting("admin-mfa");
         group.MapPost("/recovery", ResetPasswordAsync)
             .RequireRateLimiting("recovery");
         group.MapPost("/logout", Logout)
@@ -169,6 +175,8 @@ public static class AuthenticationEndpoints
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
         AuthenticationService authentication,
+        IAccountRepository accounts,
+        AdminMfaService adminMfa,
         JwtTokenIssuer tokenIssuer,
         HttpContext context,
         CancellationToken cancellationToken)
@@ -196,6 +204,135 @@ public static class AuthenticationEndpoints
             throw new InvalidOperationException("An authenticated result must contain an account.");
         }
 
+        if (account.IsAdmin)
+        {
+            var adminUser = await accounts.FindByIdAsync(account.UserId, cancellationToken);
+            if (adminUser is not { IsAdmin: true, Status: "active" })
+            {
+                return Results.Unauthorized();
+            }
+
+            var purpose = adminUser.AdminTotpEnabledAt is null ? "setup" : "login";
+            var challenge = await adminMfa.CreateChallengeAsync(
+                account.UserId,
+                purpose,
+                cancellationToken);
+            if (challenge is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            DeleteAuthenticationCookie(context);
+            SetAdminMfaChallengeCookie(context, challenge);
+            return Results.Ok(new LoginResponse(
+                null,
+                null,
+                account.RecoveryKey,
+                MfaRequired: purpose == "login",
+                MfaSetupRequired: purpose == "setup"));
+        }
+
+        SetAuthenticationCookie(context, tokenIssuer, account);
+        return Results.Ok(new LoginResponse(
+            account.UserId,
+            account.Email,
+            account.RecoveryKey));
+    }
+
+    private static async Task<IResult> GetAdminMfaSetupAsync(
+        AdminMfaService adminMfa,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        var setup = await adminMfa.GetSetupAsync(
+            context.Request.Cookies[AdminMfaCookieName],
+            cancellationToken);
+        return setup is null
+            ? Results.Unauthorized()
+            : Results.Ok(setup);
+    }
+
+    private static async Task<IResult> EnableAdminMfaAsync(
+        AdminMfaCodeRequest request,
+        AdminMfaService adminMfa,
+        JwtTokenIssuer tokenIssuer,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        var admin = await adminMfa.CompleteEnrollmentAsync(
+            context.Request.Cookies[AdminMfaCookieName],
+            request.Code,
+            cancellationToken);
+        if (admin is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        DeleteAdminMfaChallengeCookie(context);
+        SetAuthenticationCookie(
+            context,
+            tokenIssuer,
+            new AuthenticatedAccount(admin.Id, admin.Email, true, null));
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> VerifyAdminMfaAsync(
+        AdminMfaCodeRequest request,
+        AdminMfaService adminMfa,
+        JwtTokenIssuer tokenIssuer,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        var admin = await adminMfa.CompleteLoginAsync(
+            context.Request.Cookies[AdminMfaCookieName],
+            request.Code,
+            cancellationToken);
+        if (admin is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        DeleteAdminMfaChallengeCookie(context);
+        SetAuthenticationCookie(
+            context,
+            tokenIssuer,
+            new AuthenticatedAccount(admin.Id, admin.Email, true, null));
+        return Results.NoContent();
+    }
+
+    private const string AdminMfaCookieName = "Postern.AdminMfa";
+
+    private static void SetAdminMfaChallengeCookie(HttpContext context, string token) =>
+        context.Response.Cookies.Append(
+            AdminMfaCookieName,
+            token,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = !context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment(),
+                SameSite = SameSiteMode.Strict,
+                Path = "/api/auth/admin-mfa",
+                MaxAge = AdminMfaService.ChallengeLifetime
+            });
+
+    private static void DeleteAdminMfaChallengeCookie(HttpContext context) =>
+        context.Response.Cookies.Delete(
+            AdminMfaCookieName,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = !context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment(),
+                SameSite = SameSiteMode.Strict,
+                Path = "/api/auth/admin-mfa"
+            });
+
+    private static void SetAuthenticationCookie(
+        HttpContext context,
+        JwtTokenIssuer tokenIssuer,
+        AuthenticatedAccount account) =>
         context.Response.Cookies.Append(
             JwtTokenIssuer.CookieName,
             tokenIssuer.Issue(account),
@@ -205,18 +342,18 @@ public static class AuthenticationEndpoints
                 Secure = !context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment(),
                 SameSite = SameSiteMode.Strict,
                 Path = "/",
-                MaxAge = JwtTokenIssuer.Lifetime
+                MaxAge = JwtTokenIssuer.LifetimeFor(account)
             });
-
-        return Results.Ok(new LoginResponse(
-            account.UserId,
-            account.Email,
-            account.RecoveryKey));
-    }
 
     private static IResult Logout(HttpContext context)
     {
         context.Response.Headers.CacheControl = "no-store";
+        DeleteAuthenticationCookie(context);
+        DeleteAdminMfaChallengeCookie(context);
+        return Results.NoContent();
+    }
+
+    private static void DeleteAuthenticationCookie(HttpContext context) =>
         context.Response.Cookies.Delete(
             JwtTokenIssuer.CookieName,
             new CookieOptions
@@ -226,8 +363,6 @@ public static class AuthenticationEndpoints
                 SameSite = SameSiteMode.Strict,
                 Path = "/"
             });
-        return Results.NoContent();
-    }
 
     private static async Task<IResult> GetCurrentAccountAsync(
         ClaimsPrincipal user,
@@ -275,8 +410,14 @@ public static class AuthenticationEndpoints
 
     public sealed record RegisterRequest(string? Email, string? Password, string? InviteCode);
     public sealed record LoginRequest(string? Email, string? Password);
+    public sealed record AdminMfaCodeRequest(string? Code);
     public sealed record RecoveryRequest(string? RecoveryKey, string? NewPassword);
-    public sealed record LoginResponse(Guid UserId, string Email, string? RecoveryKey);
+    public sealed record LoginResponse(
+        Guid? UserId,
+        string? Email,
+        string? RecoveryKey,
+        bool MfaRequired = false,
+        bool MfaSetupRequired = false);
     public sealed record CurrentAccountResponse(Guid UserId, string Email, string? ForwardingAddress);
     public sealed record DevelopmentInviteRequest(string? Email);
     public sealed record DevelopmentInviteResponse(string Code, string Email, string RegistrationPath);

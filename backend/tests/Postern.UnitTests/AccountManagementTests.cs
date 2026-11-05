@@ -242,8 +242,13 @@ public class AccountManagementTests
         public Task<RegistrationResult> RegisterPendingUserAsync(PosternUser user, IReadOnlyCollection<string> legacyNormalizedEmails, string inviteCodeHash, int maximumUsers, DateTimeOffset now, CancellationToken cancellationToken) => throw new NotImplementedException();
         public Task<PosternUser?> FindByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken) => Task.FromResult(_users.Values.FirstOrDefault(u => u.NormalizedEmail == normalizedEmail));
         public Task<PosternUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken) => Task.FromResult(FindUserById(userId));
+        public Task<PosternUser?> FindByAdminMfaChallengeAsync(string challengeHash, string purpose, DateTimeOffset now, CancellationToken cancellationToken) => Task.FromResult<PosternUser?>(null);
         public Task<bool> ActivatePendingUserAsync(Guid userId, CancellationToken cancellationToken) => throw new NotImplementedException();
         public Task<bool> SetInitialRecoveryKeyHashAsync(Guid userId, string recoveryKeyHash, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<bool> SetAdminMfaChallengeAsync(Guid userId, string challengeHash, string purpose, DateTimeOffset expiresAt, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> SetAdminTotpSecretAsync(Guid userId, string protectedSecret, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> CompleteAdminTotpEnrollmentAsync(Guid userId, string challengeHash, string protectedSecret, long timeStep, DateTimeOffset now, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> CompleteAdminMfaLoginAsync(Guid userId, string challengeHash, long timeStep, DateTimeOffset now, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task<bool> RotateRecoveryCredentialsAsync(string currentRecoveryKeyHash, string passwordHash, string nextRecoveryKeyHash, CancellationToken cancellationToken) => throw new NotImplementedException();
         public Task<bool> UpdateForwardingAddressAsync(Guid userId, string newForwardingAddress, CancellationToken cancellationToken)
         {
