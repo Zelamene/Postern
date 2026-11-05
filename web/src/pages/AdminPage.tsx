@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import type { ThemeMode } from '../components/common/Navbar'
 import { IconMoon, IconPosternLogo, IconSun } from '../components/common/Icons'
+import { useAdminRealtime } from '../hooks/useAdminRealtime'
 
 interface AdminPageProps {
   theme: ThemeMode
@@ -136,6 +137,7 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
       setIsLoading(false)
     }
   }, [])
+  useAdminRealtime(access === 'dashboard', refreshDashboard)
 
   useEffect(() => {
     let active = true

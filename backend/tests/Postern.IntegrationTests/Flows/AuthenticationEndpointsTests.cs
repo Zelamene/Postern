@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Postern.Api.Realtime;
 using Postern.Api.Security;
 using Postern.Application.Accounts;
 using Postern.Domain.Accounts;
@@ -18,6 +19,28 @@ namespace Postern.IntegrationTests.Flows;
 
 public sealed class AuthenticationEndpointsTests
 {
+    [Fact]
+    public async Task RegisterNotifiesAdminThatAnInvitationWasAccepted()
+    {
+        var notifier = new RecordingAdminRealtimeNotifier();
+        using var factory = CreateFactory(
+            new InMemoryAccountRepository("test-invite"),
+            realtimeNotifier: notifier);
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email = "user@example.test",
+                password = "correct horse battery staple",
+                inviteCode = "test-invite"
+            });
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Equal(1, notifier.InvitationAcceptedCount);
+    }
+
     [Fact]
     public async Task RegistrationVerificationLoginRecoveryAndLogoutWorkEndToEnd()
     {
@@ -445,7 +468,8 @@ public sealed class AuthenticationEndpointsTests
 
     private static WebApplicationFactory<Program> CreateFactory(
         InMemoryAccountRepository repository,
-        TimeProvider? timeProvider = null) =>
+        TimeProvider? timeProvider = null,
+        IAdminRealtimeNotifier? realtimeNotifier = null) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Development");
@@ -463,6 +487,11 @@ public sealed class AuthenticationEndpointsTests
                 {
                     services.RemoveAll<TimeProvider>();
                     services.AddSingleton(timeProvider);
+                }
+                if (realtimeNotifier is not null)
+                {
+                    services.RemoveAll<IAdminRealtimeNotifier>();
+                    services.AddSingleton(realtimeNotifier);
                 }
             });
         });

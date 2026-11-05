@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Postern.Api.Endpoints;
+using Postern.Api.Realtime;
 using Postern.Api.Security;
 using Postern.Api.Workers;
 using Postern.Application.Accounts;
@@ -144,6 +145,8 @@ builder.Services.AddScoped<IAliasRepository, EfAliasRepository>();
 builder.Services.AddScoped<IActivityRepository, EfActivityRepository>();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<AdminMfaService>();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IAdminRealtimeNotifier, AdminRealtimeNotifier>();
 builder.Services.AddScoped<AccountManagementService>();
 builder.Services.AddScoped<AliasService>();
 builder.Services.AddScoped<IngestService>();
@@ -233,6 +236,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapHub<AdminEventsHub>("/api/admin/events").RequireAuthorization("admin");
 app.MapAuthenticationEndpoints();
 app.MapAccountManagementEndpoints();
 app.MapInviteEndpoints();

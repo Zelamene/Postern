@@ -21,10 +21,15 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
     private static readonly string WebhookSecret =
         $"whsec_{Convert.ToBase64String(Encoding.UTF8.GetBytes(WebhookSigningKey))}";
     private PosternApiFactory _factory = null!;
+    private RecordingAdminRealtimeNotifier _realtimeNotifier = null!;
 
     public Task InitializeAsync()
     {
-        _factory = new PosternApiFactory(fixture, resendWebhookSecret: WebhookSecret);
+        _realtimeNotifier = new RecordingAdminRealtimeNotifier();
+        _factory = new PosternApiFactory(
+            fixture,
+            resendWebhookSecret: WebhookSecret,
+            adminRealtimeNotifier: _realtimeNotifier);
         return Task.CompletedTask;
     }
 
@@ -44,6 +49,7 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
             new { email = $"  {email} " });
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Equal(1, _realtimeNotifier.InviteRequestCount);
         await using var db = fixture.CreateContext();
         var request = await db.InviteRequests.SingleAsync(
             item => item.EmailNormalized == NormalizeIdentity(email));

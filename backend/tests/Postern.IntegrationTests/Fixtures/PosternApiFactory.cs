@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Postern.Api.Security;
+using Postern.Api.Realtime;
 using Postern.Application.Accounts;
 using Postern.Application.Integrations;
 using Postern.Infrastructure.Integrations;
@@ -26,6 +27,7 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
     private readonly bool _enableInviteWorker;
     private readonly bool _configureInviteWorker;
     private readonly IInviteEmailSender? _inviteEmailSender;
+    private readonly IAdminRealtimeNotifier? _adminRealtimeNotifier;
 
     public PosternApiFactory(
         PosternFixture fixture,
@@ -34,7 +36,8 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
         string? resendWebhookSecret = null,
         bool enableInviteWorker = false,
         IInviteEmailSender? inviteEmailSender = null,
-        bool configureInviteWorker = false)
+        bool configureInviteWorker = false,
+        IAdminRealtimeNotifier? adminRealtimeNotifier = null)
     {
         _fixture = fixture;
         _kvWriter = kvWriter ?? new NoOpKvWriter();
@@ -43,6 +46,7 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
         _enableInviteWorker = enableInviteWorker;
         _configureInviteWorker = configureInviteWorker;
         _inviteEmailSender = inviteEmailSender;
+        _adminRealtimeNotifier = adminRealtimeNotifier;
     }
 
     public DevelopmentDestinationService Destinations =>
@@ -95,6 +99,11 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
             {
                 services.RemoveAll<IInviteEmailSender>();
                 services.AddSingleton(_inviteEmailSender);
+            }
+            if (_adminRealtimeNotifier is not null)
+            {
+                services.RemoveAll<IAdminRealtimeNotifier>();
+                services.AddSingleton(_adminRealtimeNotifier);
             }
         });
     }

@@ -19,6 +19,7 @@ export default defineConfig({
       '/api': {
         target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080',
         changeOrigin: true,
+        ws: true,
       },
       '/health': {
         target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080',

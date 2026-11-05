@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Postern.Api.Realtime;
 using Postern.Api.Security;
 using Postern.Application.Accounts;
 
@@ -46,6 +47,7 @@ public static class InviteEndpoints
     private static async Task<IResult> RequestInviteAsync(
         InviteRequestBody request,
         InviteManagementService service,
+        IAdminRealtimeNotifier realtimeNotifier,
         CancellationToken cancellationToken)
     {
         try
@@ -60,6 +62,7 @@ public static class InviteEndpoints
             });
         }
 
+        await realtimeNotifier.InviteRequestReceivedAsync();
         return Results.Accepted(
             value: new { message = "If eligible, your request has been recorded for review." });
     }

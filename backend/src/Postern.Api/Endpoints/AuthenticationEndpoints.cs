@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Postern.Api.Realtime;
 using Postern.Api.Security;
 using Postern.Application.Accounts;
 using Postern.Domain.Accounts;
@@ -130,6 +131,7 @@ public static class AuthenticationEndpoints
         RegisterRequest request,
         AuthenticationService authentication,
         InviteManagementService invites,
+        IAdminRealtimeNotifier realtimeNotifier,
         HttpContext context,
         CancellationToken cancellationToken)
     {
@@ -149,6 +151,11 @@ public static class AuthenticationEndpoints
             request.Password,
             request.InviteCode,
             cancellationToken);
+
+        if (result == RegistrationResult.Created)
+        {
+            await realtimeNotifier.InvitationAcceptedAsync();
+        }
 
         return result switch
         {
