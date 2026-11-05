@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it } from 'vitest'
-import App from './App'
-import { server } from './test/server'
+import App from '../../src/App'
+import { server } from '../server'
 
 afterEach(() => {
   window.history.pushState({}, '', '/')

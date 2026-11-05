@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { RequestInvite } from './RequestInvite'
-import { server } from '../../test/server'
+import { RequestInvite } from '../../src/components/user/RequestInvite'
+import { server } from '../server'
 
 const originalShowModal = HTMLDialogElement.prototype.showModal
 const originalClose = HTMLDialogElement.prototype.close

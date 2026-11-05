@@ -103,7 +103,7 @@ npm run test:a11y
 npm run build
 ```
 
-`test:integration` uses React Testing Library and MSW. `test:a11y` runs axe-core against the browser-rendered page using WCAG 2.2 AA rules.
+Frontend tests live under `web/test/`, grouped into `unit/`, `integration/`, and `e2e/`. Vitest runs the unit and integration suites; Playwright runs browser end-to-end tests. Shared Vitest setup and MSW handlers live in `web/test/`. `test:a11y` runs axe-core against the browser-rendered page using WCAG 2.2 AA rules.
 
 Run backend tests from the repository root:
 

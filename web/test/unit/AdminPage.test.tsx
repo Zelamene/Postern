@@ -2,8 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
-import { AdminPage } from './AdminPage'
-import { server } from '../test/server'
+import { AdminPage } from '../../src/pages/AdminPage'
+import { server } from '../server'
 
 const dashboard = {
   invites: [
