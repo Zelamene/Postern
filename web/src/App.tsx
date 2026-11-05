@@ -3,6 +3,7 @@ import type { ThemeMode } from './components/common/Navbar'
 import { AdminPage } from './pages/AdminPage'
 import { HomePage } from './pages/HomePage'
 import { InviteRegistrationPage } from './pages/InviteRegistrationPage'
+import { LoginPage } from './pages/LoginPage'
 
 const STORAGE_KEY = 'postern-theme'
 
@@ -37,6 +38,10 @@ function App() {
 
   if (/^\/admin\/?$/.test(window.location.pathname)) {
     return <AdminPage theme={theme} onThemeChange={setTheme} />
+  }
+
+  if (/^\/login\/?$/.test(window.location.pathname)) {
+    return <LoginPage />
   }
 
   return <HomePage theme={theme} onThemeChange={setTheme} />

@@ -27,6 +27,7 @@ describe('InviteRegistrationPage', () => {
     await user.click(screen.getByRole('button', { name: 'Accept invitation' }))
 
     expect(await screen.findByRole('status')).toHaveTextContent('Your account is ready')
+    expect(screen.getByRole('link', { name: 'Go to login' })).toHaveAttribute('href', '/login')
     expect(submitted).toEqual({
       password: 'a long secure password',
       inviteCode: 'postern_invite_secret',

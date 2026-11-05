@@ -51,6 +51,9 @@ export function Navbar({ theme, onThemeChange }: Readonly<NavbarProps>) {
         </nav>
 
         <div className="flex items-center gap-2">
+          <a href="/login" className="btn btn--ghost btn--sm">
+            Sign in
+          </a>
           <button
             type="button"
             onClick={() => onThemeChange(isDark ? 'light' : 'dark')}

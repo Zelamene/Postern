@@ -22,6 +22,8 @@ Copy-Item env/web.env.example env/web.env
 
 Replace the placeholder passwords with unique local values. The `POSTERN_APP_PASSWORD` in `env/db.env` must match the password in the API connection string in `env/api.env`. Never commit these local `.env` files or use development credentials outside local development. All container environment variables, including `ASPNETCORE_ENVIRONMENT`, are provided using the corresponding service env file.
 
+The web development container runs `npm ci` at startup so its mounted `node_modules` volume stays synchronized with `web/package-lock.json`, including after dependencies are added or updated.
+
 From the repository root, start the stack:
 
 ```powershell
@@ -46,7 +48,7 @@ Migrations run as `postern_migrator`; the API only receives the restricted `post
 
 ### Day 2 authentication
 
-The API exposes `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/recovery`, `POST /api/auth/logout`, and the authenticated `GET /api/auth/me`. Registration requires a single-use invite and a password of at least 12 characters. The signup cap is 199 accounts; pending verification accounts also count because they reserve destination slots.
+The API exposes `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/recovery`, `POST /api/auth/logout`, and the authenticated `GET /api/auth/me`. The public `/login` page accepts credentials only for accounts created from an accepted invitation, and explains that pending accounts must complete destination verification before sign-in. Registration requires a single-use invite and a password of at least 12 characters. The signup cap is 199 accounts; pending verification accounts also count because they reserve destination slots.
 
 Signup and login accept internationalized email addresses, including Unicode local parts (EAI) and Unicode domain names (IDN). Inputs are Unicode-normalized, common international domain separators are accepted, and Unicode domains are validated and compared through their IDNA form. Use the same normalized address at signup and login.
 

@@ -107,6 +107,9 @@ export function RequestInvite() {
               <p role="status" className="text-sm text-success">
                 {state.success}
               </p>
+              <p className="text-sm text-text-secondary">
+                Already had your invitation accepted? <a href="/login">Sign in</a>.
+              </p>
               <button
                 type="button"
                 className="btn btn--primary"
@@ -146,6 +149,9 @@ export function RequestInvite() {
               >
                 {state.submitting ? 'Sending...' : 'Send request'}
               </button>
+              <p className="text-center text-sm text-text-secondary">
+                Already had your invitation accepted? <a href="/login">Sign in</a>.
+              </p>
             </form>
           )}
         </div>

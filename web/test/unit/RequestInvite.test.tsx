@@ -43,6 +43,7 @@ describe('RequestInvite', () => {
     await user.click(screen.getByRole('button', { name: 'Request an invite' }))
     const dialog = screen.getByRole('dialog')
     expect(dialog).toHaveAttribute('open')
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
 
     await user.type(screen.getByLabelText('Email address'), 'person@example.com')
     await user.click(screen.getByRole('button', { name: 'Send request' }))
@@ -50,6 +51,7 @@ describe('RequestInvite', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Your request has been recorded.',
     )
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
     expect(requestedEmail).toBe('person@example.com')
 
     await user.click(screen.getByRole('button', { name: 'Done' }))

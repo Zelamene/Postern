@@ -20,7 +20,16 @@ describe('Postern app shell', () => {
     const howItWorks = screen.getByRole('link', { name: 'See how it works' })
 
     expect(requestInvite.parentElement).toBe(howItWorks.parentElement)
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
     expect(screen.queryByRole('link', { name: 'Admin sign-in' })).not.toBeInTheDocument()
+  })
+
+  it('routes regular users to the invite-only sign-in page', async () => {
+    window.history.pushState({}, '', '/login')
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Sign in to Postern' })).toBeVisible()
+    expect(screen.getByText(/invite-only platform/i)).toBeVisible()
   })
 
   it('routes administrators to the admin sign-in screen', async () => {

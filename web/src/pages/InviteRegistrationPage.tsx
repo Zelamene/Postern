@@ -144,8 +144,8 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
               Your account is ready for email verification. Sign in after your destination is
               verified to activate it.
             </p>
-            <a href="/" className="btn btn--primary inline-flex">
-              Back to Postern
+            <a href="/login" className="btn btn--primary inline-flex">
+              Go to login
             </a>
           </div>
         ) : (
