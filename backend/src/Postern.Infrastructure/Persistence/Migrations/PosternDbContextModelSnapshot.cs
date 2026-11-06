@@ -689,6 +689,68 @@ namespace Postern.Infrastructure.Persistence.Migrations
                     b.ToTable("expected_senders", "postern");
                 });
 
+            modelBuilder.Entity("Postern.Domain.Notifications.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Audience")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("audience");
+
+                    b.Property<string>("Body")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("link");
+
+                    b.Property<DateTimeOffset?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<Guid?>("RecipientUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipient_user_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientUserId");
+
+                    b.HasIndex("Audience", "RecipientUserId", "CreatedAt")
+                        .HasDatabaseName("ix_notifications_audience_recipient_created_at");
+
+                    b.ToTable("notifications", "postern", t =>
+                        {
+                            t.HasCheckConstraint("ck_notifications_audience", "audience IN ('user', 'admin')");
+                        });
+                });
+
             modelBuilder.Entity("Postern.Domain.Accounts.InviteEmailOutboxMessage", b =>
                 {
                     b.HasOne("Postern.Domain.Accounts.InviteCode", null)
@@ -792,6 +854,15 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_expected_senders_aliases_alias_id");
 
                     b.Navigation("Alias");
+                });
+
+            modelBuilder.Entity("Postern.Domain.Notifications.Notification", b =>
+                {
+                    b.HasOne("Postern.Domain.Accounts.PosternUser", null)
+                        .WithMany()
+                        .HasForeignKey("RecipientUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_notifications_users_recipient_user_id");
                 });
 
             modelBuilder.Entity("Postern.Domain.Accounts.PosternUser", b =>

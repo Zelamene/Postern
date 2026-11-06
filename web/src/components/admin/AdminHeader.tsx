@@ -1,9 +1,12 @@
 import type { ThemeMode } from '../common/Navbar'
 import { IconMoon, IconPosternLogo, IconSun } from '../common/Icons'
+import { NotificationMenu } from '../common/NotificationMenu'
+import type { NotificationsController } from '../../hooks/useNotifications'
 
 interface AdminHeaderProps {
   theme: ThemeMode
   isSignedIn: boolean
+  notifications: NotificationsController
   onThemeChange: (theme: ThemeMode) => void
   onSignOut: () => void
 }
@@ -11,6 +14,7 @@ interface AdminHeaderProps {
 export function AdminHeader({
   theme,
   isSignedIn,
+  notifications,
   onThemeChange,
   onSignOut,
 }: Readonly<AdminHeaderProps>) {
@@ -34,6 +38,7 @@ export function AdminHeader({
               Sign out
             </button>
           )}
+          {isSignedIn && <NotificationMenu controller={notifications} />}
           <button
             type="button"
             onClick={() => onThemeChange(isDark ? 'light' : 'dark')}

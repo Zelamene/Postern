@@ -247,4 +247,58 @@ describe('AdminPage', () => {
 
     errorSpy.mockRestore()
   })
+
+  it('shows the admin notification bell after sign-in and opens the admin inbox', async () => {
+    const user = userEvent.setup()
+    let inviteDashboardRequests = 0
+
+    server.use(
+      http.get('*/api/admin/invites', () => {
+        inviteDashboardRequests += 1
+        return inviteDashboardRequests === 1
+          ? HttpResponse.json({ error: 'unauthorized' }, { status: 401 })
+          : HttpResponse.json(dashboard)
+      }),
+      http.get('*/api/admin/invite-requests', () =>
+        HttpResponse.json({ requests: [] }),
+      ),
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json({
+          userId: 'admin-id',
+          email: 'admin@example.test',
+          recoveryKey: 'one-time-admin-recovery-key',
+        }),
+      ),
+      http.get('*/api/admin/notifications', () =>
+        HttpResponse.json({
+          unreadCount: 1,
+          notifications: [
+            {
+              id: 'admin-notification-1',
+              kind: 'user_suspended',
+              title: 'User suspended',
+              body: null,
+              link: '/admin',
+              createdAt: '2026-11-02T10:00:00Z',
+              readAt: null,
+            },
+          ],
+        }),
+      ),
+    )
+
+    render(<AdminPage theme="light" onThemeChange={() => undefined} />)
+
+    await user.type(await screen.findByLabelText('Email address'), 'admin@example.test')
+    await user.type(screen.getByLabelText('Password'), 'secure-password')
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    await screen.findByRole('heading', { name: 'Admin dashboard' })
+    await user.click(
+      await screen.findByRole('button', { name: 'Notifications, 1 unread' }),
+    )
+
+    expect(await screen.findByRole('dialog', { name: 'Notifications' })).toBeVisible()
+    expect(screen.getByText('User suspended')).toBeVisible()
+  })
 })

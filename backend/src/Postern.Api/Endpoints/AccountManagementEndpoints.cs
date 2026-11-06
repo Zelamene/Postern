@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Postern.Api.Notifications;
 using Postern.Api.Realtime;
 using Postern.Application.Accounts;
+using Postern.Domain.Notifications;
 
 namespace Postern.Api.Endpoints;
 
@@ -20,6 +22,7 @@ public static class AccountManagementEndpoints
         ClaimsPrincipal user,
         AccountManagementService service,
         IUserRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId(user);
@@ -35,6 +38,13 @@ public static class AccountManagementEndpoints
         }
 
         await realtimeNotifier.AccountChangedAsync(userId.Value);
+        await notifications.PublishUserAsync(
+            userId.Value,
+            NotificationKind.AccountChanged,
+            "Forwarding address updated",
+            request.NewForwardingAddress?.Trim(),
+            "/app/account",
+            cancellationToken);
         return Results.NoContent();
     }
 

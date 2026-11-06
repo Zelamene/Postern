@@ -60,6 +60,22 @@ function defaultAnalytics() {
 export const server = setupServer(
   http.get('*/health', () => HttpResponse.json({ status: 'ok' })),
   http.get('*/api/auth/me', () => HttpResponse.json({ error: 'unauthorized' }, { status: 401 })),
+  http.get('*/api/notifications', () =>
+    HttpResponse.json({ unreadCount: 0, notifications: [] }),
+  ),
+  http.post('*/api/notifications/:notificationId/read', () =>
+    new HttpResponse(null, { status: 204 }),
+  ),
+  http.post('*/api/notifications/read-all', () => new HttpResponse(null, { status: 204 })),
+  http.get('*/api/admin/notifications', () =>
+    HttpResponse.json({ unreadCount: 0, notifications: [] }),
+  ),
+  http.post('*/api/admin/notifications/:notificationId/read', () =>
+    new HttpResponse(null, { status: 204 }),
+  ),
+  http.post('*/api/admin/notifications/read-all', () =>
+    new HttpResponse(null, { status: 204 }),
+  ),
   http.get('*/api/admin/analytics', () => HttpResponse.json(defaultAnalytics())),
   http.get('*/api/admin/global-blocklist', () =>
     HttpResponse.json({ domains: [], entries: [] }),

@@ -10,6 +10,7 @@ import { AccountSettings } from '../components/app/AccountSettings'
 import { useAccountSession } from '../hooks/useAccountSession'
 import { useAliasMessages, useBlockedMessages } from '../hooks/useActivity'
 import { useAliases } from '../hooks/useAliases'
+import { useNotifications } from '../hooks/useNotifications'
 import { useUserRealtime } from '../hooks/useUserRealtime'
 import { signOut } from '../services/accountService'
 import { addressDomain } from '../services/aliasService'
@@ -31,14 +32,29 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
   const aliases = useAliases(isSignedIn)
   const messages = useAliasMessages(isSignedIn ? route.aliasId : null)
   const blocked = useBlockedMessages(isSignedIn && route.view === 'blocked')
+  const notifications = useNotifications(isSignedIn, 'user')
 
   useUserRealtime(isSignedIn, {
-    onAliasesChanged: aliases.refresh,
-    onMessageReceived: (aliasId) =>
-      route.aliasId === aliasId ? messages.refresh() : undefined,
-    onBlockedMessageReceived: () =>
-      route.view === 'blocked' ? blocked.refresh() : undefined,
-    onAccountChanged: refreshAccount,
+    onAliasesChanged: async () => {
+      await aliases.refresh()
+      await notifications.refresh()
+    },
+    onMessageReceived: async (aliasId) => {
+      if (route.aliasId === aliasId) {
+        await messages.refresh()
+      }
+      await notifications.refresh()
+    },
+    onBlockedMessageReceived: async () => {
+      if (route.view === 'blocked') {
+        await blocked.refresh()
+      }
+      await notifications.refresh()
+    },
+    onAccountChanged: async () => {
+      await refreshAccount()
+      await notifications.refresh()
+    },
   })
 
   const [recoveryKey, setRecoveryKey] = useState<string | null>(() => takeRecoveryKey())
@@ -133,6 +149,7 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
         email={account.email}
         view={route.view}
         theme={theme}
+        notifications={notifications}
         isSigningOut={isSigningOut}
         onThemeChange={onThemeChange}
         onSignOut={() => void handleSignOut()}

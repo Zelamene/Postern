@@ -123,6 +123,13 @@ async function routeAdminDashboard(page: Page) {
   await page.route('**/api/admin/events/**', async (route) => {
     await route.fulfill({ status: 204 })
   })
+  await page.route('**/api/admin/notifications', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ unreadCount: 0, notifications: [] }),
+    })
+  })
 }
 
 test.describe('page accessibility', () => {
@@ -274,6 +281,13 @@ test.describe('page accessibility', () => {
             deletedAt: null,
           },
         ]),
+      })
+    })
+    await page.route('**/api/notifications', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ unreadCount: 0, notifications: [] }),
       })
     })
 

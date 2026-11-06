@@ -2,10 +2,12 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Postern.Api.Notifications;
 using Postern.Api.Realtime;
 using Postern.Api.Security;
 using Postern.Application.Accounts;
 using Postern.Domain.Accounts;
+using Postern.Domain.Notifications;
 using Postern.Infrastructure.Integrations;
 
 namespace Postern.Api.Endpoints;
@@ -132,6 +134,7 @@ public static class AuthenticationEndpoints
         AuthenticationService authentication,
         InviteManagementService invites,
         IAdminRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         HttpContext context,
         CancellationToken cancellationToken)
     {
@@ -155,6 +158,12 @@ public static class AuthenticationEndpoints
         if (result == RegistrationResult.Created)
         {
             await realtimeNotifier.InvitationAcceptedAsync();
+            await notifications.PublishAdminAsync(
+                NotificationKind.InvitationAccepted,
+                "Invitation accepted",
+                email,
+                "/admin",
+                cancellationToken);
         }
 
         return result switch

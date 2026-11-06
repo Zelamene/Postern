@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Postern.Api.Notifications;
 using Postern.Api.Realtime;
 using Postern.Application.Accounts;
 using Postern.Application.Administration;
+using Postern.Domain.Notifications;
 
 namespace Postern.Api.Endpoints;
 
@@ -28,10 +30,17 @@ public static class AdministrationEndpoints
     private static async Task<IResult> RebuildSuspendedUsersAsync(
         SuspendedUserService service,
         IAdminRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         await service.RebuildAsync(cancellationToken);
         await realtimeNotifier.OperationsChangedAsync();
+        await notifications.PublishAdminAsync(
+            NotificationKind.SuspendedUsersRebuilt,
+            "Suspended user projection rebuilt",
+            null,
+            "/admin",
+            cancellationToken);
         return Results.NoContent();
     }
 
@@ -42,6 +51,7 @@ public static class AdministrationEndpoints
         AdministrationService service,
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -60,6 +70,12 @@ public static class AdministrationEndpoints
         {
             await userRealtime.AccountChangedAsync(userId);
             await adminRealtime.OperationsChangedAsync();
+            await notifications.PublishAdminAsync(
+                NotificationKind.UserSuspended,
+                "User suspended",
+                null,
+                "/admin",
+                cancellationToken);
         }
 
         return ToResult(outcome);
@@ -72,6 +88,7 @@ public static class AdministrationEndpoints
         AdministrationService service,
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -90,6 +107,12 @@ public static class AdministrationEndpoints
         {
             await userRealtime.AccountChangedAsync(userId);
             await adminRealtime.OperationsChangedAsync();
+            await notifications.PublishAdminAsync(
+                NotificationKind.UserResumed,
+                "User resumed",
+                null,
+                "/admin",
+                cancellationToken);
         }
 
         return ToResult(outcome);
@@ -100,6 +123,7 @@ public static class AdministrationEndpoints
         ClaimsPrincipal user,
         AdministrationService service,
         IAdminRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -117,6 +141,12 @@ public static class AdministrationEndpoints
         if (outcome == AdminOutcome.Succeeded)
         {
             await realtimeNotifier.OperationsChangedAsync();
+            await notifications.PublishAdminAsync(
+                NotificationKind.BlocklistChanged,
+                "Domain added to the global blocklist",
+                request.Domain?.Trim(),
+                "/admin",
+                cancellationToken);
         }
 
         return ToResult(outcome);
@@ -127,6 +157,7 @@ public static class AdministrationEndpoints
         ClaimsPrincipal user,
         AdministrationService service,
         IAdminRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -139,6 +170,12 @@ public static class AdministrationEndpoints
         if (outcome == AdminOutcome.Succeeded)
         {
             await realtimeNotifier.OperationsChangedAsync();
+            await notifications.PublishAdminAsync(
+                NotificationKind.BlocklistChanged,
+                "Domain removed from the global blocklist",
+                domain,
+                "/admin",
+                cancellationToken);
         }
 
         return ToResult(outcome);
@@ -176,6 +213,7 @@ public static class AdministrationEndpoints
         ClaimsPrincipal user,
         AdminKvSyncService service,
         IAdminRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -186,6 +224,12 @@ public static class AdministrationEndpoints
 
         var result = await service.SyncAsync(adminUserId.Value, cancellationToken);
         await realtimeNotifier.OperationsChangedAsync();
+        await notifications.PublishAdminAsync(
+            NotificationKind.KvSyncCompleted,
+            "KV sync completed",
+            $"{result.AliasesSynced} aliases synced, {result.AliasesFailed} failed",
+            "/admin",
+            cancellationToken);
         return Results.Ok(result);
     }
 

@@ -3,9 +3,11 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Postern.Api.Notifications;
 using Postern.Api.Realtime;
 using Postern.Api.Security;
 using Postern.Application.Accounts;
+using Postern.Domain.Notifications;
 
 namespace Postern.Api.Endpoints;
 
@@ -48,6 +50,7 @@ public static class InviteEndpoints
         InviteRequestBody request,
         InviteManagementService service,
         IAdminRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         try
@@ -63,6 +66,12 @@ public static class InviteEndpoints
         }
 
         await realtimeNotifier.InviteRequestReceivedAsync();
+        await notifications.PublishAdminAsync(
+            NotificationKind.InviteRequested,
+            "New invite request",
+            request.Email?.Trim(),
+            "/admin",
+            cancellationToken);
         return Results.Accepted(
             value: new { message = "If eligible, your request has been recorded for review." });
     }
@@ -82,6 +91,7 @@ public static class InviteEndpoints
         ClaimsPrincipal user,
         InviteManagementService service,
         IAdminRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -101,6 +111,12 @@ public static class InviteEndpoints
         }
 
         await realtimeNotifier.InvitesChangedAsync();
+        await notifications.PublishAdminAsync(
+            NotificationKind.InviteApproved,
+            "Invite approved",
+            null,
+            "/admin",
+            cancellationToken);
         return Results.Accepted();
     }
 
@@ -109,6 +125,7 @@ public static class InviteEndpoints
         ClaimsPrincipal user,
         InviteManagementService service,
         IAdminRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -124,6 +141,12 @@ public static class InviteEndpoints
         }
 
         await realtimeNotifier.InvitesChangedAsync();
+        await notifications.PublishAdminAsync(
+            NotificationKind.InviteRejected,
+            "Invite request rejected",
+            null,
+            "/admin",
+            cancellationToken);
         return Results.NoContent();
     }
 
@@ -132,6 +155,7 @@ public static class InviteEndpoints
         ClaimsPrincipal user,
         InviteManagementService service,
         IAdminRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -151,6 +175,12 @@ public static class InviteEndpoints
         }
 
         await realtimeNotifier.InvitesChangedAsync();
+        await notifications.PublishAdminAsync(
+            NotificationKind.InviteResent,
+            "Invite resent",
+            null,
+            "/admin",
+            cancellationToken);
         return Results.Accepted();
     }
 
@@ -159,6 +189,7 @@ public static class InviteEndpoints
         ClaimsPrincipal user,
         InviteManagementService service,
         IAdminRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -174,6 +205,12 @@ public static class InviteEndpoints
         }
 
         await realtimeNotifier.InvitesChangedAsync();
+        await notifications.PublishAdminAsync(
+            NotificationKind.InviteRevoked,
+            "Invite revoked",
+            null,
+            "/admin",
+            cancellationToken);
         return Results.NoContent();
     }
 

@@ -1,5 +1,7 @@
 import { IconMoon, IconPosternLogo, IconSun } from '../common/Icons'
+import { NotificationMenu } from '../common/NotificationMenu'
 import type { ThemeMode } from '../common/Navbar'
+import type { NotificationsController } from '../../hooks/useNotifications'
 import type { AppView } from '../../services/navigation'
 import { AppLink } from './AppLink'
 
@@ -7,6 +9,7 @@ interface AppHeaderProps {
   email: string
   view: AppView
   theme: ThemeMode
+  notifications: NotificationsController
   isSigningOut: boolean
   onThemeChange: (theme: ThemeMode) => void
   onSignOut: () => void
@@ -22,6 +25,7 @@ export function AppHeader({
   email,
   view,
   theme,
+  notifications,
   isSigningOut,
   onThemeChange,
   onSignOut,
@@ -44,6 +48,7 @@ export function AppHeader({
           </AppLink>
 
           <div className="flex items-center gap-2 sm:hidden">
+            <NotificationMenu controller={notifications} />
             <button
               type="button"
               onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
@@ -90,6 +95,7 @@ export function AppHeader({
           >
             {isSigningOut ? 'Signing out…' : 'Sign out'}
           </button>
+          <NotificationMenu controller={notifications} />
           <button
             type="button"
             onClick={() => onThemeChange(isDark ? 'light' : 'dark')}

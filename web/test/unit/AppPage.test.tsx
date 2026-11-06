@@ -187,6 +187,55 @@ describe('AppPage', () => {
     expect(screen.getByText('bank.p9x1@postern.local')).toBeVisible()
   })
 
+  it('shows the unread count and opens the fetched notification inbox', async () => {
+    const user = userEvent.setup()
+    signedIn()
+    let notificationRequests = 0
+    server.use(
+      http.get('*/api/aliases', () => HttpResponse.json([])),
+      http.get('*/api/notifications', () => {
+        notificationRequests += 1
+        return HttpResponse.json({
+          unreadCount: 2,
+          notifications: [
+            {
+              id: 'notification-1',
+              kind: 'message_received',
+              title: 'New mail arrived',
+              body: 'shop@example.test',
+              link: null,
+              createdAt: '2026-11-02T10:00:00Z',
+              readAt: null,
+            },
+            {
+              id: 'notification-2',
+              kind: 'alias_created',
+              title: 'Alias created',
+              body: 'news.p9x1@postern.local',
+              link: null,
+              createdAt: '2026-11-01T10:00:00Z',
+              readAt: '2026-11-01T11:00:00Z',
+            },
+          ],
+        })
+      }),
+    )
+
+    renderApp()
+
+    const triggers = await screen.findAllByRole('button', {
+      name: 'Notifications, 2 unread',
+    })
+    const initialRequests = notificationRequests
+
+    await user.click(triggers[0])
+
+    expect(await screen.findByRole('dialog', { name: 'Notifications' })).toBeVisible()
+    expect(screen.getByText('New mail arrived')).toBeVisible()
+    expect(screen.getByText('Alias created')).toBeVisible()
+    expect(notificationRequests).toBeGreaterThan(initialRequests)
+  })
+
   it('sends anonymous visitors to sign in', async () => {
     renderApp()
 

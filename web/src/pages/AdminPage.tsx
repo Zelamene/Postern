@@ -8,6 +8,7 @@ import { AdminInviteDashboard } from '../components/admin/AdminInviteDashboard'
 import { AdminKvSyncPanel } from '../components/admin/AdminKvSyncPanel'
 import { useAdminOperations } from '../hooks/useAdminOperations'
 import { useAdminRealtime } from '../hooks/useAdminRealtime'
+import { useNotifications } from '../hooks/useNotifications'
 import {
   AdminApiError,
   approveInviteRequest,
@@ -57,6 +58,7 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
     removeDomain,
     syncKv,
   } = useAdminOperations(access === 'dashboard')
+  const notifications = useNotifications(access === 'dashboard', 'admin')
 
   useEffect(() => {
     mounted.current = true
@@ -115,8 +117,14 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
   }, [applyDashboard, applyDashboardError])
 
   useAdminRealtime(access === 'dashboard', {
-    onDashboardChanged: refreshDashboard,
-    onOperationsChanged: refreshOperations,
+    onDashboardChanged: async () => {
+      await refreshDashboard()
+      await notifications.refresh()
+    },
+    onOperationsChanged: async () => {
+      await refreshOperations()
+      await notifications.refresh()
+    },
   })
 
   useEffect(() => {
@@ -209,6 +217,7 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
       <AdminHeader
         theme={theme}
         isSignedIn={access === 'dashboard'}
+        notifications={notifications}
         onThemeChange={onThemeChange}
         onSignOut={() => void handleLogout()}
       />

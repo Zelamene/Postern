@@ -3,6 +3,7 @@ using Postern.Domain.Accounts;
 using Postern.Domain.Activity;
 using Postern.Domain.Administration;
 using Postern.Domain.Aliases;
+using Postern.Domain.Notifications;
 
 namespace Postern.Infrastructure.Persistence;
 
@@ -19,6 +20,7 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
     public DbSet<ResendWebhookEvent> ResendWebhookEvents => Set<ResendWebhookEvent>();
     public DbSet<AdminAuditLogEntry> AdminAuditLog => Set<AdminAuditLogEntry>();
     public DbSet<GlobalBlockedDomain> GlobalBlocklist => Set<GlobalBlockedDomain>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -306,6 +308,37 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
                 .HasForeignKey(domain => domain.AddedByAdminUserId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("fk_global_blocklist_users_added_by_admin_user_id");
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("notifications", table =>
+                table.HasCheckConstraint(
+                    "ck_notifications_audience",
+                    "audience IN ('user', 'admin')"));
+            entity.HasKey(notification => notification.Id);
+            entity.Property(notification => notification.Id).HasColumnName("id");
+            entity.Property(notification => notification.Audience)
+                .HasColumnName("audience")
+                .HasConversion(
+                    audience => audience.ToString().ToLowerInvariant(),
+                    audience => Enum.Parse<NotificationAudience>(audience, ignoreCase: true))
+                .HasMaxLength(8)
+                .IsRequired();
+            entity.Property(notification => notification.RecipientUserId).HasColumnName("recipient_user_id");
+            entity.Property(notification => notification.Kind).HasColumnName("kind").HasMaxLength(64).IsRequired();
+            entity.Property(notification => notification.Title).HasColumnName("title").HasMaxLength(160).IsRequired();
+            entity.Property(notification => notification.Body).HasColumnName("body").HasMaxLength(500);
+            entity.Property(notification => notification.Link).HasColumnName("link").HasMaxLength(300);
+            entity.Property(notification => notification.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(notification => notification.ReadAt).HasColumnName("read_at").HasColumnType("timestamp with time zone");
+            entity.HasIndex(notification => new { notification.Audience, notification.RecipientUserId, notification.CreatedAt })
+                .HasDatabaseName("ix_notifications_audience_recipient_created_at");
+            entity.HasOne<PosternUser>()
+                .WithMany()
+                .HasForeignKey(notification => notification.RecipientUserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_notifications_users_recipient_user_id");
         });
     }
 

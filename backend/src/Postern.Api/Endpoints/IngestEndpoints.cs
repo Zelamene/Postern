@@ -1,7 +1,9 @@
 using System.Security.Cryptography;
 using System.Text;
+using Postern.Api.Notifications;
 using Postern.Api.Realtime;
 using Postern.Application.Activity;
+using Postern.Domain.Notifications;
 
 namespace Postern.Api.Endpoints;
 
@@ -21,6 +23,7 @@ public static class IngestEndpoints
         IConfiguration configuration,
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         if (!IsAuthorized(context, configuration))
@@ -49,7 +52,7 @@ public static class IngestEndpoints
             await rateLimits.RebuildRateLimitedUsersAsync(cancellationToken);
         }
 
-        await NotifyAsync(outcome, userRealtime, adminRealtime);
+        await NotifyAsync(outcome, userRealtime, adminRealtime, notifications, cancellationToken);
 
         return outcome.Result switch
         {
@@ -65,7 +68,9 @@ public static class IngestEndpoints
     private static async Task NotifyAsync(
         IngestOutcome outcome,
         IUserRealtimeNotifier userRealtime,
-        IAdminRealtimeNotifier adminRealtime)
+        IAdminRealtimeNotifier adminRealtime,
+        INotificationPublisher notifications,
+        CancellationToken cancellationToken)
     {
         if (outcome.AliasId is not { } aliasId || outcome.UserId is not { } userId)
         {
@@ -77,10 +82,24 @@ public static class IngestEndpoints
             case IngestResult.Accepted:
                 await userRealtime.MessageReceivedAsync(userId, aliasId);
                 await adminRealtime.OperationsChangedAsync();
+                await notifications.PublishUserAsync(
+                    userId,
+                    NotificationKind.MessageReceived,
+                    "New mail arrived",
+                    null,
+                    $"/app/aliases/{aliasId}",
+                    cancellationToken);
                 break;
             case IngestResult.Blocked:
                 await userRealtime.BlockedMessageReceivedAsync(userId, aliasId);
                 await adminRealtime.OperationsChangedAsync();
+                await notifications.PublishUserAsync(
+                    userId,
+                    NotificationKind.MessageBlocked,
+                    "A message was blocked",
+                    null,
+                    "/app/blocked",
+                    cancellationToken);
                 break;
         }
     }

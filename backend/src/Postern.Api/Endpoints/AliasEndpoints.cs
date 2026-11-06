@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Postern.Api.Notifications;
 using Postern.Api.Realtime;
 using Postern.Application.Aliases;
 using Postern.Domain.Aliases;
+using Postern.Domain.Notifications;
 
 namespace Postern.Api.Endpoints;
 
@@ -61,6 +63,7 @@ public static class AliasEndpoints
         AliasService service,
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -75,7 +78,15 @@ public static class AliasEndpoints
             return Results.BadRequest(new { error = "reserved_or_invalid_label" });
         }
 
-        await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+        await NotifyAliasChangedAsync(
+            userRealtime,
+            adminRealtime,
+            notifications,
+            currentUserId.Value,
+            NotificationKind.AliasCreated,
+            "Alias created",
+            alias.FullAddress,
+            cancellationToken);
         return Results.Created($"/api/aliases/{alias.Id}", MapAliasResponse(alias));
     }
 
@@ -85,6 +96,7 @@ public static class AliasEndpoints
         AliasService service,
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -96,7 +108,15 @@ public static class AliasEndpoints
         var success = await service.DisableAsync(currentUserId.Value, aliasId, cancellationToken);
         if (success)
         {
-            await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+            await NotifyAliasChangedAsync(
+                userRealtime,
+                adminRealtime,
+                notifications,
+                currentUserId.Value,
+                NotificationKind.AliasDisabled,
+                "Alias disabled",
+                null,
+                cancellationToken);
         }
 
         return success ? Results.NoContent() : Results.NotFound();
@@ -108,6 +128,7 @@ public static class AliasEndpoints
         AliasService service,
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -119,7 +140,15 @@ public static class AliasEndpoints
         var success = await service.DeleteAsync(currentUserId.Value, aliasId, cancellationToken);
         if (success)
         {
-            await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+            await NotifyAliasChangedAsync(
+                userRealtime,
+                adminRealtime,
+                notifications,
+                currentUserId.Value,
+                NotificationKind.AliasDeleted,
+                "Alias deleted",
+                null,
+                cancellationToken);
         }
 
         return success ? Results.NoContent() : Results.NotFound();
@@ -132,6 +161,7 @@ public static class AliasEndpoints
         AliasService service,
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -144,7 +174,15 @@ public static class AliasEndpoints
         var success = await service.ReplaceAsync(currentUserId.Value, aliasId, replacementAliasId, cancellationToken);
         if (success)
         {
-            await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+            await NotifyAliasChangedAsync(
+                userRealtime,
+                adminRealtime,
+                notifications,
+                currentUserId.Value,
+                NotificationKind.AliasReplaced,
+                "Alias replaced",
+                null,
+                cancellationToken);
         }
 
         return success ? Results.NoContent() : Results.NotFound();
@@ -157,6 +195,7 @@ public static class AliasEndpoints
         AliasService service,
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -173,7 +212,15 @@ public static class AliasEndpoints
 
         await service.CopyExpectedSendersAsync(currentUserId.Value, aliasId, replacement.Id, cancellationToken);
         var success = await service.ReplaceAsync(currentUserId.Value, aliasId, replacement.Id, cancellationToken);
-        await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+        await NotifyAliasChangedAsync(
+            userRealtime,
+            adminRealtime,
+            notifications,
+            currentUserId.Value,
+            NotificationKind.AliasReplaced,
+            "Alias replaced",
+            replacement.FullAddress,
+            cancellationToken);
         return success ? Results.Ok(MapAliasResponse(replacement)) : Results.NotFound();
     }
 
@@ -184,6 +231,7 @@ public static class AliasEndpoints
         AliasService service,
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -197,7 +245,15 @@ public static class AliasEndpoints
             var success = await service.DisableAsync(currentUserId.Value, aliasId, cancellationToken);
             if (success)
             {
-                await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+                await NotifyAliasChangedAsync(
+                    userRealtime,
+                    adminRealtime,
+                    notifications,
+                    currentUserId.Value,
+                    NotificationKind.AliasDisabled,
+                    "Alias disabled",
+                    null,
+                    cancellationToken);
             }
 
             return success ? Results.NoContent() : Results.NotFound();
@@ -208,7 +264,15 @@ public static class AliasEndpoints
             var success = await service.DeleteAsync(currentUserId.Value, aliasId, cancellationToken);
             if (success)
             {
-                await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+                await NotifyAliasChangedAsync(
+                    userRealtime,
+                    adminRealtime,
+                    notifications,
+                    currentUserId.Value,
+                    NotificationKind.AliasDeleted,
+                    "Alias deleted",
+                    null,
+                    cancellationToken);
             }
 
             return success ? Results.NoContent() : Results.NotFound();
@@ -299,10 +363,22 @@ public static class AliasEndpoints
     private static async Task NotifyAliasChangedAsync(
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
-        Guid userId)
+        INotificationPublisher notifications,
+        Guid userId,
+        string kind,
+        string title,
+        string? body,
+        CancellationToken cancellationToken)
     {
         await userRealtime.AliasesChangedAsync(userId);
         await adminRealtime.OperationsChangedAsync();
+        await notifications.PublishUserAsync(
+            userId,
+            kind,
+            title,
+            body,
+            "/app",
+            cancellationToken);
     }
 
     private static Guid? GetCurrentUserId(ClaimsPrincipal user)
