@@ -23,6 +23,44 @@ interface AliasActivityProps {
   onAliasReplaced: (aliasId: string, replacement: Alias) => void
 }
 
+type LeakSeverity = 'high' | 'medium' | 'low'
+
+const SEVERITY_DETAILS: Record<LeakSeverity, { label: string; tone: string; description: string }> = {
+  high: {
+    label: 'High severity',
+    tone: 'bg-danger-surface text-danger-on-surface',
+    description: 'Failed authentication',
+  },
+  medium: {
+    label: 'Medium severity',
+    tone: 'bg-warning-surface text-warning-on-surface',
+    description: 'Unexpected sender',
+  },
+  low: {
+    label: 'Low severity',
+    tone: 'bg-surface-sunken text-text-muted',
+    description: 'Unverified sender',
+  },
+}
+
+function leakSeverity(message: MailMessage): LeakSeverity | null {
+  if (!message.isFlagged) {
+    return null
+  }
+
+  switch (message.flagReason) {
+    case 'fail':
+      return 'high'
+    case 'unexpected_pass':
+      return 'medium'
+    case 'unexpected_none':
+    case 'none':
+    case 'unknown':
+    default:
+      return 'low'
+  }
+}
+
 function authTone(result: string): string {
   switch (result.toLowerCase()) {
     case 'pass':
@@ -231,6 +269,9 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
             <ul className="divide-y divide-hairline">
               {feed.items.map((message) => {
                 const sender = senderOf(message)
+                const severity = leakSeverity(message)
+                const severityDetail = severity ? SEVERITY_DETAILS[severity] : null
+                const showLeakActions = message.isFlagged && alias?.status === 'Active'
 
                 return (
                   <li key={message.id} className="px-5 py-4 sm:px-6">
@@ -251,34 +292,47 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
                       >
                         {message.authenticationResult || 'unknown'} authentication
                       </span>
-                      {message.isFlagged && (
+                      {severityDetail && (
                         <span
-                          className="inline-flex rounded-full bg-warning-surface px-2 py-0.5 text-xs font-bold text-warning-on-surface"
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold ${severityDetail.tone}`}
                           title={message.flagReason ?? undefined}
                         >
-                          Flagged
+                          {severityDetail.label} · {severityDetail.description}
                         </span>
                       )}
-                      {message.isFlagged && alias?.status === 'Active' && sender !== null && (
+                      {showLeakActions && (
                         <span className="ml-auto flex flex-wrap gap-1">
+                          {sender !== null && (
+                            <button
+                              type="button"
+                              className="btn btn--ghost btn--sm"
+                              disabled={pendingMessageId === message.id}
+                              aria-label={`Mark ${sender} as expected`}
+                              onClick={() => void handleSenderAction(message.id, sender, 'expected')}
+                            >
+                              Mark as expected
+                            </button>
+                          )}
                           <button
                             type="button"
                             className="btn btn--ghost btn--sm"
                             disabled={pendingMessageId === message.id}
-                            aria-label={`Mark ${sender} as expected`}
-                            onClick={() => void handleSenderAction(message.id, sender, 'expected')}
+                            aria-label="Replace this alias"
+                            onClick={() => setIsReplaceOpen(true)}
                           >
-                            Mark expected
+                            Replace alias
                           </button>
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm"
-                            disabled={pendingMessageId === message.id}
-                            aria-label={`Block ${sender}`}
-                            onClick={() => void handleSenderAction(message.id, sender, 'block')}
-                          >
-                            Block sender
-                          </button>
+                          {sender !== null && (
+                            <button
+                              type="button"
+                              className="btn btn--ghost btn--sm"
+                              disabled={pendingMessageId === message.id}
+                              aria-label={`Block ${sender}`}
+                              onClick={() => void handleSenderAction(message.id, sender, 'block')}
+                            >
+                              Block sender
+                            </button>
+                          )}
                         </span>
                       )}
                     </div>

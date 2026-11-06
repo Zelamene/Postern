@@ -1,12 +1,29 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
-import { describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { AliasActivity } from '../../src/components/app/AliasActivity'
 import type { Alias } from '../../src/services/aliasService'
 import type { MailMessage } from '../../src/services/activityService'
 import type { ActivityFeed } from '../../src/hooks/useActivity'
 import { server } from '../server'
+
+const originalShowModal = HTMLDialogElement.prototype.showModal
+const originalClose = HTMLDialogElement.prototype.close
+
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '')
+  }
+  HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute('open')
+  }
+})
+
+afterAll(() => {
+  HTMLDialogElement.prototype.showModal = originalShowModal
+  HTMLDialogElement.prototype.close = originalClose
+})
 
 const ALIAS: Alias = {
   id: '0d1f7c62-0a3f-4f0e-9c8f-2f6f0a9d7c11',
@@ -115,5 +132,44 @@ describe('AliasActivity sender actions', () => {
     renderActivity(FLAGGED, { ...ALIAS, status: 'Disabled' })
     expect(screen.queryByRole('button', { name: /as expected/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Replace address' })).toBeNull()
+  })
+})
+
+describe('AliasActivity leak detection', () => {
+  it('shows three severity levels for flagged messages', () => {
+    render(
+      <AliasActivity
+        alias={ALIAS}
+        feed={{
+          items: [
+            { ...FLAGGED, id: 'high', flagReason: 'fail' },
+            { ...FLAGGED, id: 'medium', flagReason: 'unexpected_pass' },
+            { ...FLAGGED, id: 'low', flagReason: 'unexpected_none' },
+          ],
+          status: 'ready',
+          error: null,
+          hasMore: false,
+          isLoadingMore: false,
+          loadMore: async () => undefined,
+        }}
+        onAliasReplaced={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/High severity/i)).toBeVisible()
+    expect(screen.getByText(/Medium severity/i)).toBeVisible()
+    expect(screen.getByText(/Low severity/i)).toBeVisible()
+  })
+
+  it('shows Mark as expected, Replace alias, and Block sender for a flagged message', async () => {
+    const user = userEvent.setup()
+    renderActivity(FLAGGED)
+
+    expect(screen.getByRole('button', { name: 'Mark shop.example as expected' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Replace this alias' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Block shop.example' })).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Replace this alias' }))
+    expect(await screen.findByRole('list', { name: 'Replacement checklist' })).toBeVisible()
   })
 })
