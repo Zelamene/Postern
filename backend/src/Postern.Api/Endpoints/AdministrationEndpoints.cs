@@ -18,6 +18,8 @@ public static class AdministrationEndpoints
         group.MapGet("/global-blocklist", ListBlockedDomainsAsync);
         group.MapPost("/global-blocklist", BlockDomainAsync);
         group.MapDelete("/global-blocklist/{domain}", UnblockDomainAsync);
+        group.MapGet("/analytics", GetAnalyticsAsync);
+        group.MapPost("/kv-sync", SyncKvAsync);
 
         return endpoints;
     }
@@ -116,7 +118,42 @@ public static class AdministrationEndpoints
         CancellationToken cancellationToken)
     {
         var domains = await service.ListBlockedDomainsAsync(cancellationToken);
-        return Results.Ok(new { domains });
+        var entries = await service.ListBlocklistEntriesAsync(cancellationToken);
+        return Results.Ok(new
+        {
+            domains,
+            entries = entries.Select(entry => new
+            {
+                domain = entry.Domain,
+                reason = entry.Reason,
+                createdAt = entry.CreatedAt
+            })
+        });
+    }
+
+    private static async Task<IResult> GetAnalyticsAsync(
+        int? windowHours,
+        int? minimumDomainVolume,
+        AdminAnalyticsService service,
+        CancellationToken cancellationToken)
+    {
+        var analytics = await service.GetAsync(windowHours, minimumDomainVolume, cancellationToken);
+        return Results.Ok(analytics);
+    }
+
+    private static async Task<IResult> SyncKvAsync(
+        ClaimsPrincipal user,
+        AdminKvSyncService service,
+        CancellationToken cancellationToken)
+    {
+        var adminUserId = GetCurrentUserId(user);
+        if (adminUserId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var result = await service.SyncAsync(adminUserId.Value, cancellationToken);
+        return Results.Ok(result);
     }
 
     private static IResult ToResult(AdminOutcome outcome) =>

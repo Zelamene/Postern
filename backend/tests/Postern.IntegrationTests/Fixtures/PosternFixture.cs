@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Postern.Application.Aliases;
 using Postern.Domain.Accounts;
 using Postern.Domain.Activity;
+using Postern.Domain.Administration;
 using Postern.Domain.Aliases;
 using Postern.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
@@ -40,7 +41,8 @@ public sealed class PosternFixture : IAsyncLifetime
     public async Task<PosternUser> AUserAsync(
         string? email = null,
         string status = "active",
-        bool isAdmin = false)
+        bool isAdmin = false,
+        string? forwardingAddress = null)
     {
         if (isAdmin)
         {
@@ -75,6 +77,7 @@ public sealed class PosternFixture : IAsyncLifetime
                 IsAdmin = isAdmin,
                 AdminTotpEnabledAt = isAdmin ? DateTimeOffset.UtcNow.AddMinutes(-1) : null,
                 Status = status,
+                ForwardingAddress = forwardingAddress,
                 CreatedAt = DateTimeOffset.UtcNow
             };
             db.Users.Add(user);
@@ -94,10 +97,12 @@ public sealed class PosternFixture : IAsyncLifetime
         Guid userId,
         string label = "shop",
         AliasStatus status = AliasStatus.Active,
-        string? category = "personal")
+        string? category = "personal",
+        bool kvDirty = false,
+        string? fullAddress = null)
     {
         await using var db = CreateContext();
-        var address = $"{label}-{Guid.NewGuid():N}@postern.test";
+        var address = fullAddress ?? $"{label}-{Guid.NewGuid():N}@postern.test";
         var alias = new Alias
         {
             Id = Guid.NewGuid(),
@@ -110,7 +115,7 @@ public sealed class PosternFixture : IAsyncLifetime
             Status = status,
             CreatedAt = DateTimeOffset.UtcNow,
             DeletedAt = status == AliasStatus.Deleted ? DateTimeOffset.UtcNow : null,
-            KvDirty = false
+            KvDirty = kvDirty
         };
         db.Aliases.Add(alias);
         await db.SaveChangesAsync();
@@ -122,18 +127,21 @@ public sealed class PosternFixture : IAsyncLifetime
         DateTimeOffset? receivedAt = null,
         string subject = "your order shipped",
         bool isFlagged = false,
-        string? flagReason = null)
+        string? flagReason = null,
+        string fromHeader = "Shop <orders@shop.example>",
+        string envelopeSender = "orders@shop.example",
+        string authenticationResult = "pass")
     {
         await using var db = CreateContext();
         var message = new Message
         {
             Id = Guid.NewGuid(),
             AliasId = aliasId,
-            FromHeader = "Shop <orders@shop.example>",
-            EnvelopeSender = "orders@shop.example",
+            FromHeader = fromHeader,
+            EnvelopeSender = envelopeSender,
             Subject = subject,
             ReceivedAt = receivedAt ?? DateTimeOffset.UtcNow,
-            AuthenticationResult = "pass",
+            AuthenticationResult = authenticationResult,
             IsFlagged = isFlagged,
             FlagReason = flagReason
         };
@@ -146,14 +154,15 @@ public sealed class PosternFixture : IAsyncLifetime
         Guid aliasId,
         DateTimeOffset? receivedAt = null,
         string reason = "unexpected_sender",
-        string subject = "verify your account")
+        string subject = "verify your account",
+        string fromHeader = "Phish <security@phish.example>")
     {
         await using var db = CreateContext();
         var message = new BlockedMessage
         {
             Id = Guid.NewGuid(),
             AliasId = aliasId,
-            FromHeader = "Phish <security@phish.example>",
+            FromHeader = fromHeader,
             Subject = subject,
             ReceivedAt = receivedAt ?? DateTimeOffset.UtcNow,
             Reason = reason
@@ -161,5 +170,63 @@ public sealed class PosternFixture : IAsyncLifetime
         db.BlockedMessages.Add(message);
         await db.SaveChangesAsync();
         return message;
+    }
+
+    public async Task<ResendWebhookEvent> AWebhookEventAsync(
+        DateTimeOffset receivedAt,
+        string? id = null)
+    {
+        await using var db = CreateContext();
+        var webhookEvent = new ResendWebhookEvent
+        {
+            Id = id ?? $"evt-{Guid.NewGuid():N}",
+            EventType = "email.delivered",
+            ProviderMessageId = $"msg-{Guid.NewGuid():N}",
+            ReceivedAt = receivedAt
+        };
+        db.ResendWebhookEvents.Add(webhookEvent);
+        await db.SaveChangesAsync();
+        return webhookEvent;
+    }
+
+    public async Task<InviteRequest> AnInviteRequestAsync(
+        DateTimeOffset requestedAt,
+        string status = "pending")
+    {
+        await using var db = CreateContext();
+        var email = $"requester-{Guid.NewGuid():N}@example.test";
+        var request = new InviteRequest
+        {
+            Id = Guid.NewGuid(),
+            Email = email,
+            EmailNormalized = email.ToUpperInvariant(),
+            RequestedAt = requestedAt,
+            Status = status
+        };
+        db.InviteRequests.Add(request);
+        await db.SaveChangesAsync();
+        return request;
+    }
+
+    public async Task<AdminAuditLogEntry> AnAuditEntryAsync(
+        string action,
+        DateTimeOffset? createdAt = null,
+        string? targetId = null,
+        string? metadata = null,
+        Guid? adminUserId = null)
+    {
+        await using var db = CreateContext();
+        var entry = new AdminAuditLogEntry
+        {
+            Id = Guid.NewGuid(),
+            AdminUserId = adminUserId,
+            Action = action,
+            TargetId = targetId,
+            Metadata = metadata,
+            CreatedAt = createdAt ?? DateTimeOffset.UtcNow
+        };
+        db.AdminAuditLog.Add(entry);
+        await db.SaveChangesAsync();
+        return entry;
     }
 }

@@ -12,6 +12,11 @@ public enum AdminOutcome
     Invalid
 }
 
+public sealed record AdminBlocklistEntry(
+    string Domain,
+    string Reason,
+    DateTimeOffset CreatedAt);
+
 public sealed class AdministrationService(
     IAccountRepository accounts,
     IAdministrationRepository administration,
@@ -123,6 +128,19 @@ public sealed class AdministrationService(
         return stored
             .Select(domain => domain.DomainEtld1)
             .OrderBy(domain => domain, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyCollection<AdminBlocklistEntry>> ListBlocklistEntriesAsync(
+        CancellationToken cancellationToken)
+    {
+        var stored = await administration.ListBlockedDomainsAsync(cancellationToken);
+        return stored
+            .OrderBy(domain => domain.DomainEtld1, StringComparer.Ordinal)
+            .Select(domain => new AdminBlocklistEntry(
+                domain.DomainEtld1,
+                domain.Reason,
+                domain.CreatedAt))
             .ToList();
     }
 

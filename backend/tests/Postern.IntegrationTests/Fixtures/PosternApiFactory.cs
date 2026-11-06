@@ -17,12 +17,14 @@ namespace Postern.IntegrationTests.Fixtures;
 public sealed class PosternApiFactory : WebApplicationFactory<Program>
 {
     public const string SigningKey = "integration-test-key-material-at-least-thirty-two-bytes";
+    public const string DefaultJobSecret = "integration-test-job-secret";
     private const string Issuer = "Postern";
     private const string Audience = "Postern.Web";
 
     private readonly PosternFixture _fixture;
     private readonly IKvWriter _kvWriter;
     private readonly string? _ingestSecret;
+    private readonly string? _jobSecret;
     private readonly string? _resendWebhookSecret;
     private readonly bool _enableInviteWorker;
     private readonly bool _configureInviteWorker;
@@ -37,11 +39,13 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
         bool enableInviteWorker = false,
         IInviteEmailSender? inviteEmailSender = null,
         bool configureInviteWorker = false,
-        IAdminRealtimeNotifier? adminRealtimeNotifier = null)
+        IAdminRealtimeNotifier? adminRealtimeNotifier = null,
+        string? jobSecret = null)
     {
         _fixture = fixture;
         _kvWriter = kvWriter ?? new NoOpKvWriter();
         _ingestSecret = ingestSecret;
+        _jobSecret = jobSecret;
         _resendWebhookSecret = resendWebhookSecret;
         _enableInviteWorker = enableInviteWorker;
         _configureInviteWorker = configureInviteWorker;
@@ -70,6 +74,7 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
         {
             builder.UseSetting("Ingest:SharedSecret", "integration-test-ingest-secret");
             builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
+            builder.UseSetting("Jobs:SharedSecret", DefaultJobSecret);
             builder.UseSetting(
                 "DataProtection:KeysPath",
                 Path.Combine(Path.GetTempPath(), $"postern-api-test-keys-{Environment.ProcessId}"));
@@ -77,6 +82,10 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
         if (_ingestSecret is not null)
         {
             builder.UseSetting("Ingest:SharedSecret", _ingestSecret);
+        }
+        if (_jobSecret is not null)
+        {
+            builder.UseSetting("Jobs:SharedSecret", _jobSecret);
         }
         builder.UseSetting(
             "Resend:ApiKey",

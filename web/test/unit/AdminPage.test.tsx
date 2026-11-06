@@ -217,4 +217,34 @@ describe('AdminPage', () => {
     await waitFor(() => expect(rejectRequests).toBe(1))
     await waitFor(() => expect(screen.getByText('No pending invite requests.')).toBeVisible())
   })
+
+  it('keeps the invite dashboard usable when operations panels fail to load', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    server.use(
+      http.get('*/api/admin/invites', () => HttpResponse.json(dashboard)),
+      http.get('*/api/admin/invite-requests', () =>
+        HttpResponse.json({ requests: [] }),
+      ),
+      http.get('*/api/admin/analytics', () =>
+        HttpResponse.json({ error: 'unavailable' }, { status: 500 }),
+      ),
+      http.get('*/api/admin/global-blocklist', () =>
+        HttpResponse.json({ error: 'unavailable' }, { status: 500 }),
+      ),
+    )
+
+    render(<AdminPage theme="light" onThemeChange={() => undefined} />)
+
+    expect(await screen.findByRole('heading', { name: 'Admin dashboard' })).toBeVisible()
+    expect(screen.getByText('196')).toBeVisible()
+    expect(
+      await screen.findByText('Analytics could not be loaded right now. Please try again.'),
+    ).toBeVisible()
+    expect(
+      screen.getByText('The global blocklist could not be loaded right now. Please try again.'),
+    ).toBeVisible()
+
+    errorSpy.mockRestore()
+  })
 })

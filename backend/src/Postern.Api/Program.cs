@@ -50,6 +50,13 @@ if (!builder.Environment.IsDevelopment()
         "Ingest:SharedSecret must be configured outside Development so the worker endpoint is authenticated.");
 }
 
+if (!builder.Environment.IsDevelopment()
+    && string.IsNullOrWhiteSpace(builder.Configuration["Jobs:SharedSecret"]))
+{
+    throw new InvalidOperationException(
+        "Jobs:SharedSecret must be configured outside Development so the nightly job endpoint is authenticated.");
+}
+
 var resendApiKey = builder.Configuration["Resend:ApiKey"] ?? builder.Configuration["RESEND_API_KEY"];
 var resendWebhookSecret =
     builder.Configuration["Resend:WebhookSecret"] ?? builder.Configuration["RESEND_WEBHOOK_SECRET"];
@@ -155,6 +162,9 @@ builder.Services.AddScoped<RateLimitService>();
 builder.Services.AddScoped<SuspendedUserService>();
 builder.Services.AddScoped<GlobalBlocklistService>();
 builder.Services.AddScoped<AdministrationService>();
+builder.Services.AddScoped<AdminAnalyticsService>();
+builder.Services.AddScoped<AdminKvSyncService>();
+builder.Services.AddScoped<NightlyMaintenanceService>();
 builder.Services.AddScoped<IAdministrationRepository, EfAdministrationRepository>();
 builder.Services.AddSingleton(aliasPolicy);
 builder.Services.AddSingleton<IPasswordHashingService, AspNetPasswordHashingService>();
@@ -244,6 +254,7 @@ app.MapAliasEndpoints();
 app.MapActivityEndpoints();
 app.MapIngestEndpoints();
 app.MapAdministrationEndpoints();
+app.MapJobEndpoints();
 
 app.Run();
 

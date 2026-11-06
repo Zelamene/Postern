@@ -74,6 +74,26 @@ public sealed class HealthEndpointTests
     }
 
     [Fact]
+    public void Api_RefusesToStartOutsideDevelopment_WithoutJobSecret()
+    {
+        using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Production");
+            builder.UseSetting("Authentication:SigningKey", "integration-test-key-material-at-least-thirty-two-bytes");
+            builder.UseSetting("ConnectionStrings:Postgres", ApiTestConfiguration.UnusedConnectionString);
+            builder.UseSetting("Ingest:SharedSecret", ApiTestConfiguration.IngestSecret);
+            builder.UseSetting("Resend:ApiKey", "integration-test-resend-key");
+            builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
+            builder.UseSetting("Resend:From", "Postern <invites@example.test>");
+            builder.UseSetting("Invites:PublicBaseUrl", "https://postern.example.test");
+            builder.UseSetting("DataProtection:KeysPath", Path.Combine(Path.GetTempPath(), "postern-api-test-keys"));
+            builder.UseSetting("Invites:WorkerEnabled", "false");
+        });
+
+        Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+    }
+
+    [Fact]
     public void Api_RefusesToStart_WithOutOfRangeSuffixLength()
     {
         using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
@@ -98,6 +118,7 @@ public sealed class HealthEndpointTests
                 "integration-test-key-material-at-least-thirty-two-bytes");
             builder.UseSetting("ConnectionStrings:Postgres", ApiTestConfiguration.UnusedConnectionString);
             builder.UseSetting("Ingest:SharedSecret", ApiTestConfiguration.IngestSecret);
+            builder.UseSetting("Jobs:SharedSecret", "integration-test-job-secret");
             builder.UseSetting("Resend:ApiKey", "integration-test-resend-key");
             builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
             builder.UseSetting("Resend:From", "Postern <invites@example.test>");
@@ -127,6 +148,7 @@ internal static class ApiTestConfiguration
                 "integration-test-key-material-at-least-thirty-two-bytes");
             builder.UseSetting("ConnectionStrings:Postgres", UnusedConnectionString);
             builder.UseSetting("Ingest:SharedSecret", IngestSecret);
+            builder.UseSetting("Jobs:SharedSecret", "integration-test-job-secret");
             builder.UseSetting("Resend:ApiKey", "integration-test-resend-key");
             builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
             builder.UseSetting("Resend:From", "Postern <invites@example.test>");
