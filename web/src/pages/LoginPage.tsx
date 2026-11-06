@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { RecoveryKeyNotice } from '../components/common/RecoveryKeyNotice'
+import { navigate } from '../services/navigation'
+import { stashRecoveryKey } from '../services/pendingRecoveryKey'
 
 interface LoginResult {
   email?: string | null
@@ -13,8 +14,6 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [adminSignIn, setAdminSignIn] = useState(false)
-  const [recoveryKey, setRecoveryKey] = useState<string | null>(null)
-  const [signedInEmail, setSignedInEmail] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -60,8 +59,11 @@ export function LoginPage() {
       }
 
       setPassword('')
-      setSignedInEmail(result.email ?? email)
-      setRecoveryKey(result.recoveryKey ?? null)
+      if (result.recoveryKey) {
+        stashRecoveryKey(result.recoveryKey)
+      }
+
+      navigate('/app', { replace: true })
     } catch (requestError) {
       console.error('User sign-in failed', requestError)
       setError('Unable to reach Postern right now. Please try again.')
@@ -80,90 +82,72 @@ export function LoginPage() {
           Postern
         </a>
 
-        {signedInEmail ? (
-          <div className="mt-8 space-y-4">
-            <p className="chip chip--success chip--sm">Signed in</p>
-            <h1 id="login-title" className="text-2xl font-bold text-text">
-              You’re signed in.
-            </h1>
-            <p role="status" className="text-sm leading-relaxed text-text-secondary">
-              Signed in as {signedInEmail}.
-            </p>
-            {recoveryKey && <RecoveryKeyNotice recoveryKey={recoveryKey} />}
-            <a href="/" className="btn btn--primary inline-flex">
-              Continue to Postern
-            </a>
-          </div>
-        ) : (
-          <>
-            <div className="mt-8 space-y-3">
-              <p className="chip chip--primary chip--sm">Invite-only access</p>
-              <h1 id="login-title" className="text-2xl font-bold text-text">
-                Sign in to Postern
-              </h1>
-              <p className="text-sm leading-relaxed text-text-secondary">
-                Postern is an invite-only platform. You can sign in only after your invitation has
-                been accepted and your account is ready.
-              </p>
-            </div>
+        <div className="mt-8 space-y-3">
+          <p className="chip chip--primary chip--sm">Invite-only access</p>
+          <h1 id="login-title" className="text-2xl font-bold text-text">
+            Sign in to Postern
+          </h1>
+          <p className="text-sm leading-relaxed text-text-secondary">
+            Postern is an invite-only platform. You can sign in only after your invitation has been
+            accepted and your account is ready.
+          </p>
+        </div>
 
-            {error && (
-              <p role="alert" className="mt-6 rounded-lg bg-danger-surface p-3 text-sm text-danger">
-                {error}
-                {adminSignIn && (
-                  <>
-                    {' '}
-                    <a href="/admin">Go to admin sign in</a>.
-                  </>
-                )}
-              </p>
+        {error && (
+          <p role="alert" className="mt-6 rounded-lg bg-danger-surface p-3 text-sm text-danger">
+            {error}
+            {adminSignIn && (
+              <>
+                {' '}
+                <a href="/admin">Go to admin sign in</a>.
+              </>
             )}
-
-            <form onSubmit={handleSubmit} className="mt-7 space-y-5">
-              <div>
-                <label htmlFor="login-email" className="mb-1.5 block text-sm font-semibold">
-                  Email address
-                </label>
-                <input
-                  id="login-email"
-                  type="text"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  required
-                  value={email}
-                  disabled={isSubmitting}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="login-password" className="mb-1.5 block text-sm font-semibold">
-                  Password
-                </label>
-                <input
-                  id="login-password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  disabled={isSubmitting}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-
-              <button type="submit" disabled={isSubmitting} className="btn btn--primary w-full">
-                {isSubmitting ? 'Signing in…' : 'Sign in'}
-              </button>
-            </form>
-
-            <p className="mt-5 text-center text-sm text-text-secondary">
-              Don’t have an accepted invitation? <a href="/">Request an invite</a>.
-            </p>
-          </>
+          </p>
         )}
+
+        <form onSubmit={handleSubmit} className="mt-7 space-y-5">
+          <div>
+            <label htmlFor="login-email" className="mb-1.5 block text-sm font-semibold">
+              Email address
+            </label>
+            <input
+              id="login-email"
+              type="text"
+              autoComplete="email"
+              autoCapitalize="none"
+              spellCheck={false}
+              required
+              value={email}
+              disabled={isSubmitting}
+              onChange={(event) => setEmail(event.target.value)}
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="login-password" className="mb-1.5 block text-sm font-semibold">
+              Password
+            </label>
+            <input
+              id="login-password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              disabled={isSubmitting}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <button type="submit" disabled={isSubmitting} className="btn btn--primary w-full">
+            {isSubmitting ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+
+        <p className="mt-5 text-center text-sm text-text-secondary">
+          Don’t have an accepted invitation? <a href="/">Request an invite</a>.
+        </p>
       </section>
     </main>
   )

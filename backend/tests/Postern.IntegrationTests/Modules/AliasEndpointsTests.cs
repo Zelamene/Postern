@@ -54,6 +54,53 @@ public sealed class AliasEndpointsTests(PosternFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Create_StoresProvidedCategory()
+    {
+        var user = await fixture.AUserAsync();
+        using var client = _factory.CreateAuthenticatedClient(user.Id, user.Email);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/aliases",
+            new { label = "shop", category = "  Shopping  " });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var alias = await ReadAliasAsync(response);
+        Assert.Equal("Shopping", alias.Category);
+
+        await using var db = fixture.CreateContext();
+        var stored = await db.Aliases.SingleAsync(item => item.Id == alias.Id);
+        Assert.Equal("Shopping", stored.Category);
+    }
+
+    [Fact]
+    public async Task Create_DefaultsCategoryWhenOmitted()
+    {
+        var user = await fixture.AUserAsync();
+        using var client = _factory.CreateAuthenticatedClient(user.Id, user.Email);
+
+        var response = await client.PostAsJsonAsync("/api/aliases", new { label = "shop" });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var alias = await ReadAliasAsync(response);
+        Assert.Equal("personal", alias.Category);
+    }
+
+    [Fact]
+    public async Task Create_TruncatesOverlongCategory()
+    {
+        var user = await fixture.AUserAsync();
+        using var client = _factory.CreateAuthenticatedClient(user.Id, user.Email);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/aliases",
+            new { label = "shop", category = new string('a', 64) });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var alias = await ReadAliasAsync(response);
+        Assert.Equal(40, alias.Category!.Length);
+    }
+
+    [Fact]
     public async Task Create_PublishesAliasRecordWithOwnerDestination()
     {
         var user = await fixture.AUserAsync();
@@ -299,6 +346,28 @@ public sealed class AliasEndpointsTests(PosternFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ReplaceWithExistingAlias_CopiesExpectedSenders()
+    {
+        var user = await fixture.AUserAsync();
+        var original = await fixture.AnAliasAsync(user.Id, label: "original");
+        var replacement = await fixture.AnAliasAsync(user.Id, label: "replacement");
+        await AddExpectedSenderAsync(original.Id, "shop.example");
+        using var client = _factory.CreateAuthenticatedClient(user.Id, user.Email);
+
+        var response = await client.PatchAsync(
+            $"/api/aliases/{original.Id}/replace/{replacement.Id}",
+            null);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        await using var db = fixture.CreateContext();
+        var copied = await db.ExpectedSenders
+            .Where(sender => sender.AliasId == replacement.Id)
+            .Select(sender => sender.SenderEtld1)
+            .ToListAsync();
+        Assert.Equal(new[] { "shop.example" }, copied);
+    }
+
+    [Fact]
     public async Task ExpectedSenders_AddListAndMarkExpected()
     {
         var user = await fixture.AUserAsync();
@@ -444,7 +513,8 @@ public sealed class AliasEndpointsTests(PosternFixture fixture) : IAsyncLifetime
         string? Label,
         string? FullAddress,
         string? PurposeMetadata,
-        int Status);
+        int Status,
+        string? Category);
 
     private sealed record ExpectedSenderBody(Guid Id, string SenderEtld1, DateTimeOffset CreatedAt);
 

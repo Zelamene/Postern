@@ -66,7 +66,7 @@ public static class AliasEndpoints
             return Results.Unauthorized();
         }
 
-        var alias = await service.CreateAsync(currentUserId.Value, request.Label ?? string.Empty, request.PurposeMetadata ?? "", cancellationToken);
+        var alias = await service.CreateAsync(currentUserId.Value, request.Label ?? string.Empty, request.PurposeMetadata ?? "", cancellationToken, request.Category);
         return alias is null
             ? Results.BadRequest(new { error = "reserved_or_invalid_label" })
             : Results.Created($"/api/aliases/{alias.Id}", MapAliasResponse(alias));
@@ -117,6 +117,7 @@ public static class AliasEndpoints
             return Results.Unauthorized();
         }
 
+        await service.CopyExpectedSendersAsync(currentUserId.Value, aliasId, replacementAliasId, cancellationToken);
         var success = await service.ReplaceAsync(currentUserId.Value, aliasId, replacementAliasId, cancellationToken);
         return success ? Results.NoContent() : Results.NotFound();
     }
@@ -134,7 +135,7 @@ public static class AliasEndpoints
             return Results.Unauthorized();
         }
 
-        var replacement = await service.CreateAsync(currentUserId.Value, request.Label ?? "replaced", request.PurposeMetadata ?? string.Empty, cancellationToken);
+        var replacement = await service.CreateAsync(currentUserId.Value, request.Label ?? "replaced", request.PurposeMetadata ?? string.Empty, cancellationToken, request.Category);
         if (replacement is null)
         {
             return Results.BadRequest(new { error = "cannot_create_replacement" });
@@ -273,9 +274,9 @@ public static class AliasEndpoints
             alias.CreatedAt,
             alias.DeletedAt);
 
-    public sealed record CreateAliasRequest(string? Label, string? PurposeMetadata);
+    public sealed record CreateAliasRequest(string? Label, string? PurposeMetadata, string? Category);
     public sealed record UpdateAliasRequest(string Action);
-    public sealed record ReplaceAliasRequest(string? Label, string? PurposeMetadata);
+    public sealed record ReplaceAliasRequest(string? Label, string? PurposeMetadata, string? Category);
     public sealed record AddExpectedSenderRequest(string SenderEtld1);
     public sealed record MarkExpectedSenderRequest(string SenderEtld1);
     public sealed record BlockSenderRequest(string SenderEtld1);

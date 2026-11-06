@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { RECOVERY_KEY_WARNING } from '../../services/productCopy'
 import { IconCheck } from './Icons'
 
 interface RecoveryKeyNoticeProps {
@@ -44,13 +45,10 @@ export function RecoveryKeyNotice({
         <h2 id="recovery-key-heading" className="text-sm font-bold text-warning-on-surface">
           Save your recovery key
         </h2>
-        <p className="mt-1 text-sm text-warning-on-surface">
-          Use this key to reset your password if you forget it. Each successful reset replaces the
-          key. Postern stores only a hash and cannot show it again.
-        </p>
+        <p className="mt-1 text-sm text-warning-on-surface">{RECOVERY_KEY_WARNING}</p>
         <p className="mt-2 text-sm font-semibold text-warning-on-surface">
-          If you lose this key and forget your password, you may lose access to your account.
-          Store it somewhere secure, such as a password manager.
+          Store it somewhere secure, such as a password manager. Postern stores only a hash and
+          cannot show it again.
         </p>
         <code className="mt-3 block break-all rounded-lg bg-surface px-3 py-2 text-sm text-text">
           {recoveryKey}

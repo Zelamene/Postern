@@ -390,6 +390,9 @@ components:
           description: Trimmed and truncated server-side. Reserved labels are rejected.
         purposeMetadata:
           type: [string, 'null']
+        category:
+          type: [string, 'null']
+          description: Trimmed and truncated to 40 characters. Defaults to `personal`.
 
     UpdateAliasRequest:
       type: object
@@ -407,6 +410,9 @@ components:
           description: Label for the replacement alias. Defaults to `replaced`.
         purposeMetadata:
           type: [string, 'null']
+        category:
+          type: [string, 'null']
+          description: Trimmed and truncated to 40 characters. Defaults to `personal`.
 
     ExpectedSenderRequest:
       type: object

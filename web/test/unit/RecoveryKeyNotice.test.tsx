@@ -24,8 +24,8 @@ describe('RecoveryKeyNotice', () => {
 
     render(<RecoveryKeyNotice recoveryKey="postern_recovery_key" />)
 
-    expect(screen.getByText(/reset your password if you forget it/i)).toBeVisible()
-    expect(screen.getByText(/if you lose this key and forget your password/i)).toBeVisible()
+    expect(screen.getByText(/only way to recover your account/i)).toBeVisible()
+    expect(screen.getByText(/a new key is issued automatically/i)).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Copy recovery key' }))
 
     expect(writeText).toHaveBeenCalledWith('postern_recovery_key')

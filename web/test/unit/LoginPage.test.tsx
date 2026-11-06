@@ -1,12 +1,17 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { LoginPage } from '../../src/pages/LoginPage'
 import { server } from '../server'
 
+afterEach(() => {
+  window.history.pushState({}, '', '/')
+  window.sessionStorage.clear()
+})
+
 describe('LoginPage', () => {
-  it('signs in an active invited user and displays a one-time recovery key', async () => {
+  it('signs in an active invited user and sends them into the app', async () => {
     const user = userEvent.setup()
     let submitted: Record<string, unknown> | undefined
     server.use(
@@ -24,12 +29,31 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText('Password'), 'a long secure password')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
-    expect(await screen.findByRole('heading', { name: 'You’re signed in.' })).toBeVisible()
-    expect(screen.getByText('one-time-recovery-key')).toBeVisible()
+    await waitFor(() => expect(window.location.pathname).toBe('/app'))
+    expect(window.sessionStorage.getItem('postern-pending-recovery-key')).toBe(
+      'one-time-recovery-key',
+    )
     expect(submitted).toEqual({
       email: 'person@example.test',
       password: 'a long secure password',
     })
+  })
+
+  it('signs in without staging a recovery key when none is returned', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post('*/api/auth/login', () =>
+        HttpResponse.json({ email: 'person@example.test', recoveryKey: null }),
+      ),
+    )
+
+    render(<LoginPage />)
+    await user.type(screen.getByLabelText('Email address'), 'person@example.test')
+    await user.type(screen.getByLabelText('Password'), 'a long secure password')
+    await user.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    await waitFor(() => expect(window.location.pathname).toBe('/app'))
+    expect(window.sessionStorage.getItem('postern-pending-recovery-key')).toBeNull()
   })
 
   it('explains that pending accounts must be verified before sign-in', async () => {

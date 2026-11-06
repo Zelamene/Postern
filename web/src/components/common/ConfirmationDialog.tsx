@@ -5,6 +5,8 @@ interface ConfirmationDialogProps {
   title: string
   description: string
   confirmLabel: string
+  cancelLabel?: string
+  busyLabel?: string
   busy?: boolean
   onCancel: () => void
   onConfirm: () => void
@@ -15,6 +17,8 @@ export function ConfirmationDialog({
   title,
   description,
   confirmLabel,
+  cancelLabel = 'Keep request',
+  busyLabel = 'Rejecting…',
   busy = false,
   onCancel,
   onConfirm,
@@ -57,7 +61,7 @@ export function ConfirmationDialog({
           onClick={onCancel}
           disabled={busy}
         >
-          Keep request
+          {cancelLabel}
         </button>
         <button
           type="button"
@@ -66,7 +70,7 @@ export function ConfirmationDialog({
           disabled={busy}
           autoFocus
         >
-          {busy ? 'Rejecting…' : confirmLabel}
+          {busy ? busyLabel : confirmLabel}
         </button>
       </div>
     </dialog>

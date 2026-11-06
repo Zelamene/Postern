@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useIsSignedIn } from '../../hooks/useIsSignedIn'
 import { IconMoon, IconPosternLogo, IconSun } from './Icons'
 
 export type ThemeMode = 'light' | 'dark'
@@ -18,6 +19,7 @@ interface NavbarProps {
 
 export function Navbar({ theme, onThemeChange }: Readonly<NavbarProps>) {
   const [isOpen, setIsOpen] = useState(false)
+  const isSignedIn = useIsSignedIn()
   const isDark = theme === 'dark'
   const closeMenu = () => setIsOpen(false)
 
@@ -51,8 +53,8 @@ export function Navbar({ theme, onThemeChange }: Readonly<NavbarProps>) {
         </nav>
 
         <div className="flex items-center gap-2">
-          <a href="/login" className="btn btn--ghost btn--sm">
-            Sign in
+          <a href={isSignedIn ? '/app' : '/login'} className="btn btn--ghost btn--sm">
+            {isSignedIn ? 'Open app' : 'Sign in'}
           </a>
           <button
             type="button"
@@ -106,6 +108,15 @@ export function Navbar({ theme, onThemeChange }: Readonly<NavbarProps>) {
                 </a>
               </li>
             ))}
+            <li>
+              <a
+                href={isSignedIn ? '/app' : '/login'}
+                onClick={closeMenu}
+                className="block rounded-lg px-3 py-2.5 text-sm font-semibold text-text-secondary no-underline transition-colors hover:bg-surface-sunken hover:text-text"
+              >
+                {isSignedIn ? 'Open app' : 'Sign in'}
+              </a>
+            </li>
           </ul>
         </nav>
       ) : null}

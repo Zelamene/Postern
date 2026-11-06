@@ -119,6 +119,17 @@ The solution contains API, application, domain, and infrastructure projects, plu
 
 `Postern.UnitTests` runs anywhere. `Postern.IntegrationTests` needs Docker: it starts a disposable PostgreSQL container per test collection, runs the real API pipeline against it, and removes the container when the run ends. See `backend/tests/Postern.IntegrationTests/README.md` for the folder layout and seeding helpers.
 
+### Signed-in app
+
+A successful regular-user sign-in lands on `/app` instead of returning to the marketing page. The app shell checks `GET /api/auth/me` before rendering and sends anonymous visitors back to `/login`; an administrator account is still routed to `/admin` for its TOTP step. The first successful login displays the one-time recovery key inside the shell, handed over from the login page in session storage and removed as soon as it is read.
+
+- `/app` lists the account's aliases with copy, disable, delete, and per-alias activity links, and creates new aliases. An account with no aliases opens on a first-run prompt that asks for one address to start with.
+- `/app/aliases/{aliasId}` shows the message metadata an alias has received, with authentication result and flagged state, and pages older messages through the activity cursor.
+- `/app/blocked` lists messages Postern refused to forward, with the reason and owning alias.
+- `/app/account` changes the forwarding destination and deletes the account behind a confirmation.
+
+Client code is split by responsibility: `services/` holds typed request helpers per resource (`apiClient`, `accountService`, `aliasService`, `activityService`), `hooks/` owns session and paginated loading state, and `components/app/` holds the presentation. Navigation uses the existing manual pathname router in `App.tsx` through `services/navigation.ts`, so no additional routing dependency is required.
+
 ## Progressive Web App
 
 The Vite frontend serves a web app manifest and a first-party service worker with install icons. The worker caches the app shell and static assets for offline use, and never caches API responses.

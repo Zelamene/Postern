@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ThemeMode } from './components/common/Navbar'
 import { AdminPage } from './pages/AdminPage'
+import { AppPage } from './pages/AppPage'
 import { HomePage } from './pages/HomePage'
 import { InviteRegistrationPage } from './pages/InviteRegistrationPage'
 import { LoginPage } from './pages/LoginPage'
@@ -22,6 +23,7 @@ function preferredTheme(): ThemeMode {
 
 function App() {
   const [theme, setTheme] = useState<ThemeMode>(preferredTheme)
+  const [pathname, setPathname] = useState(() => window.location.pathname)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -31,16 +33,26 @@ function App() {
       ?.setAttribute('content', theme === 'dark' ? '#151110' : '#fbf8f4')
   }, [theme])
 
-  const inviteMatch = window.location.pathname.match(/^\/invite\/([^/]+)\/?$/)
+  useEffect(() => {
+    const syncPathname = () => setPathname(window.location.pathname)
+    window.addEventListener('popstate', syncPathname)
+    return () => window.removeEventListener('popstate', syncPathname)
+  }, [])
+
+  const inviteMatch = pathname.match(/^\/invite\/([^/]+)\/?$/)
   if (inviteMatch) {
     return <InviteRegistrationPage inviteCode={decodeURIComponent(inviteMatch[1])} />
   }
 
-  if (/^\/admin\/?$/.test(window.location.pathname)) {
+  if (/^\/app(\/|$)/.test(pathname)) {
+    return <AppPage pathname={pathname} theme={theme} onThemeChange={setTheme} />
+  }
+
+  if (/^\/admin\/?$/.test(pathname)) {
     return <AdminPage theme={theme} onThemeChange={setTheme} />
   }
 
-  if (/^\/login\/?$/.test(window.location.pathname)) {
+  if (/^\/login\/?$/.test(pathname)) {
     return <LoginPage />
   }
 
