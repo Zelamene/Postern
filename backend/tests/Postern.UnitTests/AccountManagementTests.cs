@@ -195,6 +195,64 @@ public class AccountManagementTests
         Assert.Null(accounts.FindUserById(userId));
     }
 
+    [Fact]
+    public async Task ChangeForwardingAddress_UserMissing_ReturnsFalse()
+    {
+        var accounts = new InMemoryAccountRepository(new PosternUser { Id = Guid.NewGuid(), Email = "x@e.com", NormalizedEmail = "X@E.COM", PasswordHash = "h", Status = "active" });
+        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), new InMemoryDestinationService(), new Fakes.InMemoryKvWriter(), new FixedTimeProvider(DateTimeOffset.UtcNow));
+        Assert.False(await service.ChangeForwardingAddressAsync(Guid.NewGuid(), "new@example.com", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_WhenAddDestinationFails_ReturnsFalse()
+    {
+        var userId = Guid.NewGuid();
+        var user = new PosternUser { Id = userId, Email = "old@example.com", NormalizedEmail = "OLD@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
+        var service = new AccountManagementService(new InMemoryAccountRepository(user), new InMemoryAliasRepository(), new InMemoryDestinationService { ShouldFail = true }, new Fakes.InMemoryKvWriter(), new FixedTimeProvider(DateTimeOffset.UtcNow));
+        Assert.False(await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_RepublishesAliases_AndMarksDirtyOnKvFailure()
+    {
+        var userId = Guid.NewGuid();
+        var user = new PosternUser { Id = userId, Email = "old@example.com", NormalizedEmail = "OLD@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
+        var aliases = new InMemoryAliasRepository();
+        aliases.Seed(new Alias { Id = Guid.NewGuid(), UserId = userId, Label = "l", RandomSuffix = "s", FullAddress = "l-s@postern.local", FullAddressHash = "h", Status = AliasStatus.Active, CreatedAt = DateTimeOffset.UtcNow, KvDirty = false });
+        var kvWriter = new Fakes.InMemoryKvWriter { ShouldFail = true };
+        var service = new AccountManagementService(new InMemoryAccountRepository(user), aliases, new InMemoryDestinationService(), kvWriter, new FixedTimeProvider(DateTimeOffset.UtcNow));
+
+        var ok = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
+
+        Assert.True(ok);
+        Assert.NotEmpty(aliases.KvDirtyAliasIds);
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_RepublishesAliases_SkipsAliasWithoutAddress()
+    {
+        var userId = Guid.NewGuid();
+        var user = new PosternUser { Id = userId, Email = "old@example.com", NormalizedEmail = "OLD@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
+        var aliases = new InMemoryAliasRepository();
+        aliases.Seed(new Alias { Id = Guid.NewGuid(), UserId = userId, FullAddress = null, FullAddressHash = "h", Status = AliasStatus.Deleted, CreatedAt = DateTimeOffset.UtcNow, KvDirty = false });
+        var kvWriter = new Fakes.InMemoryKvWriter();
+        var service = new AccountManagementService(new InMemoryAccountRepository(user), aliases, new InMemoryDestinationService(), kvWriter, new FixedTimeProvider(DateTimeOffset.UtcNow));
+
+        var ok = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
+
+        Assert.True(ok);
+        Assert.Empty(kvWriter.Values);
+        Assert.Empty(aliases.KvDirtyAliasIds);
+    }
+
+    [Fact]
+    public async Task DeleteAccount_UserMissing_ReturnsFalse()
+    {
+        var accounts = new InMemoryAccountRepository(new PosternUser { Id = Guid.NewGuid(), Email = "x@e.com", NormalizedEmail = "X@E.COM", PasswordHash = "h", Status = "active" });
+        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), new InMemoryDestinationService(), new Fakes.InMemoryKvWriter(), new FixedTimeProvider(DateTimeOffset.UtcNow));
+        Assert.False(await service.DeleteAccountAsync(Guid.NewGuid(), CancellationToken.None));
+    }
+
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => utcNow;
