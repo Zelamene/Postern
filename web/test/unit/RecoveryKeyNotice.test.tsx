@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RecoveryKeyNotice } from '../../src/components/common/RecoveryKeyNotice'
+import { ToastProvider } from '../../src/components/common/ToastProvider'
 
 const originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard')
 
@@ -13,6 +14,14 @@ afterEach(() => {
   }
 })
 
+function renderNotice() {
+  return render(
+    <ToastProvider>
+      <RecoveryKeyNotice recoveryKey="postern_recovery_key" />
+    </ToastProvider>,
+  )
+}
+
 describe('RecoveryKeyNotice', () => {
   it('explains recovery use and confirms when the key is copied', async () => {
     const user = userEvent.setup()
@@ -22,30 +31,28 @@ describe('RecoveryKeyNotice', () => {
       value: { writeText },
     })
 
-    render(<RecoveryKeyNotice recoveryKey="postern_recovery_key" />)
+    renderNotice()
 
     expect(screen.getByText(/only way to recover your account/i)).toBeVisible()
-    expect(screen.getByText(/a new key is issued automatically/i)).toBeVisible()
+    expect(screen.getByText(/you can create a new key later/i)).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Copy recovery key' }))
 
     expect(writeText).toHaveBeenCalledWith('postern_recovery_key')
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Recovery key copied to clipboard.',
-    )
+    expect(await screen.findByText('Recovery key copied to clipboard.')).toBeVisible()
   })
 
-  it('explains when clipboard copying fails', async () => {
+  it('offers manual copy guidance when clipboard copying fails', async () => {
     const user = userEvent.setup()
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText: vi.fn().mockRejectedValue(new Error('Clipboard unavailable')) },
     })
 
-    render(<RecoveryKeyNotice recoveryKey="postern_recovery_key" />)
+    renderNotice()
     await user.click(screen.getByRole('button', { name: 'Copy recovery key' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Could not copy the key. Select and copy it manually.',
-    )
+    expect(
+      await screen.findByText(/could not copy automatically/i),
+    ).toBeVisible()
   })
 })

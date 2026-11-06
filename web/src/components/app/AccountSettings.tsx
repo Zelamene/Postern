@@ -1,5 +1,6 @@
 import { useId, useState, type SubmitEvent } from 'react'
 import { ConfirmationDialog } from '../common/ConfirmationDialog'
+import { useToast } from '../common/toast'
 import {
   changeForwardingAddress,
   deleteAccount,
@@ -26,6 +27,7 @@ export function AccountSettings({
   onForwardingAddressChange,
   onAccountDeleted,
 }: Readonly<AccountSettingsProps>) {
+  const toast = useToast()
   const [forwardingAddress, setForwardingAddress] = useState(account.forwardingAddress)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -51,13 +53,14 @@ export function AccountSettings({
       setForwardingAddress(nextAddress)
       onForwardingAddressChange(nextAddress)
       setSaveNotice('Forwarding address updated. New mail is delivered there.')
+      toast.success('Forwarding address updated.')
     } catch (error) {
-      setSaveError(
-        describeError(
-          error,
-          'The forwarding address could not be updated. Check the address and try again.',
-        ),
+      const message = describeError(
+        error,
+        'The forwarding address could not be updated. Check the address and try again.',
       )
+      setSaveError(message)
+      toast.error(message)
     } finally {
       setIsSaving(false)
     }
@@ -76,9 +79,9 @@ export function AccountSettings({
       setIsDeleteOpen(false)
       onAccountDeleted()
     } catch (error) {
-      setDeleteError(
-        describeError(error, 'The account could not be deleted. Try again in a moment.'),
-      )
+      const message = describeError(error, 'The account could not be deleted. Try again in a moment.')
+      setDeleteError(message)
+      toast.error(message)
       setIsDeleting(false)
       setIsDeleteOpen(false)
     }
@@ -188,6 +191,11 @@ export function AccountSettings({
         cancelLabel="Keep account"
         busyLabel="Deleting…"
         busy={isDeleting}
+        confirmMatch={{
+          label: `Type ${account.email} to confirm`,
+          expected: account.email,
+          hint: 'This confirms you are deleting the right account.',
+        }}
         onCancel={() => setIsDeleteOpen(false)}
         onConfirm={() => void handleDelete()}
       />

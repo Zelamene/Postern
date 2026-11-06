@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ConfirmationDialog } from '../common/ConfirmationDialog'
 import { IconCopy, IconInbox } from '../common/Icons'
+import { useToast } from '../common/toast'
 import type { Alias } from '../../services/aliasService'
+import { copyText, selectText } from '../../services/clipboard'
 import { formatDate } from '../../services/formatters'
+import { ALIAS_DELETE_RETENTION } from '../../services/productCopy'
 import { AppLink } from './AppLink'
 import { ALIAS_STATUS_CLASSES } from './aliasStatus'
 
@@ -20,6 +23,23 @@ interface AliasListProps {
 
 type PendingAction = { kind: 'disable' | 'delete'; alias: Alias }
 
+function deleteMatch(alias: Alias): { label: string; expected: string; hint: string } {
+  const address = alias.fullAddress
+  if (address) {
+    return {
+      label: `Type ${address} to confirm`,
+      expected: address,
+      hint: 'This confirms you are retiring the right address.',
+    }
+  }
+
+  return {
+    label: 'Type DELETE to confirm',
+    expected: 'DELETE',
+    hint: 'This confirms you want to retire this alias.',
+  }
+}
+
 export function AliasList({
   aliases,
   status,
@@ -31,38 +51,50 @@ export function AliasList({
   onDelete,
   onDismissError,
 }: Readonly<AliasListProps>) {
+  const toast = useToast()
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [copiedAliasId, setCopiedAliasId] = useState<string | null>(null)
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(
-    () => () => {
-      if (copiedTimer.current !== null) {
-        clearTimeout(copiedTimer.current)
-      }
-    },
-    [],
-  )
-
-  async function copyAddress(alias: Alias) {
-    if (!alias.fullAddress) {
+  useEffect(() => {
+    if (copiedAliasId === null) {
       return
     }
 
-    try {
-      await navigator.clipboard.writeText(alias.fullAddress)
-      setCopiedAliasId(alias.id)
-      if (copiedTimer.current !== null) {
-        clearTimeout(copiedTimer.current)
-      }
+    const timer = window.setTimeout(() => setCopiedAliasId(null), 2000)
+    return () => window.clearTimeout(timer)
+  }, [copiedAliasId])
 
-      copiedTimer.current = setTimeout(() => setCopiedAliasId(null), 2000)
-    } catch (error) {
-      console.error('Unable to copy the alias address', error)
+  async function copyAddress(alias: Alias, target: HTMLElement | null) {
+    const address = alias.fullAddress
+    if (!address) {
+      return
+    }
+
+    if (await copyText(address)) {
+      setCopiedAliasId(alias.id)
+      toast.success('Alias address copied.')
+      return
+    }
+
+    selectText(target)
+    toast.error('Could not copy automatically. The address is selected for manual copy.')
+  }
+
+  async function confirmPendingAction() {
+    if (!pendingAction) {
+      return
+    }
+
+    const { kind, alias } = pendingAction
+    const ok = kind === 'disable' ? await onDisable(alias.id) : await onDelete(alias.id)
+    setPendingAction(null)
+    if (ok && kind === 'delete') {
+      toast.success('Alias deleted.')
     }
   }
 
   const isBusy = pendingAliasId !== null
+  const pendingDelete = pendingAction?.kind === 'delete' ? pendingAction.alias : null
 
   return (
     <>
@@ -71,7 +103,7 @@ export function AliasList({
         aria-labelledby="alias-list-title"
       >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-4 sm:px-6">
-          <div>
+          <div className="min-w-0">
             <h2 id="alias-list-title" className="text-xl font-bold">
               All aliases
             </h2>
@@ -148,8 +180,8 @@ export function AliasList({
                 >
                   <div className="min-w-0">
                     <p className="font-semibold capitalize">{label}</p>
-                    <div className="mt-0.5 flex items-start gap-1.5">
-                      <code className="break-all text-xs text-text-muted">
+                    <div className="mt-0.5 flex min-w-0 items-start gap-1.5">
+                      <code className="min-w-0 break-all text-xs text-text-muted">
                         {alias.fullAddress ?? 'Address pending'}
                       </code>
                       {alias.fullAddress && (
@@ -158,7 +190,11 @@ export function AliasList({
                           className="tip inline-flex size-6 shrink-0 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-tint hover:text-primary"
                           data-tip={copiedAliasId === alias.id ? 'Copied' : 'Copy address'}
                           aria-label={`Copy address for ${label}`}
-                          onClick={() => void copyAddress(alias)}
+                          onClick={(event) => {
+                            const code =
+                              event.currentTarget.parentElement?.querySelector('code')
+                            void copyAddress(alias, code instanceof HTMLElement ? code : null)
+                          }}
                         >
                           <IconCopy size={14} />
                         </button>
@@ -222,39 +258,24 @@ export function AliasList({
         busyLabel="Disabling…"
         busy={isBusy}
         onCancel={() => setPendingAction(null)}
-        onConfirm={() => {
-          if (!pendingAction) {
-            return
-          }
-
-          const aliasId = pendingAction.alias.id
-          setPendingAction(null)
-          void onDisable(aliasId)
-        }}
+        onConfirm={() => void confirmPendingAction()}
       />
 
       <ConfirmationDialog
-        open={pendingAction?.kind === 'delete'}
+        open={pendingDelete !== null}
         title="Delete this alias?"
         description={
-          pendingAction
-            ? `Mail sent to ${pendingAction.alias.fullAddress ?? 'this address'} will stop being forwarded, and the address is retired permanently.`
-            : ''
+          pendingDelete
+            ? `${ALIAS_DELETE_RETENTION} Address: ${pendingDelete.fullAddress ?? 'this address'}.`
+            : ALIAS_DELETE_RETENTION
         }
         confirmLabel="Delete alias"
         cancelLabel="Keep alias"
         busyLabel="Deleting…"
         busy={isBusy}
+        confirmMatch={pendingDelete ? deleteMatch(pendingDelete) : undefined}
         onCancel={() => setPendingAction(null)}
-        onConfirm={() => {
-          if (!pendingAction) {
-            return
-          }
-
-          const aliasId = pendingAction.alias.id
-          setPendingAction(null)
-          void onDelete(aliasId)
-        }}
+        onConfirm={() => void confirmPendingAction()}
       />
     </>
   )

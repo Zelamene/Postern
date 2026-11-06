@@ -3,100 +3,116 @@ import {
   createAlias,
   deleteAlias,
   linkReplacement,
+  DEFAULT_ALIAS_CATEGORY,
+  type Alias,
 } from '../../services/aliasService'
-import type { Alias } from '../../services/aliasService'
 import { copyText, selectText } from '../../services/clipboard'
 import { describeAliasError } from '../../services/aliasErrors'
-import { IconCheck, IconCopy } from '../common/Icons'
+import { IconAlertTriangle, IconCopy, IconCheck } from '../common/Icons'
+import { useToast } from '../common/toast'
 
+type Step = 'reserve' | 'confirm'
 type CopyState = 'idle' | 'copied' | 'manual'
 
 interface ReplaceAliasDialogProps {
-  open: boolean
+  open?: boolean
   alias: Alias | null
   onClose: () => void
   onReplaced: (replacement: Alias) => void
 }
 
-/**
- * Kills a leak without losing the account.
- *
- * The replacement address has to exist before the user can hand it to the
- * service, so it is reserved first and only linked to the old alias on
- * confirm. Cancelling before that point discards the reservation.
- */
 export function ReplaceAliasDialog({
   open,
   alias,
   onClose,
   onReplaced,
 }: Readonly<ReplaceAliasDialogProps>) {
+  const toast = useToast()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const addressRef = useRef<HTMLElement>(null)
   const reservedRef = useRef<Alias | null>(null)
+  const [step, setStep] = useState<Step>('reserve')
   const [replacement, setReplacement] = useState<Alias | null>(null)
   const [copyState, setCopyState] = useState<CopyState>('idle')
-  const [isPreparing, setIsPreparing] = useState(false)
+  const [isReserving, setIsReserving] = useState(false)
   const [isConfirming, setIsConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const isOpen = (open ?? alias !== null) && alias !== null
+
+  const discardReservation = (reserved: Alias | null) => {
+    if (reserved) {
+      void deleteAlias(reserved.id).catch(() => undefined)
+    }
+  }
+
+  const reset = () => {
+    setStep('reserve')
+    setReplacement(null)
+    reservedRef.current = null
+    setCopyState('idle')
+    setIsReserving(false)
+    setIsConfirming(false)
+    setError(null)
+  }
+
+  const handleClose = () => {
+    discardReservation(reservedRef.current)
+    reset()
+    onClose()
+  }
+
+  const prevOpen = useRef(false)
   useEffect(() => {
     const dialog = dialogRef.current
     if (!dialog) {
       return
     }
 
-    if (open && !dialog.open) {
+    if (isOpen && !dialog.open) {
+      if (!prevOpen.current) {
+        reset()
+      }
       dialog.showModal()
-    } else if (!open && dialog.open) {
+      prevOpen.current = true
+    } else if (!isOpen && dialog.open) {
       dialog.close()
+      discardReservation(reservedRef.current)
+      reservedRef.current = null
+      prevOpen.current = false
+    } else if (!isOpen) {
+      prevOpen.current = false
     }
-  }, [open])
+  }, [isOpen])
 
   useEffect(
     () => () => {
-      const reserved = reservedRef.current
-      if (reserved) {
-        void deleteAlias(reserved.id).catch(() => {
-          // A leftover alias is harmless; the user can delete it from the list.
-        })
-      }
+      discardReservation(reservedRef.current)
     },
     [],
   )
 
-  function reset() {
-    reservedRef.current = null
-    setReplacement(null)
-    setCopyState('idle')
-    setError(null)
-  }
-
-  async function prepare() {
-    if (!alias || isPreparing) {
+  async function reserveAddress() {
+    if (!alias || isReserving) {
       return
     }
 
-    setIsPreparing(true)
+    setIsReserving(true)
     setError(null)
 
     try {
-      const reserved = await createAlias({
-        label: alias.label ?? 'default',
-        category: alias.category,
+      const next = await createAlias({
+        label: alias.label ?? 'alias',
+        category: alias.category ?? DEFAULT_ALIAS_CATEGORY,
         expectedSender: null,
       })
-      reservedRef.current = reserved
-      setReplacement(reserved)
-    } catch (prepareError) {
-      setError(
-        describeAliasError(
-          prepareError,
-          'The new address could not be reserved. Check your connection and try again.',
-        ),
-      )
+      reservedRef.current = next
+      setReplacement(next)
+      setStep('confirm')
+    } catch (cause) {
+      setError(describeAliasError(cause, 'The new address could not be created. Try again.'))
     } finally {
-      setIsPreparing(false)
+      setIsReserving(false)
     }
   }
 
@@ -108,14 +124,16 @@ export function ReplaceAliasDialog({
 
     if (await copyText(address)) {
       setCopyState('copied')
+      toast.success('New address copied.')
       return
     }
 
     selectText(addressRef.current)
     setCopyState('manual')
+    toast.error('Could not copy automatically. The address is selected for manual copy.')
   }
 
-  async function confirm() {
+  async function confirmReplace() {
     if (!alias || !replacement || isConfirming || copyState === 'idle') {
       return
     }
@@ -125,14 +143,16 @@ export function ReplaceAliasDialog({
 
     try {
       await linkReplacement(alias.id, replacement.id)
+      reservedRef.current = null
+      const replaced = replacement
       reset()
-      onReplaced(replacement)
+      onReplaced(replaced)
       onClose()
-    } catch (confirmError) {
+    } catch (cause) {
       setError(
         describeAliasError(
-          confirmError,
-          'The replacement could not be confirmed. Check your connection and try again.',
+          cause,
+          'The new address was created, but it could not be linked. You can find it in your alias list.',
         ),
       )
     } finally {
@@ -140,29 +160,25 @@ export function ReplaceAliasDialog({
     }
   }
 
-  function cancel() {
-    const reserved = replacement
-    reset()
-    onClose()
-
-    if (reserved) {
-      void deleteAlias(reserved.id).catch(() => {
-        // A leftover alias is harmless; the user can delete it from the list.
-      })
-    }
+  if (!alias) {
+    return <dialog ref={dialogRef} className="dialog" aria-label="Replace alias" />
   }
 
-  const isBusy = isPreparing || isConfirming
-  const label = alias?.label ?? 'this alias'
+  const isBusy = isReserving || isConfirming
   const canConfirm = replacement !== null && copyState !== 'idle' && !isBusy
 
   return (
     <dialog
       ref={dialogRef}
-      className="dialog"
+      className="dialog max-w-xl"
       aria-labelledby="replace-alias-title"
-      aria-describedby="replace-alias-description"
-      onCancel={cancel}
+      onCancel={(event) => {
+        if (isBusy) {
+          event.preventDefault()
+          return
+        }
+        handleClose()
+      }}
     >
       <div className="dialog__header">
         <h2 id="replace-alias-title" className="text-xl font-bold text-text">
@@ -171,79 +187,59 @@ export function ReplaceAliasDialog({
       </div>
 
       <div className="dialog__body space-y-4">
-        <p id="replace-alias-description">
-          Postern reserves a new address for <span className="font-semibold">{label}</span> and
-          retires the current one, so mail sent to the leaked address stops.
+        <p>
+          Create a fresh address for this service, save it there, then confirm. The old address
+          stops forwarding as soon as the replacement is linked.
         </p>
 
-        <ol className="space-y-4">
-          <li className="flex gap-3">
-            <StepNumber step={1} />
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-text">Reserve the new address and copy it.</p>
-              {replacement?.fullAddress ? (
-                <>
-                  <code
-                    ref={addressRef}
-                    className="mt-2 block break-all rounded-lg bg-surface-sunken px-3 py-2 text-sm text-text"
+        {step === 'reserve' && (
+          <div className="rounded-xl border border-hairline bg-surface-sunken p-4 text-sm">
+            <p className="font-semibold text-text">Reserve the new address and copy it.</p>
+            <p className="mt-1 text-text-muted">
+              You’ll get the real address first so you can save it before the old one is retired.
+            </p>
+          </div>
+        )}
+
+        {step === 'confirm' && replacement && (
+          <div className="space-y-3">
+            <div className="rounded-xl border border-primary-border bg-primary-surface p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                New address
+              </p>
+              <div className="mt-2 flex flex-wrap items-start gap-2">
+                <code ref={addressRef} className="min-w-0 flex-1 break-all text-sm text-text">
+                  {replacement.fullAddress ?? 'Address pending'}
+                </code>
+                {replacement.fullAddress && (
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => void copyAddress()}
                   >
-                    {replacement.fullAddress}
-                  </code>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      className="btn btn--secondary btn--sm"
-                      onClick={() => void copyAddress()}
-                    >
-                      {copyState === 'copied' ? (
-                        <IconCheck className="btn__icon" />
-                      ) : (
-                        <IconCopy className="btn__icon" />
-                      )}
-                      {copyState === 'copied' ? 'Copied' : 'Copy address'}
-                    </button>
-                    {copyState === 'manual' && (
-                      <span role="status" className="text-xs text-text-muted">
-                        Could not copy automatically — the address is selected, so use your
-                        keyboard to copy it.
-                      </span>
+                    {copyState === 'copied' ? (
+                      <IconCheck className="btn__icon" />
+                    ) : (
+                      <IconCopy className="btn__icon" />
                     )}
-                  </div>
-                </>
-              ) : (
-                <p className="mt-1 text-text-muted">
-                  Reserve the address first, then copy it before confirming.
+                    {copyState === 'copied' ? 'Copied' : 'Copy address'}
+                  </button>
+                )}
+              </div>
+              {copyState === 'manual' && (
+                <p className="mt-2 text-xs text-text-muted">
+                  The address is selected, so use your keyboard to copy it.
                 </p>
               )}
             </div>
-          </li>
 
-          <li className="flex gap-3">
-            <StepNumber step={2} />
-            <div>
-              <p className="font-semibold text-text">Change the address at {label}.</p>
-              <p className="mt-1 text-text-muted">
-                Paste the new address into the service’s account settings, in place of the old
-                one.
+            {copyState === 'idle' && (
+              <p className="flex items-start gap-2 text-sm text-text-muted">
+                <IconAlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />
+                <span>Copy the address before confirming, so you don’t lose it.</span>
               </p>
-            </div>
-          </li>
-
-          <li className="flex gap-3">
-            <StepNumber step={3} />
-            <div>
-              <p className="font-semibold text-text">Confirm the swap.</p>
-              <p className="mt-1 text-text-muted">
-                The old address stops delivering immediately. Its history stays readable.
-              </p>
-            </div>
-          </li>
-        </ol>
-
-        {!replacement && (
-          <p className="text-xs text-text-muted">
-            The new address is only linked to this alias when you confirm.
-          </p>
+            )}
+          </div>
         )}
 
         {error && (
@@ -254,43 +250,31 @@ export function ReplaceAliasDialog({
       </div>
 
       <div className="dialog__footer">
-        <button type="button" className="btn btn--secondary" onClick={cancel} disabled={isBusy}>
+        <button type="button" className="btn btn--secondary" onClick={handleClose} disabled={isBusy}>
           Cancel
         </button>
-        {replacement ? (
+        {step === 'reserve' ? (
           <button
             type="button"
             className="btn btn--primary"
-            onClick={() => void confirm()}
-            disabled={!canConfirm}
-            aria-busy={isConfirming || undefined}
+            onClick={() => void reserveAddress()}
+            disabled={isBusy}
+            aria-busy={isReserving || undefined}
           >
-            {isConfirming ? 'Replacing…' : 'Confirm replacement'}
+            {isReserving ? 'Reserving…' : 'Reserve new address'}
           </button>
         ) : (
           <button
             type="button"
             className="btn btn--primary"
-            onClick={() => void prepare()}
-            disabled={isBusy}
-            aria-busy={isPreparing || undefined}
-            autoFocus
+            onClick={() => void confirmReplace()}
+            disabled={!canConfirm}
+            aria-busy={isConfirming || undefined}
           >
-            {isPreparing ? 'Reserving…' : 'Reserve new address'}
+            {isConfirming ? 'Linking…' : 'Confirm replacement'}
           </button>
         )}
       </div>
     </dialog>
-  )
-}
-
-function StepNumber({ step }: Readonly<{ step: number }>) {
-  return (
-    <span
-      className="inline-flex size-6 flex-none items-center justify-center rounded-full bg-primary-subtle text-xs font-bold text-primary"
-      aria-hidden="true"
-    >
-      {step}
-    </span>
   )
 }

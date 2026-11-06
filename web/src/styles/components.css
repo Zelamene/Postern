@@ -981,3 +981,71 @@
     line-height: var(--lh-sm);
   }
 }
+
+  .toast-viewport {
+    position: fixed;
+    inset-inline: var(--space-3);
+    bottom: var(--space-4);
+    z-index: var(--z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    pointer-events: none;
+  }
+
+  @media (min-width: 640px) {
+    .toast-viewport {
+      inset-inline: auto;
+      right: var(--space-6);
+      bottom: var(--space-6);
+      align-items: flex-end;
+    }
+  }
+
+  .toast-viewport .toast {
+    pointer-events: auto;
+  }
+
+  .toast__dismiss {
+    margin: -0.15rem -0.25rem -0.15rem 0;
+    flex: none;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0.15rem 0.35rem;
+    cursor: pointer;
+    opacity: 0.75;
+  }
+
+  .toast__dismiss:hover {
+    opacity: 1;
+    background-color: color-mix(in srgb, currentColor 12%, transparent);
+  }
+
+  @media (max-width: 639px) {
+    .dialog {
+      width: min(100% - 1rem, 30rem);
+      margin: var(--space-2);
+    }
+
+    .dialog__header {
+      padding: var(--space-4) var(--space-4) var(--space-2);
+    }
+
+    .dialog__body {
+      padding: var(--space-2) var(--space-4) var(--space-4);
+    }
+
+    .dialog__footer {
+      flex-wrap: wrap-reverse;
+      padding: var(--space-3) var(--space-4);
+    }
+
+    .dialog__footer > .btn {
+      flex: 1 1 8rem;
+    }
+  }
