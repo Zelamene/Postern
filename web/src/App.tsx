@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ThemeMode } from './components/common/Navbar'
+import { ConnectionBanner } from './components/common/ConnectionBanner'
 import { AdminPage } from './pages/AdminPage'
 import { AppPage } from './pages/AppPage'
 import { HomePage } from './pages/HomePage'
@@ -39,24 +40,25 @@ function App() {
     return () => window.removeEventListener('popstate', syncPathname)
   }, [])
 
+  let page = <HomePage theme={theme} onThemeChange={setTheme} />
   const inviteMatch = pathname.match(/^\/invite\/([^/]+)\/?$/)
+
   if (inviteMatch) {
-    return <InviteRegistrationPage inviteCode={decodeURIComponent(inviteMatch[1])} />
+    page = <InviteRegistrationPage inviteCode={decodeURIComponent(inviteMatch[1])} />
+  } else if (/^\/app(\/|$)/.test(pathname)) {
+    page = <AppPage pathname={pathname} theme={theme} onThemeChange={setTheme} />
+  } else if (/^\/admin\/?$/.test(pathname)) {
+    page = <AdminPage theme={theme} onThemeChange={setTheme} />
+  } else if (/^\/login\/?$/.test(pathname)) {
+    page = <LoginPage />
   }
 
-  if (/^\/app(\/|$)/.test(pathname)) {
-    return <AppPage pathname={pathname} theme={theme} onThemeChange={setTheme} />
-  }
-
-  if (/^\/admin\/?$/.test(pathname)) {
-    return <AdminPage theme={theme} onThemeChange={setTheme} />
-  }
-
-  if (/^\/login\/?$/.test(pathname)) {
-    return <LoginPage />
-  }
-
-  return <HomePage theme={theme} onThemeChange={setTheme} />
+  return (
+    <>
+      <ConnectionBanner />
+      {page}
+    </>
+  )
 }
 
 export default App
