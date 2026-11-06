@@ -94,7 +94,10 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IKvWriter>();
             services.AddSingleton(_kvWriter);
             services.RemoveAll<IDestinationService>();
-            services.AddSingleton<IDestinationService>(new DevelopmentDestinationService());
+            services.RemoveAll<DevelopmentDestinationService>();
+            var destinations = new DevelopmentDestinationService();
+            services.AddSingleton(destinations);
+            services.AddSingleton<IDestinationService>(destinations);
             if (_inviteEmailSender is not null)
             {
                 services.RemoveAll<IInviteEmailSender>();

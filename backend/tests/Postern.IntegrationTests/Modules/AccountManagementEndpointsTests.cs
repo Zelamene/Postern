@@ -137,4 +137,18 @@ public sealed class AccountManagementEndpointsTests(PosternFixture fixture) : IA
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task AccountManagementEndpoints_RequireAuthentication()
+    {
+        using var client = _factory.CreateClient();
+
+        var change = await client.PostAsJsonAsync(
+            "/api/users/change-forwarding-address",
+            new { NewForwardingAddress = "verified@example.test" });
+        var delete = await client.DeleteAsync("/api/users/me");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, change.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, delete.StatusCode);
+    }
 }

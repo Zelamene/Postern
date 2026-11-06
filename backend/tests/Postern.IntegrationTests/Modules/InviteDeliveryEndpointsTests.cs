@@ -215,11 +215,11 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
         Assert.Equal(HttpStatusCode.Accepted, resend.StatusCode);
 
         await using var resentDb = fixture.CreateContext();
-        var reloadedInvite = await resentDb.InviteCodes.SingleAsync();
+        var reloadedInvite = await resentDb.InviteCodes.SingleAsync(item => item.Id == invite.Id);
         var oldMessage = await resentDb.InviteEmailOutbox.SingleAsync(
             message => message.Id == firstOutboxMessage.Id);
         var newMessage = await resentDb.InviteEmailOutbox.SingleAsync(
-            message => message.Id != firstOutboxMessage.Id);
+            message => message.InviteId == invite.Id && message.Id != firstOutboxMessage.Id);
         Assert.NotEqual(invite.CodeHash, reloadedInvite.CodeHash);
         Assert.Equal("cancelled", oldMessage.Status);
         Assert.Equal(string.Empty, oldMessage.ProtectedInviteCode);
@@ -663,6 +663,79 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
         Assert.Contains("https://postern-render.com/invite/postern_invite_secret", root.GetProperty("text").GetString());
         Assert.DoesNotContain("localhost:5173", root.GetProperty("text").GetString());
         Assert.True(handler.HasIdempotencyKey);
+    }
+
+    [Fact]
+    public async Task ResendWebhookRejectsOversizedPayload()
+    {
+        var body = "{" + "\"type\":\"email.bounced\",\"data\":{\"email_id\":\"x\"},\"pad\":\""
+            + new string('a', 64 * 1024) + "\"}";
+        using var client = _factory.CreateClient();
+        using var request = CreateWebhookRequest(
+            body,
+            $"event-too-large-{Guid.NewGuid():N}",
+            DateTimeOffset.UtcNow);
+
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ResendWebhookRejectsMissingSignatureHeader()
+    {
+        using var client = _factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/webhooks/resend")
+        {
+            Content = new StringContent(
+                """{"type":"email.bounced","data":{"email_id":"unknown"}}""",
+                Encoding.UTF8,
+                "application/json")
+        };
+        request.Headers.Add("svix-id", $"event-missing-sig-{Guid.NewGuid():N}");
+        request.Headers.Add("svix-timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
+
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ResendWebhookUpdatesDeliveryStatusForMatchingBouncedMessage()
+    {
+        var providerMessageId = $"resend-{Guid.NewGuid():N}";
+        var email = $"bounced-{Guid.NewGuid():N}@example.test";
+        await using (var db = fixture.CreateContext())
+        {
+            db.InviteCodes.Add(new InviteCode
+            {
+                Id = Guid.NewGuid(),
+                CodeHash = AuthenticationService.HashInviteCode($"postern_invite_{Guid.NewGuid():N}"),
+                Email = email,
+                EmailNormalized = NormalizeIdentity(email),
+                CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-10),
+                ExpiresAt = DateTimeOffset.UtcNow.AddDays(7),
+                DeliveryStatus = InviteDeliveryStatus.Sent,
+                DeliveryMessageId = providerMessageId,
+                DeliveryUpdatedAt = DateTimeOffset.UtcNow.AddMinutes(-5)
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var client = _factory.CreateClient();
+        using var request = CreateWebhookRequest(
+            $"{{\"type\":\"email.bounced\",\"data\":{{\"email_id\":\"{providerMessageId}\"}}}}",
+            $"event-bounced-{Guid.NewGuid():N}",
+            DateTimeOffset.UtcNow);
+
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        await using var verifyDb = fixture.CreateContext();
+        var invite = await verifyDb.InviteCodes.AsNoTracking().SingleAsync(
+            item => item.DeliveryMessageId == providerMessageId);
+        Assert.Equal(InviteDeliveryStatus.Bounced, invite.DeliveryStatus);
+        Assert.NotNull(invite.DeliveryUpdatedAt);
     }
 
     private static HttpRequestMessage CreateWebhookRequest(
