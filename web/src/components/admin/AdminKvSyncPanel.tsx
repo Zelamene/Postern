@@ -1,5 +1,5 @@
 import { IconRefresh } from '../common/Icons'
-import type { KvSyncResult } from '../../services/adminService'
+import type { KvSyncResult } from '../../types'
 
 interface AdminKvSyncPanelProps {
   dirtyAliases: number | null

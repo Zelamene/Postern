@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ConfirmationDialog } from '../common/ConfirmationDialog'
 import { RecoveryKeyNotice } from '../common/RecoveryKeyNotice'
-import type { AdminInvite, InviteDashboard, InviteRequest } from '../../services/adminService'
+import type { AdminInvite, InviteDashboard, InviteRequest } from '../../types'
 import { formatDate } from '../../services/formatters'
 
 interface AdminInviteDashboardProps {

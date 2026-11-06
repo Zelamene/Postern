@@ -3,9 +3,8 @@ import {
   ALIAS_CATEGORIES,
   DEFAULT_ALIAS_CATEGORY,
   isAliasCategory,
-} from '../../services/aliasService'
-import type { AliasCategory, CreateAliasInput } from '../../services/aliasService'
-import type { CreateAliasOutcome } from '../../hooks/useAliases'
+} from '../../constants/aliases'
+import type { AliasCategory, CreateAliasInput, CreateAliasOutcome } from '../../types'
 import { EmailAddressNormalizer } from '../../services/EmailAddressNormalizer'
 import { IconAlertTriangle } from '../common/Icons'
 

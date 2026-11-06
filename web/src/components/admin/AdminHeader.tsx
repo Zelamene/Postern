@@ -1,7 +1,6 @@
-import type { ThemeMode } from '../common/Navbar'
 import { IconMoon, IconPosternLogo, IconSun } from '../common/Icons'
 import { NotificationMenu } from '../common/NotificationMenu'
-import type { NotificationsController } from '../../hooks/useNotifications'
+import type { NotificationsController, ThemeMode } from '../../types'
 
 interface AdminHeaderProps {
   theme: ThemeMode

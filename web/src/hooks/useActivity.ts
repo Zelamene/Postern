@@ -1,26 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  fetchAliasMessages,
-  fetchBlockedMessages,
-  type ActivityPage,
-  type BlockedMessage,
-  type MailMessage,
-} from '../services/activityService'
+import { fetchAliasMessages, fetchBlockedMessages } from '../services/activityService'
 import { ApiError } from '../services/apiClient'
-
-type FeedStatus = 'idle' | 'loading' | 'ready' | 'error'
-
-type PageLoader<T> = (cursor: string | null, signal: AbortSignal) => Promise<ActivityPage<T>>
-
-export interface ActivityFeed<T> {
-  items: T[]
-  status: FeedStatus
-  error: string | null
-  hasMore: boolean
-  isLoadingMore: boolean
-  loadMore: () => Promise<void>
-  refresh: () => Promise<void>
-}
+import type {
+  ActivityFeed,
+  BlockedMessage,
+  FeedStatus,
+  MailMessage,
+  PageLoader,
+} from '../types'
 
 function describeFeedError(error: unknown): string {
   if (error instanceof ApiError) {

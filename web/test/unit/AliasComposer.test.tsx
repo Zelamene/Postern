@@ -2,8 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AliasComposer } from '../../src/components/app/AliasComposer'
-import type { CreateAliasInput } from '../../src/services/aliasService'
-import type { CreateAliasOutcome } from '../../src/hooks/useAliases'
+import type { CreateAliasInput, CreateAliasOutcome } from '../../src/types'
 
 function setup(outcome: CreateAliasOutcome = { ok: true, warning: null }) {
   const onCreate = vi.fn(

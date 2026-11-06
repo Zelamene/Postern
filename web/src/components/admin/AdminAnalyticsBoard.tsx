@@ -1,4 +1,4 @@
-import type { AdminAnalytics, AdminDistributionItem } from '../../services/adminService'
+import type { AdminAnalytics, AdminDistributionItem } from '../../types'
 import { formatDateTime } from '../../services/formatters'
 
 interface AdminAnalyticsBoardProps {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ThemeMode } from './components/common/Navbar'
+import type { ThemeMode } from './types'
 import { ConnectionBanner } from './components/common/ConnectionBanner'
 import { AdminPage } from './pages/AdminPage'
 import { AppPage } from './pages/AppPage'

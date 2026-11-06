@@ -1,44 +1,5 @@
+import type { Alias, AliasStatus, CreateAliasInput } from '../types'
 import { requestEmpty, requestJson } from './apiClient'
-
-export type AliasStatus = 'Active' | 'Disabled' | 'Replaced' | 'Deleted'
-
-export const ALIAS_CATEGORIES = [
-  { value: 'streaming', label: 'Streaming' },
-  { value: 'shopping', label: 'Shopping' },
-  { value: 'newsletter', label: 'Newsletter' },
-  { value: 'finance', label: 'Finance' },
-  { value: 'social', label: 'Social' },
-  { value: 'other', label: 'Other' },
-] as const
-
-export type AliasCategory = (typeof ALIAS_CATEGORIES)[number]['value']
-
-export const DEFAULT_ALIAS_CATEGORY: AliasCategory = 'other'
-
-export function isAliasCategory(value: string): value is AliasCategory {
-  return ALIAS_CATEGORIES.some((category) => category.value === value)
-}
-
-export interface Alias {
-  id: string
-  userId: string | null
-  label: string | null
-  randomSuffix: string | null
-  fullAddress: string | null
-  purposeMetadata: string | null
-  category: string | null
-  status: AliasStatus
-  replacedByAliasId: string | null
-  kvDirty: boolean
-  createdAt: string
-  deletedAt: string | null
-}
-
-export interface CreateAliasInput {
-  label: string
-  category: string | null
-  expectedSender: string | null
-}
 
 interface AliasResponse {
   id: string

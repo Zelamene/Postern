@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ReplaceAliasDialog } from '../../src/components/app/ReplaceAliasDialog'
-import type { Alias } from '../../src/services/aliasService'
+import type { Alias } from '../../src/types'
 import { server } from '../server'
 
 const ALIAS: Alias = {

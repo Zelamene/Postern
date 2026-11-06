@@ -6,34 +6,16 @@ import {
   disableAlias as disableAliasRequest,
   fetchAliases,
 } from '../services/aliasService'
-import type { Alias, AliasStatus, CreateAliasInput } from '../services/aliasService'
 import { ApiError } from '../services/apiClient'
 import { describeAliasError } from '../services/aliasErrors'
-
-type LoadStatus = 'loading' | 'ready' | 'error'
-
-export interface CreateAliasOutcome {
-  ok: boolean
-  /** Set when the alias exists but its expected sender could not be saved. */
-  warning: string | null
-}
-
-export interface AliasesController {
-  aliases: Alias[]
-  status: LoadStatus
-  loadError: string | null
-  createError: string | null
-  actionError: string | null
-  pendingAliasId: string | null
-  isCreating: boolean
-  reload: () => void
-  refresh: () => Promise<void>
-  create: (input: CreateAliasInput) => Promise<CreateAliasOutcome>
-  disable: (aliasId: string) => Promise<boolean>
-  remove: (aliasId: string) => Promise<boolean>
-  applyReplacement: (aliasId: string, replacement: Alias) => void
-  dismissActionError: () => void
-}
+import type {
+  Alias,
+  AliasLoadStatus,
+  AliasesController,
+  AliasStatus,
+  CreateAliasInput,
+  CreateAliasOutcome,
+} from '../types'
 
 async function addExpectedSenderOrWarn(
   aliasId: string,
@@ -58,7 +40,7 @@ function markReplaced(alias: Alias, replacementId: string): Alias {
 
 export function useAliases(enabled: boolean): AliasesController {
   const [aliases, setAliases] = useState<Alias[]>([])
-  const [status, setStatus] = useState<LoadStatus>('loading')
+  const [status, setStatus] = useState<AliasLoadStatus>('loading')
   const [loadError, setLoadError] = useState<string | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)

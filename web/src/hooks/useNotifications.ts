@@ -4,22 +4,13 @@ import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
-  type NotificationAudience,
-  type NotificationItem,
 } from '../services/notificationService'
-
-type NotificationStatus = 'loading' | 'ready' | 'error'
-
-export interface NotificationsController {
-  notifications: NotificationItem[]
-  unreadCount: number
-  status: NotificationStatus
-  error: string | null
-  isMarkingAll: boolean
-  refresh: () => Promise<void>
-  markRead: (notificationId: string) => Promise<void>
-  markAllRead: () => Promise<void>
-}
+import type {
+  NotificationAudience,
+  NotificationItem,
+  NotificationStatus,
+  NotificationsController,
+} from '../types'
 
 function describeLoadError(error: unknown): string {
   if (error instanceof ApiError && error.status === 401) {

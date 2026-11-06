@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { MailMessage } from '../../src/services/activityService'
+import type { MailMessage } from '../../src/types'
 import { exportAliasActivityCsv } from '../../src/services/activityExport'
 
 const fetchAliasMessages = vi.fn()

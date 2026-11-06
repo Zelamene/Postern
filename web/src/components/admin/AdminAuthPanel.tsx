@@ -7,8 +7,8 @@ import {
   signInAdmin,
   startAdminTotpSetup,
   verifyAdminTotp,
-  type AdminTotpSetup,
 } from '../../services/adminService'
+import type { AdminTotpSetup } from '../../types'
 
 type AuthMode = 'signedOut' | 'unavailable' | 'forbidden'
 type MfaStep = 'setup' | 'verify' | null

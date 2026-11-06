@@ -6,32 +6,15 @@ import {
   fetchBlocklist,
   removeBlockedDomain,
   syncAdminKv,
-  type AdminAnalytics,
-  type Blocklist,
-  type KvSyncResult,
 } from '../services/adminService'
+import type {
+  AdminAnalytics,
+  AdminOperations,
+  Blocklist,
+  KvSyncResult,
+} from '../types'
 
 const DEFAULT_WINDOW_HOURS = 24
-
-export interface AdminOperations {
-  windowHours: number
-  setWindowHours: (hours: number) => void
-  analytics: AdminAnalytics | null
-  analyticsError: string | null
-  isAnalyticsLoading: boolean
-  blocklist: Blocklist | null
-  blocklistError: string | null
-  isBlocklistLoading: boolean
-  blocklistBusy: string | null
-  kvResult: KvSyncResult | null
-  kvError: string | null
-  isSyncingKv: boolean
-  reload: () => Promise<void>
-  refresh: () => Promise<void>
-  addDomain: (domain: string, reason: string) => Promise<boolean>
-  removeDomain: (domain: string) => Promise<boolean>
-  syncKv: () => Promise<void>
-}
 
 export function useAdminOperations(enabled: boolean): AdminOperations {
   const [windowHours, setWindowHoursState] = useState(DEFAULT_WINDOW_HOURS)

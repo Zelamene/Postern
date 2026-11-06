@@ -1,11 +1,5 @@
 import { createContext, useContext } from 'react'
-
-export type ToastKind = 'success' | 'error'
-
-export interface ToastApi {
-  success: (message: string) => void
-  error: (message: string) => void
-}
+import type { ToastApi } from '../../types'
 
 const noop = () => undefined
 export const NOOP_TOAST_API: ToastApi = { success: noop, error: noop }

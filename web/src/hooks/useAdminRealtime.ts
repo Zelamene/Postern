@@ -4,13 +4,9 @@ import {
   adminRealtimeEvents,
   createAdminRealtimeConnection,
 } from '../realtime/adminRealtime'
+import type { AdminRealtimeHandlers } from '../types'
 
 const INITIAL_RETRY_DELAY_MS = 5_000
-
-export interface AdminRealtimeHandlers {
-  onDashboardChanged: () => void | Promise<void>
-  onOperationsChanged: () => void | Promise<void>
-}
 
 export function useAdminRealtime(enabled: boolean, handlers: AdminRealtimeHandlers): void {
   const handlersRef = useRef(handlers)

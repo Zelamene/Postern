@@ -3,9 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { AliasActivity } from '../../src/components/app/AliasActivity'
-import type { Alias } from '../../src/services/aliasService'
-import type { MailMessage } from '../../src/services/activityService'
-import type { ActivityFeed } from '../../src/hooks/useActivity'
+import type { ActivityFeed, Alias, MailMessage } from '../../src/types'
 import { server } from '../server'
 
 const originalShowModal = HTMLDialogElement.prototype.showModal

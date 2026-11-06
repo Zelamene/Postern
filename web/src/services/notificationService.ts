@@ -1,21 +1,8 @@
+import type {
+  NotificationAudience,
+  NotificationInbox,
+} from '../types'
 import { requestEmpty, requestJson } from './apiClient'
-
-export type NotificationAudience = 'user' | 'admin'
-
-export interface NotificationItem {
-  id: string
-  kind: string
-  title: string
-  body: string | null
-  link: string | null
-  createdAt: string
-  readAt: string | null
-}
-
-export interface NotificationInbox {
-  unreadCount: number
-  notifications: NotificationItem[]
-}
 
 function inboxPath(audience: NotificationAudience): string {
   return audience === 'admin' ? '/api/admin/notifications' : '/api/notifications'

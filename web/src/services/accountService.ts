@@ -1,10 +1,5 @@
+import type { CurrentAccount } from '../types'
 import { requestEmpty, requestJson } from './apiClient'
-
-export interface CurrentAccount {
-  userId: string
-  email: string
-  forwardingAddress: string
-}
 
 export function fetchCurrentAccount(signal?: AbortSignal): Promise<CurrentAccount> {
   return requestJson<CurrentAccount>('/api/auth/me', { signal })

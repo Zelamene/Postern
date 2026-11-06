@@ -1,15 +1,11 @@
-import { fetchAliasMessages, type MailMessage } from './activityService'
+import type { AliasActivityExportResult, MailMessage } from '../types'
+import { fetchAliasMessages } from './activityService'
 import { downloadCsv, formatExportDateRange, sanitizeFilenamePart, serializeCsv } from './csvExport'
 
 export const EXPORT_ROW_LIMIT = 5_000
 export const EXPORT_PAGE_LIMIT = 100
 
 const HEADERS = ['sender', 'subject', 'received-at', 'authentication result', 'flagged']
-
-export interface AliasActivityExportResult {
-  rowCount: number
-  limited: boolean
-}
 
 function senderValue(message: MailMessage): string {
   return message.fromHeader?.trim() || message.envelopeSender?.trim() || ''

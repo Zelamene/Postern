@@ -1,8 +1,6 @@
 import { IconMoon, IconPosternLogo, IconSun } from '../common/Icons'
 import { NotificationMenu } from '../common/NotificationMenu'
-import type { ThemeMode } from '../common/Navbar'
-import type { NotificationsController } from '../../hooks/useNotifications'
-import type { AppView } from '../../services/navigation'
+import type { AppView, NotificationsController, ThemeMode } from '../../types'
 import { AppLink } from './AppLink'
 
 interface AppHeaderProps {

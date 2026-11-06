@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ThemeMode } from '../components/common/Navbar'
+import type { InviteDashboard, InviteRequest, ThemeMode } from '../types'
 import { AdminAnalyticsBoard } from '../components/admin/AdminAnalyticsBoard'
 import { AdminAuthPanel } from '../components/admin/AdminAuthPanel'
 import { AdminBlocklistPanel } from '../components/admin/AdminBlocklistPanel'
@@ -17,8 +17,6 @@ import {
   resendInvite,
   revokeInvite,
   signOutAdmin,
-  type InviteDashboard,
-  type InviteRequest,
 } from '../services/adminService'
 
 interface AdminPageProps {

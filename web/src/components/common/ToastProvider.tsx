@@ -7,7 +7,8 @@ import {
   type ReactNode,
 } from 'react'
 import { IconAlertTriangle, IconCheck } from './Icons'
-import { ToastContext, type ToastApi, type ToastKind } from './toast'
+import { ToastContext } from './toast'
+import type { ToastApi, ToastKind } from '../../types'
 
 interface Toast {
   id: number

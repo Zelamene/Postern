@@ -4,15 +4,9 @@ import {
   createUserRealtimeConnection,
   userRealtimeEvents,
 } from '../realtime/userRealtime'
+import type { UserRealtimeHandlers } from '../types'
 
 const INITIAL_RETRY_DELAY_MS = 5_000
-
-export interface UserRealtimeHandlers {
-  onAliasesChanged: () => void | Promise<void>
-  onMessageReceived: (aliasId: string) => void | Promise<void>
-  onBlockedMessageReceived: (aliasId: string) => void | Promise<void>
-  onAccountChanged: () => void | Promise<void>
-}
 
 export function useUserRealtime(enabled: boolean, handlers: UserRealtimeHandlers): void {
   const handlersRef = useRef(handlers)

@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useIsSignedIn } from '../../hooks/useIsSignedIn'
+import type { ThemeMode } from '../../types'
 import { IconMoon, IconPosternLogo, IconSun } from './Icons'
-
-export type ThemeMode = 'light' | 'dark'
 
 const LINKS = [
   { href: '#problem', label: 'The Problem' },

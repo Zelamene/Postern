@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { ConfirmationDialog } from '../common/ConfirmationDialog'
-import type { BlocklistEntry } from '../../services/adminService'
+import type { BlocklistEntry } from '../../types'
 import { formatDate } from '../../services/formatters'
 
 interface AdminBlocklistPanelProps {

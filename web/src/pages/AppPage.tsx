@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ThemeMode } from '../components/common/Navbar'
+import type { ThemeMode } from '../types'
 import { RecoveryKeyNotice } from '../components/common/RecoveryKeyNotice'
 import { AppHeader } from '../components/app/AppHeader'
 import { AliasActivity } from '../components/app/AliasActivity'

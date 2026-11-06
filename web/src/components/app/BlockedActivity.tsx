@@ -1,8 +1,6 @@
 import { IconEyeOff } from '../common/Icons'
-import type { BlockedMessage } from '../../services/activityService'
-import type { Alias } from '../../services/aliasService'
+import type { ActivityFeed, Alias, BlockedMessage } from '../../types'
 import { formatDateTime } from '../../services/formatters'
-import type { ActivityFeed } from '../../hooks/useActivity'
 
 interface BlockedActivityProps {
   aliases: Alias[]

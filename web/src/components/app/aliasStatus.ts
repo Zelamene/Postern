@@ -1,4 +1,4 @@
-import type { AliasStatus } from '../../services/aliasService'
+import type { AliasStatus } from '../../types'
 
 export const ALIAS_STATUS_CLASSES: Record<AliasStatus, string> = {
   Active: 'bg-success-surface text-success-on-surface',

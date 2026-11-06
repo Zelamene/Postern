@@ -7,8 +7,7 @@ import { WhoItsForSection } from '../components/landing/WhoItsForSection'
 import { GuaranteesSection } from '../components/landing/GuaranteesSection'
 import { Footer } from '../components/common/Footer'
 import { Navbar } from '../components/common/Navbar'
-
-type ThemeMode = 'light' | 'dark'
+import type { ThemeMode } from '../types'
 
 interface HomePageProps {
   theme: ThemeMode

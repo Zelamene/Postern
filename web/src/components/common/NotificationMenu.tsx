@@ -1,8 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { NotificationsController } from '../../hooks/useNotifications'
 import { formatDateTime } from '../../services/formatters'
 import { navigate } from '../../services/navigation'
-import type { NotificationItem } from '../../services/notificationService'
+import type { NotificationItem, NotificationsController } from '../../types'
 import { IconBell } from './Icons'
 
 interface NotificationMenuProps {

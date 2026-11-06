@@ -1,30 +1,5 @@
+import type { ActivityPage, BlockedMessage, MailMessage } from '../types'
 import { requestJson } from './apiClient'
-
-export interface MailMessage {
-  id: string
-  aliasId: string
-  fromHeader: string
-  envelopeSender: string
-  subject: string | null
-  receivedAt: string
-  authenticationResult: string
-  isFlagged: boolean
-  flagReason: string | null
-}
-
-export interface BlockedMessage {
-  id: string
-  aliasId: string
-  fromHeader: string
-  subject: string | null
-  receivedAt: string
-  reason: string
-}
-
-export interface ActivityPage<T> {
-  items: T[]
-  nextCursor: string | null
-}
 
 interface ActivityQuery {
   cursor?: string | null

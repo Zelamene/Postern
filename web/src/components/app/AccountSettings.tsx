@@ -4,9 +4,9 @@ import { useToast } from '../common/toast'
 import {
   changeForwardingAddress,
   deleteAccount,
-  type CurrentAccount,
 } from '../../services/accountService'
 import { ApiError } from '../../services/apiClient'
+import type { CurrentAccount } from '../../types'
 
 interface AccountSettingsProps {
   account: CurrentAccount

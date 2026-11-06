@@ -1,19 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchCurrentAccount, type CurrentAccount } from '../services/accountService'
+import { fetchCurrentAccount } from '../services/accountService'
 import { ApiError } from '../services/apiClient'
-
-export type AccountSession =
-  | { status: 'checking' }
-  | { status: 'slow' }
-  | { status: 'ready'; account: CurrentAccount }
-  | { status: 'anonymous' }
-  | { status: 'unavailable' }
-
-export interface AccountSessionState {
-  session: AccountSession
-  retry: () => void
-  refresh: () => Promise<void>
-}
+import type { AccountSession, AccountSessionState } from '../types'
 
 const SLOW_AFTER_MS = 3_000
 

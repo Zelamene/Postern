@@ -2,8 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NotificationMenu } from '../../src/components/common/NotificationMenu'
-import type { NotificationsController } from '../../src/hooks/useNotifications'
-import type { NotificationItem } from '../../src/services/notificationService'
+import type { NotificationItem, NotificationsController } from '../../src/types'
 
 function aNotification(overrides: Partial<NotificationItem> = {}): NotificationItem {
   return {

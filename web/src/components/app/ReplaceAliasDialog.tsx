@@ -3,9 +3,9 @@ import {
   createAlias,
   deleteAlias,
   linkReplacement,
-  DEFAULT_ALIAS_CATEGORY,
-  type Alias,
 } from '../../services/aliasService'
+import { DEFAULT_ALIAS_CATEGORY } from '../../constants/aliases'
+import type { Alias } from '../../types'
 import { copyText, selectText } from '../../services/clipboard'
 import { describeAliasError } from '../../services/aliasErrors'
 import { IconAlertTriangle, IconCopy, IconCheck } from '../common/Icons'

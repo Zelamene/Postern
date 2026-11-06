@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { AliasList } from '../../src/components/app/AliasList'
-import type { Alias } from '../../src/services/aliasService'
+import type { Alias } from '../../src/types'
 
 beforeAll(() => {
   if (typeof HTMLDialogElement !== 'undefined') {

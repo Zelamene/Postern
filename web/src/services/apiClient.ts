@@ -1,3 +1,5 @@
+import type { ApiRequestOptions } from '../types'
+
 export class ApiError extends Error {
   readonly status: number
 
@@ -13,12 +15,6 @@ export class ApiTimeoutError extends Error {
     super('Request timed out.')
     this.name = 'ApiTimeoutError'
   }
-}
-
-export interface ApiRequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
-  body?: unknown
-  signal?: AbortSignal
 }
 
 const REQUEST_TIMEOUT_MS = 15_000

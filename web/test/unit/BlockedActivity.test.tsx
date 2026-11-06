@@ -2,9 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { BlockedActivity } from '../../src/components/app/BlockedActivity'
-import type { ActivityFeed } from '../../src/hooks/useActivity'
-import type { BlockedMessage } from '../../src/services/activityService'
-import type { Alias } from '../../src/services/aliasService'
+import type { ActivityFeed, Alias, BlockedMessage } from '../../src/types'
 
 const ALIAS: Alias = {
   id: 'alias-1',

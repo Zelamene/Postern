@@ -1,9 +1,4 @@
-export type AppView = 'aliases' | 'messages' | 'blocked' | 'account'
-
-export interface AppRoute {
-  view: AppView
-  aliasId: string | null
-}
+import type { AppRoute } from '../types'
 
 const ALIAS_MESSAGES_PATTERN = /^\/app\/aliases\/([^/]+)\/?$/
 
