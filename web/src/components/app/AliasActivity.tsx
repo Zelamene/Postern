@@ -12,6 +12,8 @@ import type { ActivityFeed } from '../../hooks/useActivity'
 import { AppLink } from './AppLink'
 import { ALIAS_STATUS_CLASSES } from './aliasStatus'
 import { ReplaceAliasDialog } from './ReplaceAliasDialog'
+import { useToast } from '../common/toast'
+import { exportAliasActivityCsv } from '../../services/activityExport'
 
 type SenderAction = 'expected' | 'block'
 
@@ -53,10 +55,12 @@ function describeSenderError(error: unknown): string {
 }
 
 export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasActivityProps>) {
+  const toast = useToast()
   const [isReplaceOpen, setIsReplaceOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
 
   const title = alias?.label ?? 'Alias activity'
   const address = alias?.fullAddress ?? ''
@@ -100,6 +104,32 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
     )
   }
 
+  async function handleExport() {
+    if (!alias || isExporting) {
+      return
+    }
+
+    setIsExporting(true)
+
+    try {
+      const result = await exportAliasActivityCsv(alias.id, alias.label ?? alias.fullAddress ?? 'alias')
+      if (result.limited) {
+        toast.error('Export limited to the first 5,000 messages.')
+        return
+      }
+
+      toast.success('Activity exported.')
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return
+      }
+
+      toast.error('The export could not be completed. Try again.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -124,6 +154,17 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
           <p className="max-w-prose text-sm text-text-muted">
             Postern keeps message metadata for this address. Bodies are never stored.
           </p>
+          {alias && (
+            <button
+              type="button"
+              className="btn btn--secondary btn--sm"
+              onClick={() => void handleExport()}
+              disabled={isExporting}
+              aria-busy={isExporting || undefined}
+            >
+              {isExporting ? 'Exporting…' : 'Export CSV'}
+            </button>
+          )}
           {canReplace && (
             <button
               type="button"
