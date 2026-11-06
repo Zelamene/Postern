@@ -89,7 +89,7 @@ afterEach(() => {
 })
 
 describe('ReplaceAliasDialog', () => {
-  it('only allows confirming after the new address has been copied', async () => {
+  it('shows a replacement checklist and only allows confirming after required steps', async () => {
     const user = userEvent.setup()
     const links: string[] = []
     const { onReplaced } = renderDialog()
@@ -103,14 +103,22 @@ describe('ReplaceAliasDialog', () => {
     expect(
       screen.getByRole('dialog', { name: 'Kill the leak, keep the service' }),
     ).toBeVisible()
+    expect(screen.getByRole('list', { name: 'Replacement checklist' })).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: 'Reserve new address' }))
     expect(await screen.findByText('shop.ab12@postern.local')).toBeVisible()
 
     const confirm = screen.getByRole('button', { name: 'Confirm replacement' })
+    const serviceUpdated = screen.getByRole('checkbox', {
+      name: /updated the service and saved the new address/i,
+    })
     expect(confirm).toBeDisabled()
+    expect(serviceUpdated).toBeEnabled()
 
     await user.click(screen.getByRole('button', { name: 'Copy address' }))
+    expect(confirm).toBeDisabled()
+
+    await user.click(serviceUpdated)
     expect(confirm).toBeEnabled()
 
     await user.click(confirm)
@@ -132,6 +140,9 @@ describe('ReplaceAliasDialog', () => {
 
     await user.click(screen.getByRole('button', { name: 'Reserve new address' }))
     await user.click(await screen.findByRole('button', { name: 'Copy address' }))
+    await user.click(
+      screen.getByRole('checkbox', { name: /updated the service and saved the new address/i }),
+    )
     await user.click(screen.getByRole('button', { name: 'Confirm replacement' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('That alias no longer exists')

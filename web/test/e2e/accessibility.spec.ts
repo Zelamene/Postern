@@ -96,7 +96,6 @@ test.describe('page accessibility', () => {
   })
 
   test('admin dashboard has no WCAG 2.2 AA violations', async ({ page }) => {
-    let invitesRequests = 0
     const dashboard = {
       invites: [
         {
@@ -114,32 +113,24 @@ test.describe('page accessibility', () => {
     }
 
     await page.route('**/api/admin/invites', async (route) => {
-      invitesRequests += 1
       await route.fulfill({
-        status: invitesRequests === 1 ? 401 : 200,
+        status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(invitesRequests === 1 ? { error: 'unauthorized' } : dashboard),
+        body: JSON.stringify(dashboard),
       })
     })
     await page.route('**/api/admin/invite-requests', async (route) => {
       await route.fulfill({
-        status: invitesRequests === 1 ? 401 : 200,
-        contentType: 'application/json',
-        body: JSON.stringify(invitesRequests === 1 ? { error: 'unauthorized' } : { requests: [] }),
-      })
-    })
-    await page.route('**/api/auth/login', async (route) => {
-      await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ userId: 'admin-id', email: 'admin@example.test' }),
+        body: JSON.stringify({ requests: [] }),
       })
+    })
+    await page.route('**/api/admin/events/**', async (route) => {
+      await route.fulfill({ status: 204 })
     })
 
     await page.goto('/admin')
-    await page.getByLabel('Email address').fill('admin@example.test')
-    await page.getByLabel('Password').fill('secure-admin-password')
-    await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(page.getByRole('heading', { name: 'Admin dashboard' })).toBeVisible()
     await expect(page.getByText('invitee@example.test').first()).toBeVisible()
