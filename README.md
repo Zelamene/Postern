@@ -22,6 +22,8 @@ Copy-Item env/web.env.example env/web.env
 
 Replace the placeholder passwords with unique local values. The `POSTERN_APP_PASSWORD` in `env/db.env` must match the password in the API connection string in `env/api.env`. Never commit these local `.env` files or use development credentials outside local development. All container environment variables, including `ASPNETCORE_ENVIRONMENT`, are provided using the corresponding service env file.
 
+The web development container runs `npm ci` at startup so its mounted `node_modules` volume stays synchronized with `web/package-lock.json`, including after dependencies are added or updated.
+
 From the repository root, start the stack:
 
 ```powershell
@@ -46,15 +48,29 @@ Migrations run as `postern_migrator`; the API only receives the restricted `post
 
 ### Day 2 authentication
 
-The API exposes `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/recovery`, `POST /api/auth/logout`, and the authenticated `GET /api/auth/me`. Registration requires a single-use invite and a password of at least 12 characters. The signup cap is 199 accounts; pending verification accounts also count because they reserve destination slots.
+The API exposes `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/recovery`, `POST /api/auth/logout`, and the authenticated `GET /api/auth/me`. The public `/login` page accepts credentials only for accounts created from an accepted invitation, and explains that pending accounts must complete destination verification before sign-in. Registration requires a single-use invite and a password of at least 12 characters. The signup cap is 199 accounts; pending verification accounts also count because they reserve destination slots.
 
 Signup and login accept internationalized email addresses, including Unicode local parts (EAI) and Unicode domain names (IDN). Inputs are Unicode-normalized, common international domain separators are accepted, and Unicode domains are validated and compared through their IDNA form. Use the same normalized address at signup and login.
 
 Login checks destination verification for pending accounts before activating them. The first successful verified login returns a one-time recovery key; only its SHA-256 hash is stored. `POST /api/auth/recovery` uses that key to change the password and atomically rotate to a new key. The key is shown only in that response, so save it securely. Login and recovery responses are marked `no-store`.
 
-Authentication uses a one-hour JWT in an `HttpOnly`, `SameSite=Strict` cookie, with `Secure` enabled outside Development. Configure `Authentication__SigningKey` in `env/api.env` with at least 32 bytes of random material; do not use or commit the example placeholder. Registration, login, and recovery are rate-limited per client IP in-process.
+Authentication uses an `HttpOnly`, `SameSite=Strict` cookie, with `Secure` enabled outside Development. Standard sessions last one hour; TOTP-verified admin sessions last 15 minutes. Configure `Authentication__SigningKey` in `env/api.env` with at least 32 bytes of random material; do not use or commit the example placeholder. Registration, login, recovery, and MFA challenges are rate-limited per client IP in-process.
 
-Until the Day 15 invite manager exists, create a seven-day single-use local invite with `.\database\create-invite.ps1`. It prints the raw invite once; store it safely. In Development only, `POST /api/dev/destinations/{email}/verify` simulates Cloudflare destination verification after signup. The production Cloudflare destination adapter is not yet implemented; production registration and pending-account verification must not be enabled until that adapter is configured.
+Public invite requests are stored for administrator review and do not send mail immediately. Admins can list pending requests at `GET /api/admin/invite-requests`, approve with `POST /api/admin/invite-requests/{requestId}/approve`, reject with `POST /api/admin/invite-requests/{requestId}/reject`, resend an issued invitation with `POST /api/admin/invites/{inviteId}/resend`, and revoke it with `POST /api/admin/invites/{inviteId}/revoke`. Approval and resend write a protected, retryable email job to the PostgreSQL outbox; the hosted worker sends it through Resend. The invite is single-use, expires after seven days, and resend rotates the code and expiry. Revoke cancels queued deliveries and invalidates the invite. The registration page resolves and displays the recipient bound to the invite; the user sets a password, and the API derives the account email from the invite rather than trusting a client-supplied address.
+
+There is no admin link in the public app. To provision the single administrator, first create and activate the intended account through the normal invite flow, then run `.\database\bootstrap-admin.ps1 -Email you@example.com` from the repository root. This uses the local database bootstrap role, refuses to replace an existing admin, and does not create an account or expose an admin-provisioning API. A partial unique index also prevents more than one admin.
+
+The admin dashboard is at `/admin` and displays pending requests, issued invites, delivery states, and seat availability. On the admin's first password login, the page requires authenticator-app TOTP setup; every later admin login requires a fresh six-digit code. TOTP secrets are protected with ASP.NET Core Data Protection, and a time-step cannot be reused. Admin-only API policies require a TOTP-verified session claim, so old admin cookies are not accepted for administration after this update. This implementation uses authenticator TOTP, not WebAuthn/passkeys; if your authenticator app uses device biometrics to unlock, that biometric check stays on the device and is not sent to Postern. Keep the Data Protection key directory persistent and private; production must configure `DataProtection__KeysPath` as documented above. Authenticator recovery is an offline operator action: run `.\database\reset-admin-mfa.ps1 -Email you@example.com`, then sign in and enroll the replacement authenticator. This operation requires the local database bootstrap role.
+
+Real-time updates use two authenticated SignalR hubs. The admin dashboard connects to `/api/admin/events`, which requires the same TOTP-verified admin policy as the admin API; regular users cannot connect. It receives notifications for invite requests, invitations, invite changes, and operations changes, then reloads authoritative dashboard data through the existing HTTP APIs. Signed-in users connect to `/api/user/events`, which delivers only that account's events through a per-user group: alias changes, accepted or blocked messages for an alias, and account changes. Both browsers reconnect automatically and refresh after reconnecting. If real-time delivery is unavailable, the pages remain usable through their refresh actions.
+
+Both headers also include a notification bell backed by a server-side inbox stored in PostgreSQL, so unread history survives refreshes, sign-out, and using another device. Signed-in users read their inbox with `GET /api/notifications`, mark one item read with `POST /api/notifications/{notificationId}/read`, and mark everything read with `POST /api/notifications/read-all`; administrators use the same routes under `/api/admin/notifications` with the TOTP-verified admin policy. An inbox returns the 50 most recent items and an unread count. The bell shows the unread badge, refreshes from real-time events and when the tab becomes visible, and the panel supports marking individual items or the whole inbox read. Reading an already-read item returns `404` because the update matches nothing.
+
+The inbox is curated rather than a mirror of every real-time event. Users receive new-mail, blocked-mail, alias, and account-change entries; administrators receive invite requests, approvals, rejections, resends, revocations, accepted invitations, suspensions and resumes, global blocklist changes, and KV sync or suspended-user rebuild results. Message entries never include subjects or bodies, and the inbox does not reuse admin analytics data. Notifications are published best-effort from a fresh dependency-injection scope: a notification failure is logged and never fails the alias, ingest, invite, account, or administration operation that triggered it. In the single-administrator model, admin notifications share one read state.
+
+Configure `Resend__ApiKey`, `Resend__WebhookSecret`, `Resend__From`, and `Invites__PublicBaseUrl` in `env/api.env` for local Compose runs, or inject them from your deployment secret manager. `Invites__PublicBaseUrl` must be the absolute public web origin used to build invite links; the API does not assume a URL. Production requires HTTPS for this origin and a persistent writable `DataProtection__KeysPath` shared by all API instances; outbox invite codes are protected with ASP.NET Core Data Protection. Verify the configured sender domain in Resend before sending. Configure Resend's webhook to `POST /api/webhooks/resend` and subscribe to `email.sent`, `email.delivered`, `email.bounced`, and `email.complained`; signatures and replay timestamps are verified before event IDs are persisted. Delivery status means Resend/provider-reported state, not proof the recipient read the message. Email uses inline Postern maroon-and-paper styling, contains no tracking pixels, and does not include a referrer-bearing web page.
+
+In Development, the Resend sender and outbox worker are never registered, even if Resend credentials or `Invites__WorkerEnabled=true` are present. No local invite action sends email. Use `POST /api/dev/invites` with an email to create a bound invite and receive its code and registration path; `GET /api/dev/invites` lists unexpired invite codes queued after local admin approval so the flow can be tested without delivery. These development-only endpoints are absent outside Development. In Development only, `POST /api/dev/destinations/{email}/verify` simulates Cloudflare destination verification after signup. The production Cloudflare destination adapter is not yet implemented; production registration and pending-account verification must not be enabled until that adapter is configured.
 
 The API and web development containers run as non-root users. Compose also drops Linux capabilities and enables `no-new-privileges` for both application containers.
 
@@ -95,7 +111,7 @@ npm run test:a11y
 npm run build
 ```
 
-`test:integration` uses React Testing Library and MSW. `test:a11y` runs axe-core against the browser-rendered page using WCAG 2.2 AA rules.
+Frontend tests live under `web/test/`, grouped into `unit/`, `integration/`, and `e2e/`. Vitest runs the unit and integration suites; Playwright runs browser end-to-end tests. Shared Vitest setup and MSW handlers live in `web/test/`. `test:a11y` runs axe-core against the browser-rendered page using WCAG 2.2 AA rules.
 
 Run backend tests from the repository root:
 
@@ -107,6 +123,26 @@ The solution contains API, application, domain, and infrastructure projects, plu
 
 `Postern.UnitTests` runs anywhere. `Postern.IntegrationTests` needs Docker: it starts a disposable PostgreSQL container per test collection, runs the real API pipeline against it, and removes the container when the run ends. See `backend/tests/Postern.IntegrationTests/README.md` for the folder layout and seeding helpers.
 
+Run the email worker tests from `worker/`:
+
+```powershell
+npm test
+npm run typecheck
+```
+
+The Vitest suite exercises forwarding, KV policy gates, blocked-message decisions, and best-effort ingest with in-memory fakes, so it needs no Wrangler or Cloudflare account.
+
+### Signed-in app
+
+A successful regular-user sign-in lands on `/app` instead of returning to the marketing page. The app shell checks `GET /api/auth/me` before rendering and sends anonymous visitors back to `/login`; an administrator account is still routed to `/admin` for its TOTP step. The first successful login displays the one-time recovery key inside the shell, handed over from the login page in session storage and removed as soon as it is read.
+
+- `/app` lists the account's aliases with copy, disable, delete, and per-alias activity links, and creates new aliases. An account with no aliases opens on a first-run prompt that asks for one address to start with.
+- `/app/aliases/{aliasId}` shows the message metadata an alias has received, with authentication result and flagged state, and pages older messages through the activity cursor.
+- `/app/blocked` lists messages Postern refused to forward, with the reason and owning alias.
+- `/app/account` changes the forwarding destination and deletes the account behind a confirmation.
+
+Client code is split by responsibility: `services/` holds typed request helpers per resource (`apiClient`, `accountService`, `aliasService`, `activityService`), `hooks/` owns session and paginated loading state, and `components/app/` holds the presentation. Navigation uses the existing manual pathname router in `App.tsx` through `services/navigation.ts`, so no additional routing dependency is required.
+
 ## Progressive Web App
 
-The Vite frontend is configured with `vite-plugin-pwa`, a web app manifest, generated service-worker registration, and install icons. The service worker is produced during the production build; development mode uses Vite’s normal dev server.
+The Vite frontend serves a web app manifest and a first-party service worker with install icons. The worker caches the app shell and static assets for offline use, and never caches API responses.

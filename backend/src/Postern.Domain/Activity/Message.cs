@@ -8,6 +8,7 @@ public sealed class Message
     public Guid AliasId { get; set; }
     public required string FromHeader { get; set; }
     public required string EnvelopeSender { get; set; }
+    public string? MessageId { get; set; }
     public string? Subject { get; set; }
     public DateTimeOffset ReceivedAt { get; set; }
     public required string AuthenticationResult { get; set; }

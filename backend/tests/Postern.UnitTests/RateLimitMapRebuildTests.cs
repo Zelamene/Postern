@@ -108,6 +108,9 @@ public class RateLimitMapRebuildTests
 
         public Task<Alias?> FindAliasForIngestAsync(string fullAddressHash, CancellationToken cancellationToken) => Task.FromResult<Alias?>(null);
         public Task<Alias?> FindAliasForIngestWithExpectedSendersAsync(string fullAddressHash, CancellationToken cancellationToken) => Task.FromResult<Alias?>(null);
+        public Task<bool> MessageIdExistsAsync(Guid aliasId, string messageId, CancellationToken cancellationToken) =>
+            Task.FromResult(false);
+
         public Task<Message> RecordMessageAsync(Message message, CancellationToken cancellationToken) => Task.FromResult(message);
         public Task<BlockedMessage> RecordBlockedMessageAsync(BlockedMessage blockedMessage, CancellationToken cancellationToken) => Task.FromResult(blockedMessage);
         public Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) => Task.CompletedTask;

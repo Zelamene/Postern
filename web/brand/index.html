@@ -1,0 +1,1936 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Postern — Brand &amp; Design System</title>
+    <meta
+      name="description"
+      content="The Postern brand story, design tokens, components, motion rules, accessibility standard and voice — the single reference for building the product."
+    />
+    <link rel="icon" type="image/svg+xml" href="/postern.svg" />
+    <meta name="theme-color" content="#fbf8f4" />
+    <script>
+      (() => {
+        let stored = null;
+        try {
+          stored = localStorage.getItem('postern-theme');
+        } catch {}
+        if (stored === 'light' || stored === 'dark') {
+          document.documentElement.dataset.theme = stored;
+        }
+        const dark =
+          stored === 'dark' ||
+          (!stored && matchMedia('(prefers-color-scheme: dark)').matches);
+        document
+          .querySelector('meta[name="theme-color"]')
+          ?.setAttribute('content', dark ? '#151110' : '#fbf8f4');
+      })();
+    </script>
+    <link rel="stylesheet" href="/src/styles/brand.css" />
+    <script>
+      document.documentElement.classList.add('js');
+    </script>
+  </head>
+  <body class="guide">
+    <a class="skip-link" href="#main">Skip to contents</a>
+
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position: absolute">
+      <symbol id="arch-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor">
+        <path d="M6.5 30V15a9.5 9.5 0 0 1 19 0v15" stroke-width="3" />
+        <path d="M16.8 30v-7.4a2.7 2.7 0 0 1 5.4 0V30" stroke-width="2" />
+      </symbol>
+    </svg>
+
+    <header class="topbar">
+      <div class="topbar__inner">
+        <a class="brand" href="#top">
+          <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true">
+            <use href="#arch-mark" />
+          </svg>
+          <span class="brand__word">Postern</span>
+        </a>
+        <p class="brand__sub">Brand &amp; Design System</p>
+        <p class="audit" id="token-audit" role="status">Checking tokens…</p>
+        <div class="theme-switch" role="group" aria-label="Colour theme">
+          <button class="theme-switch__btn" type="button" data-theme-set="system" aria-pressed="true">Auto</button>
+          <button class="theme-switch__btn" type="button" data-theme-set="light" aria-pressed="false">Light</button>
+          <button class="theme-switch__btn" type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+        </div>
+        <a class="topbar__link" href="/">Open the app <span aria-hidden="true">→</span></a>
+      </div>
+    </header>
+
+    <div class="guide__body" id="top">
+      <nav class="rail" aria-label="Contents">
+        <p class="rail__label">Contents</p>
+        <ol class="rail__list">
+          <li><a href="#story"><span>01</span> The Story</a></li>
+          <li><a href="#logo"><span>02</span> Logo &amp; Iconography</a></li>
+          <li><a href="#colour"><span>03</span> Colour</a></li>
+          <li><a href="#dark"><span>04</span> Dark mode</a></li>
+          <li><a href="#type"><span>05</span> Typography</a></li>
+          <li><a href="#tokens"><span>06</span> Tokens</a></li>
+          <li><a href="#layout"><span>07</span> Space &amp; Layout</a></li>
+          <li><a href="#components"><span>08</span> Components</a></li>
+          <li><a href="#motion"><span>09</span> Motion &amp; Loading</a></li>
+          <li><a href="#a11y"><span>10</span> Accessibility</a></li>
+          <li><a href="#voice"><span>11</span> Voice &amp; Tone</a></li>
+          <li><a href="#governance"><span>12</span> Governance</a></li>
+        </ol>
+      </nav>
+
+      <main id="main" tabindex="-1">
+
+        <section class="hero" aria-labelledby="hero-title">
+          <h1 class="hero__title" id="hero-title">
+            A small gate<br />in a long wall.
+          </h1>
+          <p class="hero__lede">
+            A <em>postern</em> is the side gate of a castle: the quiet way in, built so the
+            main gate never has to open. Postern gives you one of those for your inbox — a
+            disposable address per service, mail forwarded to the one place you actually read,
+            and a ledger of everything that came through.
+          </p>
+
+          <div class="hero__marks" aria-label="The three ideas behind the brand">
+            <div class="hero__mark">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><use href="#arch-mark" /></svg>
+              <p class="hero__mark-word">Gate</p>
+              <p class="hero__mark-rule">
+                One alias, one purpose. Access is granted on purpose and closed on purpose.
+              </p>
+            </div>
+            <div class="hero__mark">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><use href="#arch-mark" /></svg>
+              <p class="hero__mark-word">Seal</p>
+              <p class="hero__mark-rule">
+                Maroon is wax, not decoration. It appears where something is decided or sent.
+              </p>
+            </div>
+            <div class="hero__mark">
+              <svg viewBox="0 0 32 32" aria-hidden="true"><use href="#arch-mark" /></svg>
+              <p class="hero__mark-word">Ledger</p>
+              <p class="hero__mark-rule">
+                Every message is a line in a book: what came, from where, and what we did.
+              </p>
+            </div>
+          </div>
+
+          <dl class="spec-strip">
+            <div><dt>Version</dt><dd>1.0</dd></div>
+            <div><dt>Updated</dt><dd>3 November 2026</dd></div>
+            <div><dt>Conformance</dt><dd>WCAG 2.2 AA · body text AAA</dd></div>
+            <div><dt>Typeface</dt><dd>Manrope Variable</dd></div>
+            <div><dt>Owner</dt><dd>Postern team</dd></div>
+          </dl>
+        </section>
+
+        <section class="plate reveal" id="story" aria-labelledby="story-title">
+          <header class="plate__head">
+            <p class="plate__no">01</p>
+            <h2 id="story-title">The Story</h2>
+            <p class="plate__deck">
+              Why the brand looks like a ledger and not like a startup.
+            </p>
+          </header>
+
+          <div class="prose">
+            <p>
+              Postern is built for one moment: you are asked for an email address by a service
+              you do not entirely trust. You give it something disposable. Mail arrives
+              somewhere you control. If it ever gets sold, you know exactly which gate it came
+              through — and you close that gate without changing your identity.
+            </p>
+            <p>
+              That moment is not exciting. It is administrative. The brand should feel the way a
+              good clerk feels: unhurried, precise, and completely unimpressed by you. So the
+              system is built from three materials — <strong>paper, ink and sealing wax</strong>
+              — and nothing else. Warm white paper, near-black ink, one deep maroon that behaves
+              like a stamp: rare, decisive, and impossible to miss when it appears.
+            </p>
+            <p>
+              The restraint is also an accessibility strategy. A palette of one accent and four
+              neutrals is a palette you can validate exhaustively: every foreground/background
+              pair in this document is measured, and the measured pairings are the only ones
+              allowed. Colour is never the only carrier of meaning, because maroon and rust sit
+              too close together on a screen for anyone to be asked to tell them apart without a
+              label.
+            </p>
+          </div>
+
+          <div class="principles">
+            <article class="principle">
+              <p class="principle__no">i</p>
+              <h3>Clarity is the feature</h3>
+              <p>
+                The product's promise is comprehension: what came in, from whom, and what
+                happened to it. Any decoration that competes with a fact is removed.
+              </p>
+            </article>
+            <article class="principle">
+              <p class="principle__no">ii</p>
+              <h3>The default is quiet</h3>
+              <p>
+                No gradients, no glass, no ambient movement. Motion exists to explain a change
+                of state in under a third of a second, and it is allowed to be switched off.
+              </p>
+            </article>
+            <article class="principle">
+              <p class="principle__no">iii</p>
+              <h3>Honest about the seams</h3>
+              <p>
+                Subjects are cut at 60 characters. Logs live 90 days. The backend may be asleep.
+                We say so, in the interface, in plain words — a limitation named is a limitation
+                trusted.
+              </p>
+            </article>
+            <article class="principle">
+              <p class="principle__no">iv</p>
+              <h3>One accent, earned</h3>
+              <p>
+                Maroon marks the decision and the danger. If a screen has two maroon buttons, it
+                has no primary action. Signal hues appear only as tinted status surfaces.
+              </p>
+            </article>
+            <article class="principle">
+              <p class="principle__no">v</p>
+              <h3>Legible in daylight</h3>
+              <p>
+                This product is used on a phone, outdoors, by someone annoyed. 16px body,
+                4.5:1 minimum, 24px targets minimum, and nothing important conveyed by hue alone.
+              </p>
+            </article>
+          </div>
+
+          <aside class="ledger-note">
+            <p class="ledger-note__label">Ledger note</p>
+            <p>
+              The name is the brief. A postern is not a backdoor — it is a designed, supervised,
+              narrower entrance. Everything in this system should read as deliberate access
+              rather than secrecy.
+            </p>
+          </aside>
+        </section>
+
+        <section class="plate reveal" id="logo" aria-labelledby="logo-title">
+          <header class="plate__head">
+            <p class="plate__no">02</p>
+            <h2 id="logo-title">Logo &amp; Iconography</h2>
+            <p class="plate__deck">An arch with a smaller door cut into it. Clear strokes and quiet symbols.</p>
+          </header>
+
+          <div class="logo-stage">
+            <div class="logo-stage__art on-paper">
+              <svg viewBox="0 0 32 32" aria-label="Postern mark" class="logo-mark">
+                <use href="#arch-mark" />
+              </svg>
+            </div>
+            <div class="logo-stage__art lockup">
+              <svg viewBox="0 0 32 32" aria-hidden="true">
+                <use href="#arch-mark" />
+              </svg>
+              <span>Postern</span>
+            </div>
+            <div class="logo-stage__art tile on-maroon">
+              <svg viewBox="0 0 32 32" aria-hidden="true">
+                <use href="#arch-mark" />
+              </svg>
+            </div>
+            <div class="logo-stage__art tile tile--light">
+              <svg viewBox="0 0 32 32" aria-hidden="true">
+                <use href="#arch-mark" />
+              </svg>
+            </div>
+          </div>
+          <p class="caption">
+            Primary mark · horizontal lockup · app tile (maroon) · inverse tile (paper).
+            The mark is drawn on a 32&nbsp;unit grid with a 3&nbsp;unit stroke; the inner
+            door is 2&nbsp;units and sits right of centre, because a postern is never the
+            main gate.
+          </p>
+
+          <div class="split">
+            <div>
+              <h3>Construction &amp; clear space</h3>
+              <div class="clearspace">
+                <div class="clearspace__box">
+                  <span class="clearspace__x">x</span>
+                  <svg viewBox="0 0 32 32" aria-hidden="true"><use href="#arch-mark" /></svg>
+                  <span class="clearspace__x clearspace__x--r">x</span>
+                </div>
+                <div class="clearspace__key">
+                  <p><strong>x</strong> = the width of the mark's stroke gap, 2 units at 32px.</p>
+                  <p>
+                    Minimum clear space is <strong>1x</strong> on every side, and never less than
+                    the height of the arch shoulder. Text, rules and other marks stay outside it.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h3>Minimum sizes</h3>
+              <ul class="rules">
+                <li><strong>Mark:</strong> 20px digital · 8mm print</li>
+                <li><strong>Lockup:</strong> 96px wide digital · 28mm print</li>
+                <li><strong>App tile:</strong> 24px, no inner door below 32px</li>
+                <li><strong>Favicon:</strong> use the solid tile, not the outline</li>
+              </ul>
+              <p class="caption caption--tight">
+                Below the minimum, drop the inner door first, then the lockup's wordmark —
+                never the outer arch.
+              </p>
+            </div>
+          </div>
+
+          <h3>Forbidden treatments</h3>
+          <ul class="forbidden">
+            <li>Stretching, squashing or rotating</li>
+            <li>Recolouring outside the palette (no black, no white-on-white, no signal hues)</li>
+            <li>Drop shadows, inner shadows, bevels, glows, gradients</li>
+            <li>Outlines traced over photographs or busy imagery</li>
+            <li>Placing on mid-tone backgrounds below 3:1 contrast</li>
+            <li>Rearranging the lockup or adding a tagline inside it</li>
+            <li>Replacing the wordmark with another typeface or with letter-spaced capitals</li>
+            <li>Animating the mark in a loop; the only permitted animation is the one-time draw</li>
+            <li>Using the mark as a bullet, an avatar, or inside body text</li>
+          </ul>
+
+          <h3>Iconography</h3>
+          <p class="lede-sm">
+            Icons are sourced from the <strong>Lucide</strong> library (ISC licence) and inlined as SVG.
+            Icons support text comprehension; they are never purely decorative, never colored in isolation,
+            and never substitute for an accessible label.
+          </p>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Icon sizing and stroke rules</caption>
+              <thead>
+                <tr><th scope="col">Role</th><th scope="col">Box size</th><th scope="col">Stroke weight</th><th scope="col">Example usage</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Inline / metadata</td><td class="tnum">16×16px</td><td class="tnum">2px</td><td>Status chips, input validation icons, tooltips</td></tr>
+                <tr><td>Action / button</td><td class="tnum">20×20px</td><td class="tnum">2px</td><td>Copy address, icon-only buttons, row actions</td></tr>
+                <tr><td>Feature / alert</td><td class="tnum">24×24px</td><td class="tnum">2px</td><td>Alert banners, dialog headers, empty states</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <ul class="rules rules--split">
+            <li><strong>Stroke &amp; caps:</strong> <code>stroke="currentColor"</code>, <code>stroke-width="2"</code>, <code>stroke-linecap="round"</code>, <code>stroke-linejoin="round"</code>.</li>
+            <li><strong>Optical alignment:</strong> Inlined icons sit on the cap height of adjacent text.</li>
+            <li><strong>Screen readers:</strong> Decorative icons use <code>aria-hidden="true"</code>; icon-only buttons carry an explicit <code>aria-label</code>.</li>
+          </ul>
+
+          <aside class="ledger-note">
+            <p class="ledger-note__label">Ledger note</p>
+            <p>
+              The wordmark is <strong>live text</strong>, not an image: Manrope 700 at
+              −0.03em, sentence case. Setting it as text keeps it selectable, translatable
+              and crisp at any density. Export an outlined SVG only when a printer demands one.
+            </p>
+          </aside>
+        </section>
+
+        <section class="plate reveal" id="colour" aria-labelledby="colour-title">
+          <header class="plate__head">
+            <p class="plate__no">03</p>
+            <h2 id="colour-title">Colour</h2>
+          </header>
+
+          <div class="prose">
+            <p>
+              Maroon is the colour of dried sealing wax and of the ledger's leather spine. It is
+              not a brand red chosen to feel energetic; it is a <em>mark</em> — the thing pressed
+              onto a document to say this is finished. That is why it is used at 11:1 against
+              white and why it is allowed to appear on only one control per screen.
+            </p>
+            <p>
+              Everything else is paper or ink. Neutrals are warmed toward the maroon (every ink
+              has a red undertone, every paper a cream one) so a purely neutral grey never appears
+              — a cold grey next to this maroon looks like a rendering error.
+            </p>
+          </div>
+
+          <h3 class="group-label">Paper</h3>
+          <ul class="swatches">
+            <li class="swatch" data-token="--paper-0" data-hex="#ffffff">
+              <span class="swatch__chip" style="background: var(--paper-0)"></span>
+              <span class="swatch__name">--paper-0</span>
+              <span class="swatch__hex">#FFFFFF</span>
+              <span class="swatch__meta">rgb(255 255 255)<br />hsl(0 0% 100%)</span>
+            </li>
+            <li class="swatch" data-token="--paper-50" data-hex="#fbf8f4">
+              <span class="swatch__chip" style="background: var(--paper-50)"></span>
+              <span class="swatch__name">--paper-50</span>
+              <span class="swatch__hex">#FBF8F4</span>
+              <span class="swatch__meta">rgb(251 248 244)<br />hsl(34 47% 97%)</span>
+            </li>
+            <li class="swatch" data-token="--paper-100" data-hex="#f3ede6">
+              <span class="swatch__chip" style="background: var(--paper-100)"></span>
+              <span class="swatch__name">--paper-100</span>
+              <span class="swatch__hex">#F3EDE6</span>
+              <span class="swatch__meta">rgb(243 237 230)<br />hsl(32 35% 93%)</span>
+            </li>
+            <li class="swatch" data-token="--paper-200" data-hex="#e4dad0">
+              <span class="swatch__chip" style="background: var(--paper-200)"></span>
+              <span class="swatch__name">--paper-200</span>
+              <span class="swatch__hex">#E4DAD0</span>
+              <span class="swatch__meta">rgb(228 218 208)<br />hsl(30 27% 85%)</span>
+            </li>
+            <li class="swatch" data-token="--paper-300" data-hex="#c4b3a2">
+              <span class="swatch__chip" style="background: var(--paper-300)"></span>
+              <span class="swatch__name">--paper-300</span>
+              <span class="swatch__hex">#C4B3A2</span>
+              <span class="swatch__meta">rgb(196 179 162)<br />hsl(30 22% 70%)</span>
+            </li>
+          </ul>
+
+          <h3 class="group-label">Ink</h3>
+          <ul class="swatches">
+            <li class="swatch" data-token="--ink-900" data-hex="#211c1b">
+              <span class="swatch__chip" style="background: var(--ink-900)"></span>
+              <span class="swatch__name">--ink-900</span>
+              <span class="swatch__hex">#211C1B</span>
+              <span class="swatch__meta">rgb(33 28 27)<br />hsl(10 10% 12%)</span>
+            </li>
+            <li class="swatch" data-token="--ink-800" data-hex="#3a3330">
+              <span class="swatch__chip" style="background: var(--ink-800)"></span>
+              <span class="swatch__name">--ink-800</span>
+              <span class="swatch__hex">#3A3330</span>
+              <span class="swatch__meta">rgb(58 51 48)<br />hsl(18 9% 21%)</span>
+            </li>
+            <li class="swatch" data-token="--ink-700" data-hex="#57504d">
+              <span class="swatch__chip" style="background: var(--ink-700)"></span>
+              <span class="swatch__name">--ink-700</span>
+              <span class="swatch__hex">#57504D</span>
+              <span class="swatch__meta">rgb(87 80 77)<br />hsl(18 6% 32%)</span>
+            </li>
+            <li class="swatch" data-token="--ink-600" data-hex="#6b625e">
+              <span class="swatch__chip" style="background: var(--ink-600)"></span>
+              <span class="swatch__name">--ink-600</span>
+              <span class="swatch__hex">#6B625E</span>
+              <span class="swatch__meta">rgb(107 98 94)<br />hsl(18 6% 39%)</span>
+            </li>
+            <li class="swatch" data-token="--ink-500" data-hex="#756c68">
+              <span class="swatch__chip" style="background: var(--ink-500)"></span>
+              <span class="swatch__name">--ink-500</span>
+              <span class="swatch__hex">#756C68</span>
+              <span class="swatch__meta">rgb(117 108 104)<br />hsl(18 6% 43%)</span>
+            </li>
+            <li class="swatch" data-token="--ink-400" data-hex="#8f7a66">
+              <span class="swatch__chip" style="background: var(--ink-400)"></span>
+              <span class="swatch__name">--ink-400</span>
+              <span class="swatch__hex">#8F7A66</span>
+              <span class="swatch__meta">rgb(143 122 102)<br />hsl(29 17% 48%)</span>
+            </li>
+            <li class="swatch" data-token="--ink-300" data-hex="#a08c7c">
+              <span class="swatch__chip" style="background: var(--ink-300)"></span>
+              <span class="swatch__name">--ink-300</span>
+              <span class="swatch__hex">#A08C7C</span>
+              <span class="swatch__meta">rgb(160 140 124)<br />hsl(27 16% 56%)</span>
+            </li>
+          </ul>
+
+          <h3 class="group-label">Maroon — the brand hue</h3>
+          <ul class="swatches">
+            <li class="swatch" data-token="--maroon-50" data-hex="#fdf7f6">
+              <span class="swatch__chip" style="background: var(--maroon-50)"></span>
+              <span class="swatch__name">--maroon-50</span>
+              <span class="swatch__hex">#FDF7F6</span>
+              <span class="swatch__meta">rgb(253 247 246)<br />hsl(9 64% 98%)</span>
+            </li>
+            <li class="swatch" data-token="--maroon-100" data-hex="#fbf1f1">
+              <span class="swatch__chip" style="background: var(--maroon-100)"></span>
+              <span class="swatch__name">--maroon-100</span>
+              <span class="swatch__hex">#FBF1F1</span>
+              <span class="swatch__meta">rgb(251 241 241)<br />hsl(0 56% 96%)</span>
+            </li>
+            <li class="swatch" data-token="--maroon-200" data-hex="#f8e7e7">
+              <span class="swatch__chip" style="background: var(--maroon-200)"></span>
+              <span class="swatch__name">--maroon-200</span>
+              <span class="swatch__hex">#F8E7E7</span>
+              <span class="swatch__meta">rgb(248 231 231)<br />hsl(0 55% 94%)</span>
+            </li>
+            <li class="swatch" data-token="--maroon-300" data-hex="#f3dada">
+              <span class="swatch__chip" style="background: var(--maroon-300)"></span>
+              <span class="swatch__name">--maroon-300</span>
+              <span class="swatch__hex">#F3DADA</span>
+              <span class="swatch__meta">rgb(243 218 218)<br />hsl(0 51% 90%)</span>
+            </li>
+            <li class="swatch" data-token="--maroon-400" data-hex="#c4646e">
+              <span class="swatch__chip" style="background: var(--maroon-400)"></span>
+              <span class="swatch__name">--maroon-400</span>
+              <span class="swatch__hex">#C4646E</span>
+              <span class="swatch__meta">rgb(196 100 110)<br />hsl(354 45% 58%)</span>
+            </li>
+            <li class="swatch" data-token="--maroon-500" data-hex="#a63a47">
+              <span class="swatch__chip" style="background: var(--maroon-500)"></span>
+              <span class="swatch__name">--maroon-500</span>
+              <span class="swatch__hex">#A63A47</span>
+              <span class="swatch__meta">rgb(166 58 71)<br />hsl(353 48% 44%)</span>
+            </li>
+            <li class="swatch" data-token="--maroon-600" data-hex="#8c2434">
+              <span class="swatch__chip" style="background: var(--maroon-600)"></span>
+              <span class="swatch__name">--maroon-600</span>
+              <span class="swatch__hex">#8C2434</span>
+              <span class="swatch__meta">rgb(140 36 52)<br />hsl(351 59% 35%)</span>
+            </li>
+            <li class="swatch" data-token="--maroon-700" data-hex="#74172a">
+              <span class="swatch__chip" style="background: var(--maroon-700)"></span>
+              <span class="swatch__name">--maroon-700</span>
+              <span class="swatch__hex">#74172A</span>
+              <span class="swatch__meta">rgb(116 23 42)<br />hsl(348 67% 27%)</span>
+            </li>
+            <li class="swatch" data-token="--maroon-800" data-hex="#5c1022">
+              <span class="swatch__chip" style="background: var(--maroon-800)"></span>
+              <span class="swatch__name">--maroon-800</span>
+              <span class="swatch__hex">#5C1022</span>
+              <span class="swatch__meta">rgb(92 16 34)<br />hsl(346 70% 21%)</span>
+            </li>
+            <li class="swatch" data-token="--maroon-900" data-hex="#430b19">
+              <span class="swatch__chip" style="background: var(--maroon-900)"></span>
+              <span class="swatch__name">--maroon-900</span>
+              <span class="swatch__hex">#430B19</span>
+              <span class="swatch__meta">rgb(67 11 25)<br />hsl(345 72% 15%)</span>
+            </li>
+          </ul>
+
+          <h3 class="group-label">Signals</h3>
+          <ul class="swatches swatches--signals">
+            <li class="swatch" data-token="--green-700" data-hex="#16603f">
+              <span class="swatch__chip" style="background: var(--green-700)"></span>
+              <span class="swatch__name">success · --green-700</span>
+              <span class="swatch__hex">#16603F</span>
+              <span class="swatch__meta">rgb(22 96 63)<br />hsl(153 63% 23%)</span>
+            </li>
+            <li class="swatch" data-token="--green-100" data-hex="#e9f2ec">
+              <span class="swatch__chip" style="background: var(--green-100)"></span>
+              <span class="swatch__name">success surface</span>
+              <span class="swatch__hex">#E9F2EC</span>
+              <span class="swatch__meta">rgb(233 242 236)<br />hsl(140 26% 93%)</span>
+            </li>
+            <li class="swatch" data-token="--amber-700" data-hex="#7a4e06">
+              <span class="swatch__chip" style="background: var(--amber-700)"></span>
+              <span class="swatch__name">warning · --amber-700</span>
+              <span class="swatch__hex">#7A4E06</span>
+              <span class="swatch__meta">rgb(122 78 6)<br />hsl(37 91% 25%)</span>
+            </li>
+            <li class="swatch" data-token="--amber-100" data-hex="#faf0dc">
+              <span class="swatch__chip" style="background: var(--amber-100)"></span>
+              <span class="swatch__name">warning surface</span>
+              <span class="swatch__hex">#FAF0DC</span>
+              <span class="swatch__meta">rgb(250 240 220)<br />hsl(40 75% 92%)</span>
+            </li>
+            <li class="swatch" data-token="--rust-700" data-hex="#8f2c1e">
+              <span class="swatch__chip" style="background: var(--rust-700)"></span>
+              <span class="swatch__name">danger · --rust-700</span>
+              <span class="swatch__hex">#8F2C1E</span>
+              <span class="swatch__meta">rgb(143 44 30)<br />hsl(7 65% 34%)</span>
+            </li>
+            <li class="swatch" data-token="--rust-100" data-hex="#fbe9e5">
+              <span class="swatch__chip" style="background: var(--rust-100)"></span>
+              <span class="swatch__name">danger surface</span>
+              <span class="swatch__hex">#FBE9E5</span>
+              <span class="swatch__meta">rgb(251 233 229)<br />hsl(11 73% 94%)</span>
+            </li>
+            <li class="swatch" data-token="--slate-700" data-hex="#2e5668">
+              <span class="swatch__chip" style="background: var(--slate-700)"></span>
+              <span class="swatch__name">info · --slate-700</span>
+              <span class="swatch__hex">#2E5668</span>
+              <span class="swatch__meta">rgb(46 86 104)<br />hsl(199 39% 29%)</span>
+            </li>
+            <li class="swatch" data-token="--slate-100" data-hex="#e7eef1">
+              <span class="swatch__chip" style="background: var(--slate-100)"></span>
+              <span class="swatch__name">info surface</span>
+              <span class="swatch__hex">#E7EEF1</span>
+              <span class="swatch__meta">rgb(231 238 241)<br />hsl(198 26% 93%)</span>
+            </li>
+          </ul>
+
+          <h3>Where each colour is allowed</h3>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Semantic colour roles and their usage</caption>
+              <thead>
+                <tr><th scope="col">Role</th><th scope="col">Token</th><th scope="col">Used for</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Primary action</td><td><code>--color-primary</code></td><td>One filled button per view; active tab; link colour; focus ring</td></tr>
+                <tr><td>Destructive action</td><td><code>--color-destructive</code></td><td>Only inside a confirmation dialog, filled. Never in a toolbar.</td></tr>
+                <tr><td>Success</td><td><code>--color-success</code></td><td>Alias forwarded, destination verified, copy confirmed</td></tr>
+                <tr><td>Warning</td><td><code>--color-warning</code></td><td>Unexpected sender that passed auth, KV propagating, approaching the 500/day cap</td></tr>
+                <tr><td>Error</td><td><code>--color-danger</code></td><td>Validation messages, failed authentication, blocked-message reasons</td></tr>
+                <tr><td>Informational</td><td><code>--color-info</code></td><td>Retention notices, onboarding, cold-start explanation</td></tr>
+                <tr><td>Text selection</td><td><code>--color-primary</code> / <code>--color-text-on-primary</code></td><td>Selected text uses the primary fill with a high-contrast light foreground</td></tr>
+                <tr><td>Surfaces</td><td><code>--color-surface</code> <code>--color-surface-sunken</code></td><td>Cards and dialogs on white; wells, zebra rows and code on sunken paper</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Contrast ratios</h3>
+          <p class="lede-sm">
+            Every pairing the interface is allowed to use. Measured with the WCAG 2.x relative
+            luminance formula; ratios are computed from the token values at page load and
+            re-checked by the audit badge in the header.
+          </p>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Contrast ratios for every permitted colour pairing</caption>
+              <thead>
+                <tr><th scope="col">Use</th><th scope="col">Pairing</th><th scope="col">Ratio</th><th scope="col">Level</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Body text</td><td><code>--ink-900</code> on <code>--paper-50</code></td><td class="tnum">15.91:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Body text on card</td><td><code>--ink-900</code> on <code>--paper-0</code></td><td class="tnum">16.85:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Secondary text</td><td><code>--ink-800</code> on <code>--paper-50</code></td><td class="tnum">11.69:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Muted text</td><td><code>--ink-700</code> on <code>--paper-50</code></td><td class="tnum">7.46:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Captions, hints</td><td><code>--ink-600</code> on <code>--paper-50</code></td><td class="tnum">5.61:1</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
+                <tr><td>Placeholder, disabled</td><td><code>--ink-500</code> on <code>--paper-50</code></td><td class="tnum">4.84:1</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
+                <tr><td>Primary label</td><td>white on <code>--maroon-700</code></td><td class="tnum">11.06:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Primary label, hover</td><td>white on <code>--maroon-800</code></td><td class="tnum">13.53:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Destructive label</td><td><code>--paper-50</code> on <code>--maroon-800</code></td><td class="tnum">12.78:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Link</td><td><code>--maroon-700</code> on <code>--paper-50</code></td><td class="tnum">10.45:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Focus ring</td><td><code>--maroon-700</code> on <code>--paper-50</code></td><td class="tnum">10.45:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Focus ring on primary</td><td><code>--paper-50</code> on <code>--maroon-700</code></td><td class="tnum">10.45:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Selected text</td><td><code>--color-text-on-primary</code> on <code>--color-primary</code></td><td class="tnum">11.06:1 light · 5.49:1 dark</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
+                <tr><td>Control border</td><td><code>--ink-300</code> on <code>--paper-50</code></td><td class="tnum">3.03:1</td><td><span class="chip chip--info chip--sm">AA non-text</span></td></tr>
+                <tr><td>Control border on card</td><td><code>--ink-300</code> on <code>--paper-0</code></td><td class="tnum">3.21:1</td><td><span class="chip chip--info chip--sm">AA non-text</span></td></tr>
+                <tr><td>Success text</td><td><code>--green-700</code> on <code>--paper-50</code></td><td class="tnum">7.14:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Warning text</td><td><code>--amber-700</code> on <code>--paper-50</code></td><td class="tnum">6.79:1</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
+                <tr><td>Error text</td><td><code>--rust-700</code> on <code>--paper-50</code></td><td class="tnum">7.79:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Info text</td><td><code>--slate-700</code> on <code>--paper-50</code></td><td class="tnum">7.49:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Chip · success</td><td><code>--green-800</code> on <code>--green-100</code></td><td class="tnum">8.18:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Chip · warning</td><td><code>--amber-800</code> on <code>--amber-100</code></td><td class="tnum">8.74:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Chip · danger</td><td><code>--rust-800</code> on <code>--rust-100</code></td><td class="tnum">8.74:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Chip · info</td><td><code>--slate-800</code> on <code>--slate-100</code></td><td class="tnum">9.01:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Chip · primary</td><td><code>--maroon-700</code> on <code>--maroon-100</code></td><td class="tnum">9.98:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Toast text</td><td><code>--paper-50</code> on <code>--ink-900</code></td><td class="tnum">15.91:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout callout--warn">
+            <h4>The rule that keeps this honest</h4>
+            <p>
+              <strong>Maroon and rust are not interchangeable.</strong> Maroon is intent — an
+              action you are taking. Rust is failure — something that happened to you. They
+              measure at 10.45:1 and 7.79:1 respectively against paper, which means they are both
+              dark enough to look similar at a glance. Every use of either must be accompanied by
+              an icon or a word, never carried by hue alone.
+            </p>
+          </div>
+
+          <ul class="rules rules--split">
+            <li><strong>Proportion:</strong> 60% paper, 30% ink, 10% maroon. Never invert this.</li>
+            <li><strong>One accent per view:</strong> a maroon primary plus one signal tint, maximum.</li>
+            <li><strong>No pure black, no pure grey:</strong> every neutral carries the warm tint.</li>
+            <li><strong>No gradients or glows:</strong> elevation is a shadow token, not a colour.</li>
+            <li><strong>Dark theme:</strong> the same roles at the other end of the day, with its own measured pairs — see <a href="#dark">04 · Dark mode</a>. Maroon on paper remains the default; nothing new is invented for it.</li>
+          </ul>
+
+          <aside class="ledger-note">
+            <p class="ledger-note__label">Ledger note</p>
+            <p>
+              The maroon is a single hue at ten stops. Two stops are load-bearing:
+              <code>--maroon-700</code> for anything interactive, <code>--maroon-800</code> for
+              anything irreversible. If you reach for <code>--maroon-500</code> to make something
+              "pop", you are decorating. Use size, weight or space instead.
+            </p>
+          </aside>
+        </section>
+
+        <section class="plate reveal" id="dark" aria-labelledby="dark-title">
+          <header class="plate__head">
+            <p class="plate__no">04</p>
+            <h2 id="dark-title">Dark mode</h2>
+            <p class="plate__deck">
+              The same roles at the other end of the day: one hue, two polarities, no second
+              stylesheet.
+            </p>
+          </header>
+
+          <div class="prose">
+            <p>
+              A mailbox is read at 23:40 as often as at 09:00, and a wall of white at that hour is
+              a flashbang. Dark mode here is not a theme layered on top of the brand — it is the
+              same design with paper and ink exchanged and the wax allowed to catch the light.
+              Nothing appears in dark that does not already exist as a role in
+              <code>tokens.css</code>.
+            </p>
+            <p>
+              Mechanically there is one definition per role, not two stylesheets:
+              <code>--color-bg</code> is <code>light-dark(#fbf8f4, #151110)</code>. One
+              <code>color-scheme</code> declaration — set by <code>data-theme</code> on
+              <code>&lt;html&gt;</code>, or by the operating system when that attribute is absent —
+              switches every role at once, including native controls, scrollbars and the
+              <code>&lt;dialog&gt;</code> backdrop. Because a role can only be declared once, the
+              two polarities cannot drift apart.
+            </p>
+          </div>
+
+          <h3 class="group-label">The same screen, both polarities</h3>
+          <p class="demo__caption">
+            Live, not a screenshot: each pane below is a subtree carrying <code>data-theme</code>,
+            reading the identical component classes.
+          </p>
+          <div class="polarity">
+            <div class="polarity__pane" data-theme="light">
+              <p class="polarity__label">Light · default</p>
+              <p class="polarity__h">Verify your domain</p>
+              <p class="polarity__p">Paste this record at your DNS host. We check every 60 seconds.</p>
+              <div class="field">
+                <label class="field__label" for="txt-light">TXT record</label>
+                <input class="input" id="txt-light" value="postern-verify=4c1a9f" readonly />
+              </div>
+              <div class="polarity__row">
+                <button class="btn btn--primary btn--sm" type="button">Verify now</button>
+                <button class="btn btn--ghost btn--sm" type="button">Later</button>
+                <span class="chip chip--success chip--sm">Verified</span>
+              </div>
+              <div class="alert alert--warning" role="note">
+                <svg class="alert__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+                <div><p class="alert__title">Propagation</p><p>Up to 24 hours, usually 3 minutes.</p></div>
+              </div>
+            </div>
+
+            <div class="polarity__pane" data-theme="dark">
+              <p class="polarity__label">Dark · 23:40</p>
+              <p class="polarity__h">Verify your domain</p>
+              <p class="polarity__p">Paste this record at your DNS host. We check every 60 seconds.</p>
+              <div class="field">
+                <label class="field__label" for="txt-dark">TXT record</label>
+                <input class="input" id="txt-dark" value="postern-verify=4c1a9f" readonly />
+              </div>
+              <div class="polarity__row">
+                <button class="btn btn--primary btn--sm" type="button">Verify now</button>
+                <button class="btn btn--ghost btn--sm" type="button">Later</button>
+                <span class="chip chip--success chip--sm">Verified</span>
+              </div>
+              <div class="alert alert--warning" role="note">
+                <svg class="alert__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+                <div><p class="alert__title">Propagation</p><p>Up to 24 hours, usually 3 minutes.</p></div>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="group-label">The eight invariants</h3>
+          <p class="demo__caption">
+            True in both polarities. The contrast ones are enforced by
+            <code>scripts/contrast-audit.mjs</code>, not by memory.
+          </p>
+          <ol class="invariants">
+            <li><div><strong>One brand hue.</strong> Maroon is the only accent in either polarity. Dark mode does not buy you a second accent, a glow, or a gradient.</div></li>
+            <li><div><strong>The hue is constant; only its value moves.</strong> Wax in a dark room catches light, so the accent rises to a fill at <code>#B04554</code> and text/rings rise further to <code>#E7A0AA</code>. Both stops are measured; neither is derived by lightening until it looks right.</div></li>
+            <li><div><strong>Body text is AAA (7:1) in both themes.</strong> 15.91:1 on paper, 16.85:1 on ink. Nothing ships on a maybe, and no dark surface is allowed to sit so close to its text that AA is the ceiling.</div></li>
+            <li><div><strong>Control borders hold 3:1 non-text contrast</strong> against the surface they sit on — 3.03:1 on paper in light, 3.35:1 on card in dark. A border you can only see on a good monitor is decoration.</div></li>
+            <li><div><strong>Signals keep their hue family and their measured pair.</strong> Success is green-on-green-tint in both themes, not green-on-grey. A chip that changes family between themes stops being a signal.</div></li>
+            <li><div><strong>Elevation is surface plus hairline, never shadow alone.</strong> A dark shadow on dark ink is invisible long before the user notices the missing depth, so every raised thing also carries a 1px hairline.</div></li>
+            <li><div><strong>Dark is warm ink (#151110), never #000.</strong> Pure black kills the paper metaphor and makes maroon read as a cut-out sticker rather than a seal.</div></li>
+            <li><div><strong>Never invert by filter.</strong> No <code>filter: invert()</code>, no automatic recolouring of the mark, no reversed logo screenshots. The inverse mark is its own asset, drawn at the same stroke weights.</div></li>
+          </ol>
+
+          <h3 class="group-label">Role mapping</h3>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Semantic roles in both themes with measured contrast</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Role</th>
+                  <th scope="col">Token</th>
+                  <th scope="col">Light</th>
+                  <th scope="col">Dark</th>
+                  <th scope="col">Measured (light → dark)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Page</td><td><code>--color-bg</code></td><td class="tnum">#FBF8F4</td><td class="tnum">#151110</td><td class="tnum">15.91 → 16.85 <span class="tnum">(text)</span></td></tr>
+                <tr><td>Card</td><td><code>--color-surface</code></td><td class="tnum">#FFFFFF</td><td class="tnum">#1F1A19</td><td class="tnum">16.85 → 15.46</td></tr>
+                <tr><td>Sunken well</td><td><code>--color-surface-sunken</code></td><td class="tnum">#F3EDE6</td><td class="tnum">#0F0C0B</td><td>decorative depth</td></tr>
+                <tr><td>Band (panel header)</td><td><code>--color-surface-band</code></td><td class="tnum">#FBF8F4</td><td class="tnum">#262120</td><td>decorative depth</td></tr>
+                <tr><td>Body text</td><td><code>--color-text</code></td><td class="tnum">#211C1B</td><td class="tnum">#F7F2EC</td><td class="tnum">15.91 → 16.85</td></tr>
+                <tr><td>Secondary text</td><td><code>--color-text-secondary</code></td><td class="tnum">#3A3330</td><td class="tnum">#DED6CF</td><td class="tnum">11.69 → 13.06</td></tr>
+                <tr><td>Muted text</td><td><code>--color-text-muted</code></td><td class="tnum">#57504D</td><td class="tnum">#BDB3AB</td><td class="tnum">7.46 → 9.11</td></tr>
+                <tr><td>Subtle text</td><td><code>--color-text-subtle</code></td><td class="tnum">#6B625E</td><td class="tnum">#A79C93</td><td class="tnum">5.61 → 6.98</td></tr>
+                <tr><td>Primary fill</td><td><code>--color-primary</code></td><td class="tnum">#74172A</td><td class="tnum">#B04554</td><td class="tnum">label 11.06 → 5.19</td></tr>
+                <tr><td>Link text</td><td><code>--color-link</code></td><td class="tnum">#74172A</td><td class="tnum">#E7A0AA</td><td class="tnum">10.45 → 8.94</td></tr>
+                <tr><td>Focus ring</td><td><code>--color-focus</code></td><td class="tnum">#74172A</td><td class="tnum">#E7A0AA</td><td class="tnum">10.45 → 8.94</td></tr>
+                <tr><td>Control border</td><td><code>--color-border</code></td><td class="tnum">#A08C7C</td><td class="tnum">#786B63</td><td class="tnum">3.03 → 3.35 <span class="tnum">(on card)</span></td></tr>
+                <tr><td>Hairline</td><td><code>--color-hairline</code></td><td class="tnum">#E4DAD0</td><td class="tnum">#332C29</td><td>decorative only</td></tr>
+                <tr><td>Success</td><td><code>--color-success</code></td><td class="tnum">#16603F</td><td class="tnum">#8FCEAC</td><td class="tnum">7.14 → 10.35</td></tr>
+                <tr><td>Warning</td><td><code>--color-warning</code></td><td class="tnum">#7A4E06</td><td class="tnum">#EEC888</td><td class="tnum">6.79 → 11.84</td></tr>
+                <tr><td>Danger</td><td><code>--color-danger</code></td><td class="tnum">#8F2C1E</td><td class="tnum">#F0ACA2</td><td class="tnum">7.79 → 9.94</td></tr>
+                <tr><td>Info</td><td><code>--color-info</code></td><td class="tnum">#2E5668</td><td class="tnum">#A9CBD9</td><td class="tnum">7.49 → 10.93</td></tr>
+                <tr><td>Scrim</td><td><code>--color-overlay</code></td><td class="tnum">ink 44%</td><td class="tnum">black 66%</td><td>dims, never hides focus</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout">
+            <h4>Wiring the toggle</h4>
+            <p>
+              Three states, not two: <em>follow system</em>, <em>light</em>, <em>dark</em>. Persist
+              the choice and apply it before first paint, otherwise a dark-mode user gets a white
+              flash on every navigation.
+            </p>
+            <pre><code>const root = document.documentElement;
+const stored = localStorage.getItem('postern-theme');
+if (stored === 'light' || stored === 'dark') root.dataset.theme = stored;
+
+function choose(next) {
+  if (next === 'system') delete root.dataset.theme;
+  else root.dataset.theme = next;
+  next === 'system' ? localStorage.removeItem('postern-theme')
+                    : localStorage.setItem('postern-theme', next);
+  syncThemeColor();
+}</code></pre>
+            <p>
+              In the document head, before any stylesheet paints, run the two lines that read
+              <code>localStorage</code> and set <code>dataset.theme</code>. Keep
+              <code>&lt;meta name="theme-color"&gt;</code> in step from the same function, so the
+              mobile URL bar follows the page rather than fighting it.
+            </p>
+          </div>
+
+          <ul class="rules rules--split">
+            <li><strong>Never branch a component on theme.</strong> If a component needs to know which polarity it is in, a role is missing from <code>tokens.css</code>.</li>
+            <li><strong>The toggle is a segmented control, not a switch.</strong> A switch cannot express "follow system", and that is the state most people actually want.</li>
+            <li><strong>No colour transition on the page.</strong> Do not animate <code>background-color</code> on <code>html</code>; the change is instant, like a light being switched.</li>
+            <li><strong>Images need a dark export.</strong> A diagram exported on white paper is a white rectangle at night. Ship a dark asset or place it on a deliberate light well.</li>
+            <li><strong>Scoped polarity is legal.</strong> The two panes above are subtrees with <code>data-theme</code>, which is why this document can show both at once without a screenshot.</li>
+          </ul>
+
+          <aside class="ledger-note">
+            <p class="ledger-note__label">Ledger note</p>
+            <p>
+              The toast is the exception worth understanding. It stays inverse in both themes —
+              dark ink on paper, raised slab on ink — because a toast is not a page element, it is
+              an interruption. Same for tooltips. If you find yourself wanting a maroon toast,
+              you want a banner.
+            </p>
+          </aside>
+        </section>
+
+        <section class="plate reveal" id="type" aria-labelledby="type-title">
+          <header class="plate__head">
+            <p class="plate__no">05</p>
+            <h2 id="type-title">Typography</h2>
+            <p class="plate__deck">One family, five stops, no italics. Restraint is the voice.</p>
+          </header>
+
+          <div class="typeface">
+            <div class="typeface__specimen">
+              <p class="typeface__name">Manrope Variable</p>
+              <p class="typeface__glyphs">AaBbCcDdEeFfGg 0123456789 &amp; @ . , : ; — £ $ %</p>
+              <p class="typeface__alpha">
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />abcdefghijklmnopqrstuvwxyz<br />0123456789 !?&amp;@#%*()[]{}
+              </p>
+            </div>
+            <dl class="typeface__facts">
+              <div><dt>Source</dt><dd>Self-hosted via <code>@fontsource-variable/manrope</code></dd></div>
+              <div><dt>Licence</dt><dd>SIL Open Font License 1.1 — free for commercial use, may be embedded</dd></div>
+              <div><dt>Axes</dt><dd>Weight 200–800, optical sizing on</dd></div>
+              <div><dt>Files</dt><dd>5 subsets emitted by the build (latin, latin-ext, cyrillic, greek, vietnamese), woff2 only</dd></div>
+              <div><dt>Loading</dt><dd><code>font-display: swap</code>; the browser fetches only the subset its <code>unicode-range</code> needs</dd></div>
+              <div><dt>Fallback</dt><dd><code>"Helvetica Neue", Arial, sans-serif</code></dd></div>
+            </dl>
+          </div>
+
+          <p class="caption">
+            Why self-hosted: Postern asks users to trust it with the addresses they use
+            everywhere else. Loading a webfont from a third-party CDN tells that third party the
+            IP and page of every visitor. The font ships with the app instead. Manrope has no
+            italic cut, so <em>italic is never used in the product</em> — emphasis is weight,
+            colour or a rule.
+          </p>
+
+          <h3>The scale</h3>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Typographic scale with size, line height, tracking and weight</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Token</th>
+                  <th scope="col">Size</th>
+                  <th scope="col">Leading</th>
+                  <th scope="col">Tracking</th>
+                  <th scope="col">Weight</th>
+                  <th scope="col">Used for</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>--fs-display</code></td><td class="tnum">44 → 76</td><td class="tnum">0.98</td><td class="tnum">−0.038em</td><td class="tnum">800</td><td>Landing hero, one per site</td></tr>
+                <tr><td><code>--fs-h1</code></td><td class="tnum">32 → 52</td><td class="tnum">1.06</td><td class="tnum">−0.030em</td><td class="tnum">800</td><td>Page title, one per page</td></tr>
+                <tr><td><code>--fs-h2</code></td><td class="tnum">24 → 32</td><td class="tnum">1.16</td><td class="tnum">−0.022em</td><td class="tnum">700</td><td>Section headings</td></tr>
+                <tr><td><code>--fs-h3</code></td><td class="tnum">22</td><td class="tnum">1.28</td><td class="tnum">−0.015em</td><td class="tnum">620</td><td>Card and dialog titles</td></tr>
+                <tr><td><code>--fs-h4</code></td><td class="tnum">18</td><td class="tnum">1.35</td><td class="tnum">−0.010em</td><td class="tnum">620</td><td>Sub-headings, list titles</td></tr>
+                <tr><td><code>--fs-body-lg</code></td><td class="tnum">18</td><td class="tnum">1.65</td><td class="tnum">−0.002em</td><td class="tnum">450</td><td>Lede paragraphs, auth screens</td></tr>
+                <tr><td><code>--fs-body</code></td><td class="tnum">16</td><td class="tnum">1.65</td><td class="tnum">−0.002em</td><td class="tnum">450</td><td>Default body</td></tr>
+                <tr><td><code>--fs-sm</code></td><td class="tnum">15</td><td class="tnum">1.55</td><td class="tnum">0.002em</td><td class="tnum">450</td><td>Controls, table cells, hints</td></tr>
+                <tr><td><code>--fs-caption</code></td><td class="tnum">13</td><td class="tnum">1.45</td><td class="tnum">0.008em</td><td class="tnum">450–620</td><td>Metadata, error text, chips</td></tr>
+                <tr><td><code>--fs-overline</code></td><td class="tnum">12</td><td class="tnum">1.2</td><td class="tnum">0.140em</td><td class="tnum">700</td><td>Uppercase labels and eyebrows — the only caps in the system</td></tr>
+                <tr><td><code>--fs-mono</code></td><td class="tnum">14</td><td class="tnum">1.5</td><td class="tnum">−0.010em</td><td class="tnum">450</td><td>Alias addresses, IDs, counts</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Hierarchy in use</h3>
+          <div class="specimen">
+            <p class="specimen__eyebrow">Activity · netflix.k7q2@3xyz.uk</p>
+            <p class="specimen__h1">One unexpected sender</p>
+            <p class="specimen__lede">
+              A message from <span class="addr">randompharma.ru</span> was forwarded to you.
+              It passed authentication but is not on your expected list — this is what a leak
+              usually looks like.
+            </p>
+            <p class="specimen__h3">What you can do</p>
+            <p class="specimen__body">
+              Mark the sender as expected if you recognise it, block the domain to stop future
+              mail, or replace the alias and give the service a new address.
+            </p>
+            <p class="specimen__caption">
+              31 October 2026 · 14:02 · subject truncated at 60 characters · retained 90 days
+            </p>
+          </div>
+
+          <ul class="rules rules--split">
+            <li><strong>Measure:</strong> body text is capped at 68 characters. Beyond that the eye loses the line.</li>
+            <li><strong>Case:</strong> sentence case everywhere, including buttons and table headers. Caps are reserved for overlines.</li>
+            <li><strong>Numerals:</strong> counts, dates and ratios use <code>tabular-nums</code> so they do not jitter as they update.</li>
+            <li><strong>Addresses:</strong> always <code>--font-mono</code>. An alias is data, and data is monospaced.</li>
+            <li><strong>Never:</strong> fake bold, fake italic, letter-spaced body text, centred paragraphs longer than two lines.</li>
+          </ul>
+        </section>
+
+        <section class="plate reveal" id="tokens" aria-labelledby="tokens-title">
+          <header class="plate__head">
+            <p class="plate__no">06</p>
+            <h2 id="tokens-title">Tokens</h2>
+            <p class="plate__deck">
+              Nine groups, one file. If a value is not a token, it does not exist.
+            </p>
+          </header>
+
+          <div class="token-intro">
+            <p>
+              Tokens are declared in <code>web/src/styles/tokens.css</code> inside Tailwind's
+              <code>@theme</code>, so every token is also a utility. There are two layers:
+              <strong>primitives</strong> named for what they are (<code>--maroon-700</code>),
+              and <strong>semantics</strong> named for what they do
+              (<code>--color-primary</code>). Components may only read the semantic layer — that
+              is what allows the palette to change without a component audit.
+            </p>
+            <div class="token-audit" id="token-audit-panel">
+              <p class="token-audit__label">Live token audit</p>
+              <p class="token-audit__count" id="token-audit-count">—</p>
+              <p class="token-audit__body">
+                Every swatch above carries the hex value it claims. This page reads each token
+                back out of the live stylesheet at load time and compares. A mismatch is
+                reported here, which means this document cannot quietly drift from the code.
+              </p>
+            </div>
+          </div>
+
+          <h3 class="group-label">Using the tokens in Tailwind</h3>
+          <p class="lede-sm">
+            Tailwind v4 is the styling engine. Tokens land in <code>@theme</code>, which generates
+            the utilities; nothing is duplicated in a config file.
+          </p>
+
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Token to utility mapping</caption>
+              <thead>
+                <tr><th scope="col">Token</th><th scope="col">Utility</th><th scope="col">Use</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>--color-bg</code></td><td><code>bg-bg</code></td><td>Page ground</td></tr>
+                <tr><td><code>--color-surface</code></td><td><code>bg-surface</code></td><td>Cards, dialogs, inputs</td></tr>
+                <tr><td><code>--color-text</code></td><td><code>text-text</code></td><td>Body copy — the role name is the utility name</td></tr>
+                <tr><td><code>--color-text-muted</code></td><td><code>text-text-muted</code></td><td>Helper text, metadata</td></tr>
+                <tr><td><code>--color-primary</code></td><td><code>bg-primary</code> <code>border-primary</code></td><td>Fills only</td></tr>
+                <tr><td><code>--color-text-on-primary</code></td><td><code>text-text-on-primary</code></td><td>Text on primary fills and selected text</td></tr>
+                <tr><td><code>--color-link</code></td><td><code>text-link</code></td><td>Link and icon colour</td></tr>
+                <tr><td><code>--color-hairline</code></td><td><code>border-hairline</code></td><td>Dividers</td></tr>
+                <tr><td><code>--color-border</code></td><td><code>border-border</code></td><td>Control boundaries, 3:1</td></tr>
+                <tr><td><code>--radius-md</code></td><td><code>rounded-md</code></td><td>8px, controls</td></tr>
+                <tr><td><code>--shadow-md</code></td><td><code>shadow-md</code></td><td>Cards, popovers</td></tr>
+                <tr><td><code>--fs-h1</code> / <code>--lh-h1</code></td><td><code>text-h1</code></td><td>Size, leading and tracking in one class</td></tr>
+                <tr><td><code>--space-4</code></td><td><code>p-4</code> <code>gap-4</code></td><td>Same 4px base, same numbers</td></tr>
+                <tr><td><code>--container</code></td><td><code>max-w-page</code></td><td>72rem content limit</td></tr>
+                <tr><td><code>--ease-standard</code></td><td><code>ease-standard</code></td><td>Default easing</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <pre><code>&lt;output class="inline-flex items-center gap-2 rounded-full border border-hairline
+              bg-success-surface px-3 py-1 text-caption text-success-on-surface"&gt;
+  &lt;span class="size-2 rounded-full bg-success" aria-hidden="true"&gt;&lt;/span&gt;
+  Destination verified
+&lt;/output&gt;</code></pre>
+
+          <ul class="rules rules--split">
+            <li><strong>Utilities for layout, components for repetition.</strong> One-off spacing, flex, grid and colour go inline. Anything used twice becomes a class in <code>@layer components</code> — which is what this guide documents.</li>
+            <li><strong>Never a raw value in a class name.</strong> <code>bg-[#74172a]</code> is a bug: it opts out of dark mode and of the audit. Use the role.</li>
+            <li><strong>No <code>dark:</code> variants.</strong> Every colour is <code>light-dark()</code> already, so <code>dark:*</code> would double-handle the flip and ignore the user's toggle.</li>
+            <li><strong>Three layers, in order:</strong> <code>theme</code> (tokens), <code>base</code> (reset, elements), <code>components</code> (classes). Utilities sit above all three, so a one-off always wins.</li>
+          </ul>
+
+          <h3 class="group-label">Spacing — 4px base</h3>
+          <div class="scale-viz">
+            <div class="scale-viz__row"><code>--space-1</code><span class="scale-viz__bar" style="width: 4px"></span><span class="scale-viz__val">4px</span></div>
+            <div class="scale-viz__row"><code>--space-2</code><span class="scale-viz__bar" style="width: 8px"></span><span class="scale-viz__val">8px</span></div>
+            <div class="scale-viz__row"><code>--space-3</code><span class="scale-viz__bar" style="width: 12px"></span><span class="scale-viz__val">12px</span></div>
+            <div class="scale-viz__row"><code>--space-4</code><span class="scale-viz__bar" style="width: 16px"></span><span class="scale-viz__val">16px</span></div>
+            <div class="scale-viz__row"><code>--space-5</code><span class="scale-viz__bar" style="width: 20px"></span><span class="scale-viz__val">20px</span></div>
+            <div class="scale-viz__row"><code>--space-6</code><span class="scale-viz__bar" style="width: 24px"></span><span class="scale-viz__val">24px</span></div>
+            <div class="scale-viz__row"><code>--space-7</code><span class="scale-viz__bar" style="width: 32px"></span><span class="scale-viz__val">32px</span></div>
+            <div class="scale-viz__row"><code>--space-8</code><span class="scale-viz__bar" style="width: 40px"></span><span class="scale-viz__val">40px</span></div>
+            <div class="scale-viz__row"><code>--space-9</code><span class="scale-viz__bar" style="width: 48px"></span><span class="scale-viz__val">48px</span></div>
+            <div class="scale-viz__row"><code>--space-10</code><span class="scale-viz__bar" style="width: 64px"></span><span class="scale-viz__val">64px</span></div>
+            <div class="scale-viz__row"><code>--space-11</code><span class="scale-viz__bar" style="width: 80px"></span><span class="scale-viz__val">80px</span></div>
+            <div class="scale-viz__row"><code>--space-12</code><span class="scale-viz__bar" style="width: 96px"></span><span class="scale-viz__val">96px</span></div>
+            <div class="scale-viz__row"><code>--space-13</code><span class="scale-viz__bar" style="width: 128px"></span><span class="scale-viz__val">128px</span></div>
+          </div>
+
+          <div class="split">
+            <div>
+              <h3>Radius</h3>
+              <div class="radius-viz">
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-xs)"></span><code>xs · 3</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-sm)"></span><code>sm · 5</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-md)"></span><code>md · 8</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-lg)"></span><code>lg · 12</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-xl)"></span><code>xl · 18</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-2xl)"></span><code>2xl · 26</code></div>
+              </div>
+              <p class="caption caption--tight">Controls 8 · cards 12 · dialogs 18 · pills full. The mark is an arch, so nothing in the system is a bubble.</p>
+            </div>
+            <div>
+              <h3>Elevation</h3>
+              <div class="shadow-viz">
+                <div class="shadow-viz__item" style="box-shadow: var(--shadow-xs)"><code>xs</code></div>
+                <div class="shadow-viz__item" style="box-shadow: var(--shadow-sm)"><code>sm</code></div>
+                <div class="shadow-viz__item" style="box-shadow: var(--shadow-md)"><code>md</code></div>
+                <div class="shadow-viz__item" style="box-shadow: var(--shadow-lg)"><code>lg</code></div>
+              </div>
+              <p class="caption caption--tight">Warm, ink-tinted, low-opacity. xs for resting cards, sm for controls, md for hover and popovers, lg for dialogs and toasts only.</p>
+            </div>
+          </div>
+
+          <h3>Motion</h3>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Motion tokens</caption>
+              <thead><tr><th scope="col">Token</th><th scope="col">Value</th><th scope="col">Allowed for</th></tr></thead>
+              <tbody>
+                <tr><td><code>--dur-instant</code></td><td class="tnum">80ms</td><td>Colour and border on hover and press. Nothing else.</td></tr>
+                <tr><td><code>--dur-fast</code></td><td class="tnum">140ms</td><td>Checkbox, switch, chip, tooltip, focus transition</td></tr>
+                <tr><td><code>--dur-base</code></td><td class="tnum">200ms</td><td>Dropdown, accordion, tab underline, toast entry</td></tr>
+                <tr><td><code>--dur-slow</code></td><td class="tnum">320ms</td><td>Dialog and sheet entrance, their backdrop</td></tr>
+                <tr><td><code>--dur-slower</code></td><td class="tnum">520ms</td><td>Page-level reveal. Once per page, never on a loop.</td></tr>
+                <tr><td><code>--ease-standard</code></td><td class="tnum">0.2, 0.6, 0.3, 1</td><td>Default: colour, size, sheets</td></tr>
+                <tr><td><code>--ease-out</code></td><td class="tnum">0.16, 1, 0.3, 1</td><td>Entrances — fast start, gentle stop</td></tr>
+                <tr><td><code>--ease-spring</code></td><td class="tnum">0.34, 1.4, 0.5, 1</td><td>Only for the wax seal and switch thumb</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-pair">
+            <div>
+              <p class="code-pair__label">Primitive</p>
+              <pre><code>--maroon-700: #74172a;</code></pre>
+            </div>
+            <div>
+              <p class="code-pair__label">Semantic — the only layer components read</p>
+              <pre><code>--color-primary: var(--maroon-700);
+--color-text:    var(--ink-900);
+--color-border:  var(--ink-300);</code></pre>
+            </div>
+          </div>
+
+          <aside class="ledger-note">
+            <p class="ledger-note__label">Ledger note</p>
+            <p>
+              Breakpoints are the one documented exception: CSS cannot read custom properties
+              inside <code>@media</code>, so <code>sm 30rem · md 48rem · lg 64rem · xl 80rem</code>
+              appear as literals. They are listed in the token file's comments so the two can be
+              changed together.
+            </p>
+          </aside>
+        </section>
+
+        <section class="plate reveal" id="layout" aria-labelledby="layout-title">
+          <header class="plate__head">
+            <p class="plate__no">07</p>
+            <h2 id="layout-title">Space &amp; Layout</h2>
+            <p class="plate__deck">One column on a phone, twelve on a desk, and nothing in between that surprises you.</p>
+          </header>
+
+          <div class="grid-demo" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <p class="caption">
+            12 columns · 24px gutter · content max 1152px (72rem) · prose max 672px (42rem) ·
+            page gutter <code>clamp(20px, 4vw, 48px)</code>. Content never touches the viewport
+            edge, and a line of body text never exceeds 68 characters.
+          </p>
+
+          <h3>Breakpoints and what changes</h3>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Breakpoint behaviour</caption>
+              <thead>
+                <tr><th scope="col">Name</th><th scope="col">Min width</th><th scope="col">Columns</th><th scope="col">What changes</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>base</td><td class="tnum">320px</td><td class="tnum">4</td><td>Single column. Rail becomes a horizontal scroller. Tables become stacked cards. Actions move to a bottom sheet.</td></tr>
+                <tr><td>sm</td><td class="tnum">480px</td><td class="tnum">4</td><td>Two-up swatch and stat grids. Inline buttons regain their labels.</td></tr>
+                <tr><td>md</td><td class="tnum">768px</td><td class="tnum">8</td><td>Persistent side rail appears. Alias rows become a real table. Dialogs are centred rather than bottom-anchored.</td></tr>
+                <tr><td>lg</td><td class="tnum">1024px</td><td class="tnum">12</td><td>Two-column plates (specimen beside rules). Sticky column heads.</td></tr>
+                <tr><td>xl</td><td class="tnum">1280px</td><td class="tnum">12</td><td>Container hits its 1152px ceiling and centres. Gutters stop growing.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Vertical rhythm</h3>
+          <ul class="rules rules--split">
+            <li><strong>Inside a component:</strong> 4, 8, 12 or 16px. Never more.</li>
+            <li><strong>Between components:</strong> 24px (<code>--space-6</code>) as the default gap.</li>
+            <li><strong>Between sections:</strong> 48–96px, scaling with viewport.</li>
+            <li><strong>Optical alignment:</strong> text aligns to text. Icons sit on the cap height, not the line box.</li>
+            <li><strong>Touch targets:</strong> 44×44px minimum on touch, 32×32px minimum for pointer-only controls, with 24×24px as the WCAG 2.2 floor.</li>
+          </ul>
+
+          <div class="callout">
+            <h4>Responsive is a layout decision, not a font-size decision</h4>
+            <p>
+              Type already scales fluidly through <code>clamp()</code>, so a phone is not a
+              shrunken desktop — it is a different composition. Below 768px the alias table
+              becomes a stack of cards, the replace-alias checklist becomes a full-height sheet,
+              and the side rail becomes a horizontal strip that scrolls with the content rather
+              than pinning to the viewport.
+            </p>
+          </div>
+        </section>
+
+        <section class="plate reveal" id="components" aria-labelledby="components-title">
+          <header class="plate__head">
+            <p class="plate__no">08</p>
+            <h2 id="components-title">Components</h2>
+            <p class="plate__deck">
+              Everything the product actually uses, rendered from the shipped classes. If it is
+              not on this page, it is not in the system.
+            </p>
+          </header>
+
+          <h3>Buttons</h3>
+          <p class="lede-sm">
+            Five variants. Exactly one filled primary per view — that is a composition rule, not a
+            preference. Hover, focus and press are live on this page; the fourth row shows them
+            frozen so the states can be compared side by side.
+          </p>
+
+          <div class="demo">
+            <div class="demo__stage demo__stage--wrap">
+              <button class="btn btn--primary" type="button">Create alias</button>
+              <button class="btn btn--secondary" type="button">Copy address</button>
+              <button class="btn btn--ghost" type="button">Mark as expected</button>
+              <button class="btn btn--danger" type="button">Block sender</button>
+              <button class="btn btn--danger-solid" type="button">Delete account</button>
+            </div>
+            <p class="demo__caption">
+              <code>.btn--primary</code> commit · <code>.btn--secondary</code> the workhorse ·
+              <code>.btn--ghost</code> in-row and toolbar · <code>.btn--danger</code> outline until
+              confirmation · <code>.btn--danger-solid</code> only inside the confirm dialog
+            </p>
+          </div>
+
+          <div class="demo">
+            <div class="demo__stage demo__stage--wrap">
+              <button class="btn btn--primary btn--sm" type="button">Small</button>
+              <button class="btn btn--primary" type="button">Medium</button>
+              <button class="btn btn--primary btn--lg" type="button">Large</button>
+              <button class="btn btn--secondary btn--icon tip" type="button" data-tip="Copy address" aria-label="Copy address">
+                <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              </button>
+              <button class="btn btn--primary btn--block" type="button" style="max-width: 12rem">Block</button>
+            </div>
+            <p class="demo__caption">Sizes 32 / 40 / 48px · <code>.btn--icon</code> is always labelled for screen readers · <code>.btn--block</code> for auth forms</p>
+          </div>
+
+          <div class="state-grid">
+            <div class="state-cell"><span class="state-label">Default</span><button class="btn btn--primary" type="button">Replace alias</button></div>
+            <div class="state-cell" data-state="hover"><span class="state-label">Hover</span><button class="btn btn--primary" type="button">Replace alias</button></div>
+            <div class="state-cell" data-state="focus"><span class="state-label">Focus</span><button class="btn btn--primary" type="button">Replace alias</button></div>
+            <div class="state-cell" data-state="active"><span class="state-label">Active</span><button class="btn btn--primary" type="button">Replace alias</button></div>
+            <div class="state-cell"><span class="state-label">Disabled</span><button class="btn btn--primary" type="button" disabled>Replace alias</button></div>
+            <div class="state-cell"><span class="state-label">Loading</span><button class="btn btn--primary" type="button" aria-busy="true" style="min-width: 11rem"><span class="spinner btn__spinner" aria-hidden="true"></span>Replacing…</button></div>
+          </div>
+          <p class="caption caption--tight">
+            Loading keeps the label and the width: the spinner is absolutely positioned so the
+            button never jumps, and the control stays focusable with <code>aria-busy="true"</code>
+            so the wait is announced.
+          </p>
+
+          <h3>Form fields</h3>
+          <div class="demo demo--split">
+            <div class="demo__stage demo__stage--stack">
+              <div class="field">
+                <label class="field__label" for="f-label">Alias label <span class="field__optional">optional</span></label>
+                <input class="input" id="f-label" name="label" placeholder="netflix" autocomplete="off" />
+                <p class="field__hint" id="f-label-hint">A word that means something to you. We add a random suffix: <span class="addr">netflix.k7q2@3xyz.uk</span></p>
+              </div>
+
+              <div class="field field--invalid">
+                <label class="field__label" for="f-err">Email address</label>
+                <input class="input" id="f-err" value="alex@gmail" aria-invalid="true" aria-describedby="f-err-msg" />
+                <p class="field__error" id="f-err-msg">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                  That address is missing a domain — try alex@gmail.com.
+                </p>
+              </div>
+
+              <div class="field field--valid">
+                <label class="field__label" for="f-ok">Invite code</label>
+                <input class="input" id="f-ok" value="SC-4417-POST" />
+                <p class="field__hint"><span class="chip chip--success chip--sm">Valid</span> 42 of 199 seats used</p>
+              </div>
+
+              <div class="field">
+                <label class="field__label" for="f-dis">Forwarding address</label>
+                <input class="input" id="f-dis" value="alex@gmail.com" disabled />
+              </div>
+
+              <div class="field">
+                <label class="field__label" for="f-sel">Category</label>
+                <select class="select" id="f-sel">
+                  <option>Streaming</option>
+                  <option>Retail</option>
+                  <option>Financial</option>
+                  <option>Newsletter</option>
+                  <option>Other</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label class="field__label" for="f-ta">Purpose <span class="field__optional">optional</span></label>
+                <textarea class="textarea" id="f-ta" rows="2" placeholder="What is this alias for?"></textarea>
+              </div>
+            </div>
+            <div class="demo__aside">
+              <p class="demo__caption">
+                Every field is label-first, hint second, error third, in that DOM order. Errors are
+                wired with <code>aria-invalid</code> and <code>aria-describedby</code>, and state the
+                fix rather than the fault.
+              </p>
+              <p class="demo__caption">
+                The valid state uses a chip as well as a border, so it survives
+                colour-blindness and greyscale printing.
+              </p>
+            </div>
+          </div>
+
+          <div class="demo demo--split">
+            <div class="demo__stage demo__stage--stack">
+              <div class="field">
+                <label class="field__label" for="f-addr">Alias address</label>
+                <div class="input-group">
+                  <input class="input" id="f-addr" value="netflix.k7q2@3xyz.uk" readonly />
+                  <span class="input-group__slot">
+                    <button class="btn btn--ghost btn--sm" type="button" data-copy="netflix.k7q2@3xyz.uk">Copy</button>
+                  </span>
+                </div>
+                <p class="field__hint">Read-only: the suffix is server-generated so it cannot be guessed.</p>
+              </div>
+              <label class="check"><input type="checkbox" checked /> <span>I have saved this recovery key somewhere safe.</span></label>
+              <label class="check"><input type="checkbox" /> <span>Notify me when an unexpected sender appears.</span></label>
+              <label class="switch"><input type="checkbox" checked /> <span>Alias active</span></label>
+            </div>
+            <div class="demo__aside">
+              <p class="demo__caption">
+                <code>.input-group</code> joins the field and its action into one border, so the
+                copy button is unmistakably part of the address. The group owns the focus ring.
+              </p>
+              <p class="demo__caption">
+                Checkboxes are 18px boxes with a 3px hit-area pad; switches are for immediate
+                effect only, never for a value that needs a Save button.
+              </p>
+            </div>
+          </div>
+
+          <h3>Status chips &amp; dots</h3>
+          <div class="demo">
+            <div class="demo__stage demo__stage--wrap">
+              <span class="chip chip--primary">Active</span>
+              <span class="chip">Disabled</span>
+              <span class="chip chip--info">Replaced</span>
+              <span class="chip chip--success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                Forwarded
+              </span>
+              <span class="chip chip--warning">Unexpected sender</span>
+              <span class="chip chip--danger">Authentication failed</span>
+              <span class="chip"><span class="dot dot--pulse dot--primary"></span> Propagating</span>
+            </div>
+            <p class="demo__caption">
+              Chips always contain a word. The dot variants are decorative companions to a label, never
+              the label itself.
+            </p>
+          </div>
+
+          <h4>Flag severity — the five authentication cases</h4>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">How authentication results map to chip tone</caption>
+              <thead><tr><th scope="col">Expected sender</th><th scope="col">Auth result</th><th scope="col">Tone</th><th scope="col">What the user sees</th></tr></thead>
+              <tbody>
+                <tr><td>Yes</td><td>pass</td><td><span class="chip chip--success chip--sm">Quiet</span></td><td>No chip. This is the normal case and deserves no decoration.</td></tr>
+                <tr><td>Yes</td><td>none / unknown</td><td><span class="chip chip--info chip--sm">Info</span></td><td>"No authentication data" — informational only.</td></tr>
+                <tr><td>No</td><td>pass</td><td><span class="chip chip--warning chip--sm">Warning</span></td><td>"Unexpected sender" — passed auth, not on your list. The likely leak.</td></tr>
+                <tr><td>No</td><td>none / unknown</td><td><span class="chip chip--sm">Neutral</span></td><td>"Unverified sender" — probably marketing, probably harmless.</td></tr>
+                <tr><td>Any</td><td>fail</td><td><span class="chip chip--danger chip--sm">Danger</span></td><td>"Failed authentication" — spoofed or misconfigured. Always shown.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Alerts</h3>
+          <div class="demo__stage demo__stage--stack">
+            <div class="alert alert--info" role="note">
+              <svg class="alert__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <div><p class="alert__title">Message bodies are never stored</p><p>Subjects are truncated to 60 characters and activity is retained for 90 days.</p></div>
+            </div>
+            <div class="alert alert--success" role="status">
+              <svg class="alert__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+              <div><p class="alert__title">Destination verified</p><p>Mail sent to your aliases now reaches alex@gmail.com.</p></div>
+            </div>
+            <div class="alert alert--warning" role="note">
+              <svg class="alert__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+              <div><p class="alert__title">One alias is propagating</p><p>Cloudflare rate-limited the update. Routing will catch up within 60 seconds.</p></div>
+            </div>
+            <div class="alert alert--danger" role="alert">
+              <svg class="alert__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4M12 16h.01"/></svg>
+              <div><p class="alert__title">Could not verify the reset link</p><p>It may have expired. Request a new one from the recovery page.</p></div>
+            </div>
+          </div>
+
+          <h3>Dialog</h3>
+          <div class="demo">
+            <div class="demo__stage demo__stage--wrap">
+              <button class="btn btn--secondary" type="button" data-open="dlg-replace">Open replace dialog</button>
+              <button class="btn btn--danger" type="button" data-open="dlg-delete">Open destructive dialog</button>
+            </div>
+            <p class="demo__caption">
+              Native <code>&lt;dialog&gt;</code> with <code>showModal()</code>: focus trap, Esc,
+              inert background and a real backdrop, without a JS library. Try it with a keyboard.
+            </p>
+          </div>
+
+          <dialog class="dialog" id="dlg-replace" aria-labelledby="dlg-replace-title">
+            <div class="dialog__header"><h3 id="dlg-replace-title">Replace netflix.k7q2@3xyz.uk?</h3></div>
+            <div class="dialog__body">
+              <p class="lede-sm">Your new aliases will be issued before the old one closes. Three steps:</p>
+              <ol class="steps">
+                <li><span>1</span><div><strong>Copy your new address</strong><p class="addr">netflix.m3p8@3xyz.uk</p></div></li>
+                <li><span>2</span><div><strong>Change your email at Netflix</strong><p>Sign in to the service and update the address on the account.</p></div></li>
+                <li><span>3</span><div><strong>Confirm</strong><p>The old address is tombstoned — it can never be reissued.</p></div></li>
+              </ol>
+              <label class="check" style="margin-block-start: var(--space-4)"><input type="checkbox" /> <span>I have updated my email at Netflix.</span></label>
+            </div>
+            <div class="dialog__footer">
+              <button class="btn btn--ghost" type="button" data-close>Cancel</button>
+              <button class="btn btn--primary" type="button" data-close>Replace alias</button>
+            </div>
+          </dialog>
+
+          <dialog class="dialog" id="dlg-delete" aria-labelledby="dlg-delete-title" aria-describedby="dlg-delete-desc">
+            <div class="dialog__header"><h3 id="dlg-delete-title">Delete this alias permanently?</h3></div>
+            <div class="dialog__body" id="dlg-delete-desc">
+              <p class="lede-sm">
+                netflix.k7q2@3xyz.uk stops forwarding immediately, its activity history is removed,
+                and the address is burned — Postern will never issue it again, to anyone.
+              </p>
+              <p class="field__hint" style="margin-block-start: var(--space-3)">This cannot be undone.</p>
+            </div>
+            <div class="dialog__footer">
+              <button class="btn btn--ghost" type="button" data-close>Keep alias</button>
+              <button class="btn btn--danger-solid" type="button" data-close>Delete permanently</button>
+            </div>
+          </dialog>
+
+          <h3>Toast</h3>
+          <div class="demo">
+            <div class="demo__stage demo__stage--wrap">
+              <button class="btn btn--secondary" type="button" data-toast="success">Copy confirmed</button>
+              <button class="btn btn--secondary" type="button" data-toast="danger">Failed to save</button>
+              <button class="btn btn--secondary" type="button" data-toast="plain">Plain</button>
+            </div>
+            <p class="demo__caption">
+              Toasts confirm completed work only. They never carry an error the user must act on —
+              those go inline next to the control that failed, because a toast disappears.
+            </p>
+          </div>
+          <div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="false"></div>
+
+          <h3>Activity table</h3>
+          <div class="panel">
+            <div class="panel__header">
+              <h4 style="margin: 0">Recent messages</h4>
+              <span class="chip chip--sm">Last 90 days</span>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <caption class="sr-only">Example activity rows showing the flag severity mapping</caption>
+                <thead>
+                  <tr><th scope="col">Sender</th><th scope="col">Subject</th><th scope="col">Received</th><th scope="col">Authentication</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="addr">netflix.com</td><td>Your subscription renews soon</td><td class="tnum">31 Oct · 14:02</td><td><span class="chip chip--success chip--sm">Expected · pass</span></td></tr>
+                  <tr><td class="addr">randompharma.ru</td><td>You have been selected</td><td class="tnum">30 Oct · 09:14</td><td><span class="chip chip--warning chip--sm">Unexpected · pass</span></td></tr>
+                  <tr><td class="addr">mail.example.net</td><td>Weekly digest</td><td class="tnum">29 Oct · 06:00</td><td><span class="chip chip--sm">Unverified</span></td></tr>
+                  <tr><td class="addr">spoof.test</td><td>Action required</td><td class="tnum">28 Oct · 22:51</td><td><span class="chip chip--danger chip--sm">Failed authentication</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="caption caption--tight">Below 768px this table becomes a stack of four-line cards. Never a horizontal scroll for anything other than the diff-sized overflow.</p>
+
+          <h3>Tabs</h3>
+          <div class="demo">
+            <div class="demo__stage demo__stage--stack">
+              <div class="tabs" role="tablist" aria-label="Alias sections" data-tabs>
+                <button class="tab" role="tab" aria-selected="true" id="tab-a" aria-controls="panel-a" type="button">Activity</button>
+                <button class="tab" role="tab" aria-selected="false" id="tab-b" aria-controls="panel-b" type="button">Expected senders</button>
+                <button class="tab" role="tab" aria-selected="false" id="tab-c" aria-controls="panel-c" type="button">Settings</button>
+              </div>
+              <div role="tabpanel" id="panel-a" aria-labelledby="tab-a" tabindex="0" class="tabpanel">Every message that reached this alias, newest first.</div>
+              <div role="tabpanel" id="panel-b" aria-labelledby="tab-b" tabindex="0" class="tabpanel" hidden>Addresses you have marked as expected for this alias.</div>
+              <div role="tabpanel" id="panel-c" aria-labelledby="tab-c" tabindex="0" class="tabpanel" hidden>Metadata, disable, replace and delete.</div>
+            </div>
+            <p class="demo__caption">Roving tabindex: Left/Right arrows move between tabs, <kbd>Home</kbd> and <kbd>End</kbd> jump to the ends. The underline is 2px and never the only indicator — the label also changes colour.</p>
+          </div>
+
+          <h3>Skeletons, spinners and progress</h3>
+          <div class="demo demo--split">
+            <div class="demo__stage demo__stage--stack">
+              <div class="loading-demo" id="loading-demo">
+                <div class="alias-list" id="alias-list">
+                  <div class="alias-row"><span class="addr">netflix.k7q2@3xyz.uk</span><span class="chip chip--primary chip--sm">Active</span></div>
+                  <div class="alias-row"><span class="addr">shop.m4x1@3xyz.uk</span><span class="chip chip--primary chip--sm">Active</span></div>
+                  <div class="alias-row"><span class="addr">bank.p9t3@3xyz.uk</span><span class="chip chip--sm">Disabled</span></div>
+                </div>
+              </div>
+              <div class="demo__controls">
+                <button class="btn btn--secondary btn--sm" type="button" id="load-1">Simulate 900ms load</button>
+                <button class="btn btn--secondary btn--sm" type="button" id="load-3">Simulate 4s cold start</button>
+                <button class="btn btn--ghost btn--sm" type="button" id="load-reset">Reset</button>
+              </div>
+            </div>
+            <div class="demo__aside">
+              <p class="demo__caption">
+                The skeleton is built from the same row height and column widths as the real list,
+                so nothing shifts when the data lands. That is the only test a skeleton has to pass.
+              </p>
+              <p class="demo__caption">
+                At four seconds the skeleton gains a sentence — <em>"Waking up the backend…"</em> —
+                because an unlabelled skeleton cannot distinguish slow from broken.
+              </p>
+            </div>
+          </div>
+
+          <div class="demo__stage demo__stage--wrap">
+            <span class="spinner spinner--lg" role="status" aria-label="Loading"></span>
+            <div class="progress-item">
+              <p class="field__hint">Re-syncing 2 dirty aliases · 40%</p>
+              <div class="progress" role="progressbar" aria-label="Re-syncing dirty aliases" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"><div class="progress__fill" style="--progress-value: 40"></div></div>
+            </div>
+            <div class="progress-item">
+              <p class="field__hint">Checking verification status…</p>
+              <div class="progress progress--indeterminate" role="progressbar" aria-label="Checking status"><div class="progress__fill"></div></div>
+            </div>
+          </div>
+
+          <h3>Empty state</h3>
+          <div class="panel">
+            <div class="empty">
+              <span class="empty__art" aria-hidden="true">
+                <svg viewBox="0 0 32 32" width="24" height="24"><use href="#arch-mark" /></svg>
+              </span>
+              <p class="empty__title">No aliases yet</p>
+              <p class="empty__body">
+                Create one for the next service that asks for your email. You will get an address
+                like <span class="addr">shop.m4x1@3xyz.uk</span> and mail will appear here.
+              </p>
+              <button class="btn btn--primary btn--sm" type="button" style="margin-block-start: var(--space-2)">Create your first alias</button>
+            </div>
+          </div>
+          <p class="caption caption--tight">An empty state says what goes here, why it is worth having, and offers exactly one action. It never apologises and never says "no data".</p>
+        </section>
+
+        <section class="plate reveal" id="motion" aria-labelledby="motion-title">
+          <header class="plate__head">
+            <p class="plate__no">09</p>
+            <h2 id="motion-title">Motion &amp; Loading</h2>
+            <p class="plate__deck">Motion explains a change of state. It never decorates one.</p>
+          </header>
+
+          <div class="prose">
+            <p>
+              The product's honest weakness is latency: a free-tier backend that sleeps, a worker
+              that logs asynchronously, a KV write that can fail and reconcile later. Those waits
+              are real, and pretending otherwise with a spinner is a kind of lying. So the rule is
+              not "always show a spinner" — it is <strong>show the smallest true thing</strong>.
+            </p>
+          </div>
+
+          <h3>The loading decision</h3>
+          <div class="table-wrap">
+            <table class="table table--doc table--decide">
+              <caption class="sr-only">Which loading treatment to use for which wait</caption>
+              <thead>
+                <tr><th scope="col">The wait</th><th scope="col">Treatment</th><th scope="col">Why</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Under 150ms — most reads</td>
+                  <td><span class="chip chip--sm">Nothing</span></td>
+                  <td>A flash of indicator is slower than the wait it describes, and it makes an instant action feel unstable.</td>
+                </tr>
+                <tr>
+                  <td>A form submit or a row action</td>
+                  <td><span class="chip chip--sm">Button spinner</span></td>
+                  <td>Keeps the label, disables the control, sets <code>aria-busy</code>. The user sees which action is pending, not just that something is.</td>
+                </tr>
+                <tr>
+                  <td>150ms–3s with a known shape</td>
+                  <td><span class="chip chip--sm">Skeleton</span></td>
+                  <td>Preserves layout, so the page does not jolt when content arrives. Must match the real row height exactly.</td>
+                </tr>
+                <tr>
+                  <td>Over 3s, or unknown duration</td>
+                  <td><span class="chip chip--sm">Skeleton + text</span></td>
+                  <td>Name the wait: "Waking up the backend…". Add a retry affordance after 15s. Silence at this length reads as failure.</td>
+                </tr>
+                <tr>
+                  <td>Measurable progress — re-sync, export</td>
+                  <td><span class="chip chip--sm">Determinate bar</span></td>
+                  <td>Show real counts (“2 of 5 aliases”). Never animate a fake percentage.</td>
+                </tr>
+                <tr>
+                  <td>Route change</td>
+                  <td><span class="chip chip--sm">2px top bar</span></td>
+                  <td>Appears only after 150ms. No full-page spinner; the shell stays usable.</td>
+                </tr>
+                <tr>
+                  <td>Copy to clipboard, toggle, optimistic edit</td>
+                  <td><span class="chip chip--sm">Instant + toast</span></td>
+                  <td>Hide the latency, roll back on failure with an inline correction. Never show a spinner for something that is already done.</td>
+                </tr>
+                <tr>
+                  <td>Nightly jobs, background sync</td>
+                  <td><span class="chip chip--sm">Nothing</span></td>
+                  <td>Surface it as a count in the admin panel. The user did not ask, so they are not waiting.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout">
+            <h4>The one-line rule</h4>
+            <p>
+              <strong>Skeleton when you know the shape. Spinner when you know the action.
+              Nothing when you know neither.</strong> A skeleton is a promise about geometry — if
+              the final content does not occupy the same box, use a spinner instead.
+            </p>
+          </div>
+
+          <h3>Skeleton anatomy</h3>
+          <ul class="rules rules--split">
+            <li>Same height, same column widths, same count as the loaded state — capped at six rows.</li>
+            <li>One sweeping highlight at 1.6s. Under <code>prefers-reduced-motion</code> it is a static tint.</li>
+            <li>Never a skeleton for a list that may be empty; show the empty state once you know.</li>
+            <li>Never a skeleton for longer than eight seconds; escalate to text and a retry.</li>
+            <li>Never skeleton a whole page when one panel is reloading. Scope the wait to what is actually waiting.</li>
+          </ul>
+
+          <h3>What may animate</h3>
+          <div class="motion-lab">
+            <div class="motion-lab__controls" role="group" aria-label="Motion demonstrations">
+              <button class="btn btn--secondary btn--sm" type="button" data-motion="instant">Instant · 80ms</button>
+              <button class="btn btn--secondary btn--sm" type="button" data-motion="fast">Fast · 140ms</button>
+              <button class="btn btn--secondary btn--sm" type="button" data-motion="base">Base · 200ms</button>
+              <button class="btn btn--secondary btn--sm" type="button" data-motion="slow">Slow · 320ms</button>
+              <button class="btn btn--secondary btn--sm" type="button" data-motion="slower">Slower · 520ms</button>
+            </div>
+            <div class="motion-lab__track" aria-hidden="true"><span class="motion-lab__dot" id="motion-dot"></span></div>
+            <p class="caption caption--tight">Only <code>opacity</code>, <code>transform</code> and colour are animated — never layout properties, never anything that triggers reflow.</p>
+          </div>
+
+          <div class="split">
+            <div>
+              <h3 class="group-label">Permitted</h3>
+              <ul class="rules">
+                <li>Colour and border on hover and press (80ms)</li>
+                <li>Dialog scale-and-rise on open, backdrop fade (320ms)</li>
+                <li>Toast entering from the bottom edge (200ms)</li>
+                <li>Switch thumb travel with a light spring</li>
+                <li>Section reveal on first scroll into view (520ms, once)</li>
+                <li>One-time logo draw on the landing page</li>
+              </ul>
+            </div>
+            <div>
+              <h3 class="group-label">Forbidden</h3>
+              <ul class="rules">
+                <li>Parallax, autoplaying carousels, looping ambient motion</li>
+                <li>Anything over 520ms without a user-initiated trigger</li>
+                <li>Animating height, width, top or left</li>
+                <li>Bouncing, wobbling or attention-seeking easing</li>
+                <li>Motion that carries meaning with no static equivalent</li>
+                <li>Animating the mark in a loop, ever</li>
+              </ul>
+            </div>
+          </div>
+
+          <aside class="ledger-note">
+            <p class="ledger-note__label">Ledger note</p>
+            <p>
+              <code>prefers-reduced-motion: reduce</code> collapses every animation to 0.01ms
+              globally, from <code>base.css</code>. That includes the skeleton sweep, the dialog
+              entrance and the section reveal. Nothing in this system depends on motion to be
+              understood — which is why switching it off is safe rather than degrading.
+            </p>
+          </aside>
+        </section>
+
+        <section class="plate reveal" id="a11y" aria-labelledby="a11y-title">
+          <header class="plate__head">
+            <p class="plate__no">10</p>
+            <h2 id="a11y-title">Accessibility</h2>
+            <p class="plate__deck">
+              WCAG 2.2 AA is the floor. Body text is held to AAA. A privacy tool that excludes
+              people is not private, it is just unavailable.
+            </p>
+          </header>
+
+          <div class="a11y-grid">
+            <article class="a11y-fact"><p class="a11y-fact__value">AA</p><p>WCAG 2.2 Level AA, all 86 success criteria that apply</p></article>
+            <article class="a11y-fact"><p class="a11y-fact__value">AAA</p><p>Body and interface text at 7:1 or better</p></article>
+            <article class="a11y-fact"><p class="a11y-fact__value">24px</p><p>Minimum target size (2.5.8); 44px on touch</p></article>
+            <article class="a11y-fact"><p class="a11y-fact__value">0</p><p>Critical or serious axe violations on this page, in either theme</p></article>
+          </div>
+
+          <h3>Contrast guarantees</h3>
+          <p class="lede-sm">
+            Every text pairing used in the product is listed in the colour plate with its measured
+            ratio. The summary: body 15.91:1, secondary 11.69:1, muted 7.46:1, captions 5.61:1,
+            disabled 4.84:1, primary button label 11.06:1, error text 7.79:1 — all at or above AA,
+            most at AAA. Non-text contrast (1.4.11) is met by the control border at 3.03:1 and by
+            the focus ring at 10.45:1. Dark mode holds the same floor with its own stops — 16.85:1
+            body, 3.35:1 border, 8.94:1 ring — rather than inheriting light ratios that no longer
+            apply.
+          </p>
+
+          <div class="callout callout--warn">
+            <h4>Colour is never the only signal</h4>
+            <p>
+              Every status chip carries a word. Every error carries an icon and a sentence. Every
+              link is underlined. The one place this matters most is flag severity, where maroon and
+              rust are 2.6:1 apart in hue but both dark reds — so "Unexpected sender" and "Failed
+              authentication" differ by label and icon, not by shade.
+            </p>
+          </div>
+
+          <h3>Keyboard</h3>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Keyboard interaction map</caption>
+              <thead><tr><th scope="col">Key</th><th scope="col">Behaviour</th></tr></thead>
+              <tbody>
+                <tr><td><kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>Follows DOM order. A skip link is the first stop on every page and jumps to <code>#main</code>.</td></tr>
+                <tr><td><kbd>Enter</kbd></td><td>Activates buttons and links; submits forms from any text field.</td></tr>
+                <tr><td><kbd>Space</kbd></td><td>Toggles checkboxes, switches and buttons.</td></tr>
+                <tr><td><kbd>Escape</kbd></td><td>Closes the topmost dialog or sheet and returns focus to the element that opened it.</td></tr>
+                <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Moves between tabs and radio options (roving tabindex — one stop per group).</td></tr>
+                <tr><td><kbd>Home</kbd> / <kbd>End</kbd></td><td>First and last tab in a tablist; start and end of a focused field's value.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Focus</h3>
+          <div class="focus-demo">
+            <div class="focus-demo__cell"><p class="state-label">On paper</p><button class="btn btn--secondary" type="button">Tab to me</button></div>
+            <div class="focus-demo__cell on-maroon" style="background: var(--maroon-700); padding: var(--space-5); border-radius: var(--radius-lg)">
+              <p class="state-label" style="color: var(--maroon-300)">On maroon</p>
+              <button class="btn btn--primary" type="button" style="--btn-bg: var(--paper-50); --btn-fg: var(--maroon-800); --btn-border: var(--paper-50)">Tab to me</button>
+            </div>
+          </div>
+          <ul class="rules rules--split">
+            <li><strong>Always visible:</strong> 2px solid maroon with a 2px offset. Never <code>outline: none</code>.</li>
+            <li><strong>On maroon:</strong> the ring flips to paper and keeps the offset gap, so it is visible against both the control and its background.</li>
+            <li><strong>Never obscured:</strong> sticky headers carry <code>scroll-padding-top</code> so a focused field is never hidden behind them (2.4.11).</li>
+            <li><strong>Order matches meaning:</strong> visual order and DOM order never disagree; no positive <code>tabindex</code> anywhere.</li>
+          </ul>
+
+          <h3>Forms and announcements</h3>
+          <ul class="rules rules--split">
+            <li>Labels are <code>&lt;label for&gt;</code>, always visible. Placeholder text is never a label.</li>
+            <li>Hints and errors are joined with <code>aria-describedby</code>; invalid fields get <code>aria-invalid="true"</code>.</li>
+            <li>Submitting an invalid form moves focus to an error summary at the top of the form, listing each field as a link.</li>
+            <li>Toasts live in a <code>aria-live="polite"</code> region. Only blocking failures use <code>role="alert"</code>.</li>
+            <li>Password fields accept paste, and never ask for a puzzle, a pattern or a memory test (3.3.8).</li>
+            <li>Loading regions set <code>aria-busy</code>; progress bars expose real <code>aria-valuenow</code>.</li>
+          </ul>
+
+          <h3>Reflow, zoom and motion</h3>
+          <ul class="rules rules--split">
+            <li>No horizontal scrolling at 320px wide (1.4.10) — the only exception is a code block.</li>
+            <li>Layout survives 200% text zoom and the WCAG text-spacing overrides without clipping.</li>
+            <li><code>prefers-reduced-motion</code> removes all transitions and the skeleton sweep.</li>
+            <li>Nothing flashes more than three times per second; there is no auto-playing video or audio.</li>
+          </ul>
+
+          <div class="audit-card">
+            <div>
+              <p class="audit-card__label">Automated audit</p>
+              <p class="audit-card__score" id="axe-score">0 violations</p>
+            </div>
+            <div>
+              <p class="audit-card__body" id="axe-detail">
+                axe-core 4.14 against the WCAG 2.0, 2.1 and 2.2 A/AA rule sets · Chromium
+                (Desktop Chrome) · this page including every component demo. Enforced by
+                <code>e2e/brand-guide.spec.ts</code>, which fails the build on any violation.
+              </p>
+            </div>
+          </div>
+          <p class="caption caption--tight">
+            Automated tools catch roughly a third of real accessibility problems. This page is also
+            checked by hand for focus order, screen-reader announcements and 320px reflow; those
+            checks are listed in the review checklist under Governance.
+          </p>
+        </section>
+
+        <section class="plate reveal" id="voice" aria-labelledby="voice-title">
+          <header class="plate__head">
+            <p class="plate__no">11</p>
+            <h2 id="voice-title">Voice &amp; Tone</h2>
+            <p class="plate__deck">
+              Like a good clerk: plain, exact, and never flustered on your behalf.
+            </p>
+          </header>
+
+          <div class="prose">
+            <p>
+              Postern writes in the second person, in the active voice, in short declarative
+              sentences. It does not congratulate you, it does not apologise for things that are
+              not its fault, and it never uses a metaphor where a number would do. When something
+              is limited — 60 characters, 90 days, 500 messages, 199 seats — the number appears in
+              the sentence.
+            </p>
+          </div>
+
+          <div class="split">
+            <div>
+              <h3 class="group-label">We are</h3>
+              <ul class="rules">
+                <li><strong>Plain:</strong> "Block sender" not "Suppress origin domain"</li>
+                <li><strong>Specific:</strong> "Saved 90 days" not "Retained as required"</li>
+                <li><strong>Calm:</strong> no exclamation marks, no capitalised alarm</li>
+                <li><strong>Direct about limits:</strong> "The backend was asleep. Your mail still forwarded; the log may be missing."</li>
+                <li><strong>Non-blaming:</strong> the user is never wrong, the input is</li>
+              </ul>
+            </div>
+            <div>
+              <h3 class="group-label">We are not</h3>
+              <ul class="rules">
+                <li>Cute: no "oops", no "whoops", no emoji in UI copy</li>
+                <li>Salesy: no "supercharge", "seamless", "effortless"</li>
+                <li>Vague: no "something went wrong" without a next step</li>
+                <li>Patronising: no "simply" or "just" — if it were simple, you would not be reading this</li>
+                <li>Clever: the product is the personality</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>Button labels</h3>
+          <p class="lede-sm">Verb first, sentence case, no full stop. The label names the result, not the mechanism.</p>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Button label guidance</caption>
+              <thead><tr><th scope="col">Instead of</th><th scope="col">Write</th><th scope="col">Because</th></tr></thead>
+              <tbody>
+                <tr><td>Submit</td><td>Create alias</td><td>The label describes what will exist afterwards.</td></tr>
+                <tr><td>OK / Yes</td><td>Delete permanently</td><td>A confirmation must restate the consequence, not ask for consent.</td></tr>
+                <tr><td>Click here</td><td>Open the activity log</td><td>Screen-reader users navigate by link text alone.</td></tr>
+                <tr><td>Cancel</td><td>Keep alias</td><td>Where possible the escape hatch says what it preserves.</td></tr>
+                <tr><td>Retry</td><td>Try again</td><td>Plain English; "retry" is jargon.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Error messages</h3>
+          <p class="lede-sm">Three parts, in this order: what happened, why, what to do now. Never blame, never exclaim.</p>
+          <div class="examples">
+            <div class="example">
+              <p class="example__bad"><span class="example__tag">Before</span>Invalid input.</p>
+              <p class="example__good"><span class="example__tag">After</span>That invite code has already been used. Ask Sam for a new one.</p>
+            </div>
+            <div class="example">
+              <p class="example__bad"><span class="example__tag">Before</span>Error 429.</p>
+              <p class="example__good"><span class="example__tag">After</span>Too many recovery attempts. You can try again in 15 minutes.</p>
+            </div>
+            <div class="example">
+              <p class="example__bad"><span class="example__tag">Before</span>Something went wrong.</p>
+              <p class="example__good"><span class="example__tag">After</span>The alias was not created — the label is reserved. Try another word.</p>
+            </div>
+            <div class="example">
+              <p class="example__bad"><span class="example__tag">Before</span>Your email is unverified!</p>
+              <p class="example__good"><span class="example__tag">After</span>Check alex@gmail.com for a confirmation link. Mail starts forwarding once you confirm.</p>
+            </div>
+          </div>
+
+          <h3>Empty states and confirmations</h3>
+          <div class="examples">
+            <div class="example">
+              <p class="example__bad"><span class="example__tag">Before</span>No data found.</p>
+              <p class="example__good"><span class="example__tag">After</span>No aliases yet. Create one for the next service that asks for your email — you will get an address like shop.m4x1@3xyz.uk.</p>
+            </div>
+            <div class="example">
+              <p class="example__bad"><span class="example__tag">Before</span>Are you sure?</p>
+              <p class="example__good"><span class="example__tag">After</span>This burns netflix.k7q2@3xyz.uk permanently. Netflix billing mail stops arriving today.</p>
+            </div>
+            <div class="example">
+              <p class="example__bad"><span class="example__tag">Before</span>Syncing…</p>
+              <p class="example__good"><span class="example__tag">After</span>Propagating routing changes. This usually takes under a minute.</p>
+            </div>
+            <div class="example">
+              <p class="example__bad"><span class="example__tag">Before</span>Save this key or lose your account!!!</p>
+              <p class="example__good"><span class="example__tag">After</span>This key is the only way back into your account. A new one is issued each time you use it.
+              </p>
+            </div>
+          </div>
+
+          <h3>Terminology</h3>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Controlled vocabulary</caption>
+              <thead><tr><th scope="col">Term</th><th scope="col">Means</th><th scope="col">Never called</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Alias</strong></td><td>The disposable address you give a service</td><td>Throwaway, burner, proxy, mask</td></tr>
+                <tr><td><strong>Forwarding address</strong></td><td>The real inbox that receives the mail</td><td>Primary email, real email</td></tr>
+                <tr><td><strong>Expected sender</strong></td><td>A domain you have approved for this alias</td><td>Whitelist, allowlist, trusted sender</td></tr>
+                <tr><td><strong>Blocked message</strong></td><td>A message Postern refused to forward</td><td>Dropped, rejected, filtered</td></tr>
+                <tr><td><strong>Replace</strong></td><td>Issue a new address and retire the old one</td><td>Rotate, recycle</td></tr>
+                <tr><td><strong>Tombstone</strong></td><td>The hash that stops an address being reissued</td><td>Blacklist, ban</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <aside class="ledger-note">
+            <p class="ledger-note__label">Ledger note</p>
+            <p>
+              Write the number. “90 days” is more trustworthy than “a while”, and “60 characters”
+              is more trustworthy than “truncated”. The product's whole claim is that it tells you
+              what it did — so the copy has to behave like evidence.
+            </p>
+          </aside>
+        </section>
+
+        <section class="plate reveal" id="governance" aria-labelledby="governance-title">
+          <header class="plate__head">
+            <p class="plate__no">12</p>
+            <h2 id="governance-title">Governance</h2>
+            <p class="plate__deck">How this document stays true to the code it describes.</p>
+          </header>
+
+          <div class="split">
+            <div>
+              <h3 class="group-label">Files</h3>
+              <div class="table-wrap">
+                <table class="table table--doc">
+                  <caption class="sr-only">Where the system lives</caption>
+                  <thead><tr><th scope="col">File</th><th scope="col">Owns</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>src/styles/tokens.css</code></td><td>Colour, type, space, radius, shadow, motion, layout, z-index</td></tr>
+                    <tr><td><code>src/styles/base.css</code></td><td>Reset, headings, links, focus, reduced motion, skip link</td></tr>
+                    <tr><td><code>src/styles/components.css</code></td><td>Every component class and its states</td></tr>
+                    <tr><td><code>src/index.css</code></td><td>Tailwind entry: layer order, theme and utilities imports, the <code>shell</code> utility</td></tr>
+                    <tr><td><code>src/styles/brand.css</code></td><td>This document's stylesheet entry — imports the app tokens, then the guide layout</td></tr>
+                    <tr><td><code>src/styles/brand-guide.css</code></td><td>This document's layout only — never product styles</td></tr>
+                    <tr><td><code>brand/index.html</code></td><td>This page</td></tr>
+                    <tr><td><code>scripts/contrast-audit.mjs</code></td><td>Every published pair, measured in both themes; exits non-zero on a regression</td></tr>
+                    <tr><td><code>public/brand/*.svg</code></td><td>Mark, inverse mark, app tile</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <h3 class="group-label">Changing a token</h3>
+              <ol class="steps steps--tight">
+                <li><span>1</span><div><strong>Propose the value with its measurement</strong><p>Any new colour arrives with its contrast ratio against paper and white.</p></div></li>
+                <li><span>2</span><div><strong>Add the primitive</strong><p>Only if an existing stop cannot do the job — the palette is intentionally finite.</p></div></li>
+                <li><span>3</span><div><strong>Map a semantic role</strong><p>Components read the semantic layer. If you must edit a component to use a new colour, the token design is wrong.</p></div></li>
+                <li><span>4</span><div><strong>Update this page in the same commit</strong><p>The swatch carries <code>data-hex</code>; the audit badge must still read 100%.</p></div></li>
+              </ol>
+            </div>
+          </div>
+
+          <h3>Review checklist</h3>
+          <ul class="checklist">
+            <li>No raw hex, px font size, or ad-hoc duration outside <code>tokens.css</code></li>
+            <li>Components read semantic tokens only</li>
+            <li>Every interactive element is reachable by <kbd>Tab</kbd> with a visible focus ring</li>
+            <li>Every state is distinguishable without colour</li>
+            <li>New copy passes the voice table above, with numbers instead of adjectives</li>
+            <li>Checked at 320px, 768px and 1280px; no horizontal scroll</li>
+            <li>Checked with <code>prefers-reduced-motion: reduce</code></li>
+            <li>axe-core: zero critical or serious violations on the changed route</li>
+            <li>Both polarities checked — light and dark, text, borders, focus ring and chips</li>
+            <li>Loading path matches the decision table — not "whatever was fastest to write"</li>
+          </ul>
+
+          <h3>Changelog</h3>
+          <div class="table-wrap">
+            <table class="table table--doc">
+              <caption class="sr-only">Version history</caption>
+              <thead><tr><th scope="col">Version</th><th scope="col">Date</th><th scope="col">Change</th></tr></thead>
+              <tbody>
+                <tr><td>1.1</td><td class="tnum">3 Nov 2026</td><td>Dark mode: the semantic layer mapped with <code>light-dark()</code> behind a <code>data-theme</code> toggle, eight invariants, role-mapping table, and a contrast audit that now measures both polarities.</td></tr>
+                <tr><td>1.0</td><td class="tnum">3 Nov 2026</td><td>First complete system: maroon-and-paper palette, Manrope scale, tokens, components, motion and loading rules, accessibility standard, voice.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Licensing</h3>
+          <ul class="rules rules--split">
+            <li><strong>Manrope</strong> — SIL Open Font License 1.1. Free for commercial use and embedding; the reserved name clause applies to modified versions.</li>
+            <li><strong>Lucide icons</strong> — ISC licence. Paths may be inlined; the notice stays in the repository.</li>
+          </ul>
+
+          <aside class="ledger-note">
+            <p class="ledger-note__label">Ledger note</p>
+            <p>
+              This document is the contract. When a screenshot and this page disagree, this page is
+              right — and when the code and this page disagree, the audit badge in the header says
+              so out loud. Fix that first.
+            </p>
+          </aside>
+        </section>
+
+        <footer class="doc-footer">
+          <div class="doc-footer__brand">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><use href="#arch-mark" /></svg>
+            <span>Postern</span>
+          </div>
+          <p>
+            Brand &amp; Design System v1.1
+          </p>
+          <p class="doc-footer__meta">
+            Set in Manrope Variable, self-hosted under the SIL Open Font License.
+          </p>
+        </footer>
+      </main>
+    </div>
+
+    <script type="module" src="/brand/guide.js"></script>
+  </body>
+</html>

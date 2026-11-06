@@ -1,0 +1,62 @@
+@baseUrl = http://localhost:8080
+@requestId = 00000000-0000-0000-0000-000000000000
+@inviteId = 00000000-0000-0000-0000-000000000000
+
+### Resolve the recipient for a valid invite code (no-store response)
+POST {{baseUrl}}/api/auth/invite-details
+Content-Type: application/json
+
+{
+  "inviteCode": "postern_invite_replace-with-code"
+}
+
+### Register using the email bound to the invite (registration does not accept an email override)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "password": "replace-with-a-long-password",
+  "inviteCode": "postern_invite_replace-with-code"
+}
+
+### Publicly request an invite (no email is sent until approval)
+POST {{baseUrl}}/api/invite-requests
+Content-Type: application/json
+
+{
+  "email": "person@example.test"
+}
+
+### List pending requests (requires admin session cookie)
+GET {{baseUrl}}/api/admin/invite-requests
+Cookie: Postern.Auth={{adminSessionCookie}}
+
+### Approve request and queue branded Resend email
+POST {{baseUrl}}/api/admin/invite-requests/{{requestId}}/approve
+Cookie: Postern.Auth={{adminSessionCookie}}
+
+### Reject request
+POST {{baseUrl}}/api/admin/invite-requests/{{requestId}}/reject
+Cookie: Postern.Auth={{adminSessionCookie}}
+
+### Resend invite (rotates the code and seven-day expiry)
+POST {{baseUrl}}/api/admin/invites/{{inviteId}}/resend
+Cookie: Postern.Auth={{adminSessionCookie}}
+
+### Revoke invite
+POST {{baseUrl}}/api/admin/invites/{{inviteId}}/revoke
+Cookie: Postern.Auth={{adminSessionCookie}}
+
+### Resend webhook - use Resend's configured signed webhook, not a manual request
+POST {{baseUrl}}/api/webhooks/resend
+Content-Type: application/json
+svix-id: {{resendEventId}}
+svix-timestamp: {{resendTimestamp}}
+svix-signature: {{resendSignature}}
+
+{
+  "type": "email.delivered",
+  "data": {
+    "email_id": "resend-message-id"
+  }
+}

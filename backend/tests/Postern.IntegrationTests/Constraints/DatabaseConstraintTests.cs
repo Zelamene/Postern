@@ -134,6 +134,80 @@ public sealed class DatabaseConstraintTests(PosternFixture fixture)
     }
 
     [Fact]
+    public async Task DuplicateMessageId_IsRejectedWithinAnAlias()
+    {
+        var user = await fixture.AUserAsync();
+        var alias = await fixture.AnAliasAsync(user.Id);
+        var messageId = $"<duplicate-{Guid.NewGuid():N}@shop.example>";
+
+        await using var db = fixture.CreateContext();
+        db.Messages.AddRange(
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                AliasId = alias.Id,
+                FromHeader = "Shop <orders@shop.example>",
+                EnvelopeSender = "orders@shop.example",
+                MessageId = messageId,
+                Subject = "first",
+                ReceivedAt = DateTimeOffset.UtcNow,
+                AuthenticationResult = "pass"
+            },
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                AliasId = alias.Id,
+                FromHeader = "Shop <orders@shop.example>",
+                EnvelopeSender = "orders@shop.example",
+                MessageId = messageId,
+                Subject = "second",
+                ReceivedAt = DateTimeOffset.UtcNow,
+                AuthenticationResult = "pass"
+            });
+
+        var error = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        AssertConstraint(error, "ux_messages_alias_id_message_id");
+    }
+
+    [Fact]
+    public async Task SameMessageId_IsAllowedAcrossAliases()
+    {
+        var user = await fixture.AUserAsync();
+        var firstAlias = await fixture.AnAliasAsync(user.Id);
+        var secondAlias = await fixture.AnAliasAsync(user.Id);
+        var messageId = $"<shared-{Guid.NewGuid():N}@shop.example>";
+
+        await using var db = fixture.CreateContext();
+        db.Messages.AddRange(
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                AliasId = firstAlias.Id,
+                FromHeader = "Shop <orders@shop.example>",
+                EnvelopeSender = "orders@shop.example",
+                MessageId = messageId,
+                Subject = "first",
+                ReceivedAt = DateTimeOffset.UtcNow,
+                AuthenticationResult = "pass"
+            },
+            new Message
+            {
+                Id = Guid.NewGuid(),
+                AliasId = secondAlias.Id,
+                FromHeader = "Shop <orders@shop.example>",
+                EnvelopeSender = "orders@shop.example",
+                MessageId = messageId,
+                Subject = "second",
+                ReceivedAt = DateTimeOffset.UtcNow,
+                AuthenticationResult = "pass"
+            });
+
+        await db.SaveChangesAsync();
+
+        Assert.Equal(2, await db.Messages.CountAsync(message => message.MessageId == messageId));
+    }
+
+    [Fact]
     public async Task ExpectedSender_IsUniquePerAlias()
     {
         var user = await fixture.AUserAsync();

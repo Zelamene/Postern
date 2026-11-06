@@ -7,10 +7,17 @@ info:
     HTTP contract for the Postern backend (`backend/src/Postern.Api`).
 
     ## Authentication
-    Every `/api/*` endpoint except `/api/ingest` and `/api/dev/*` requires a session
-    cookie named `Postern.Auth`. The cookie is issued by `POST /api/auth/login` and is
-    `HttpOnly`, `SameSite=Strict`, `Secure` outside Development, with a 1-hour lifetime.
+    Every `/api/*` endpoint except `/api/ingest`, `/api/dev/*`, `POST /api/invite-requests`,
+    `POST /api/auth/invite-details`, `POST /api/auth/register`, `POST /api/auth/login`,
+    `/api/auth/admin-mfa/*`, and `POST /api/webhooks/resend` requires a session cookie named
+    `Postern.Auth`. The cookie is issued by `POST /api/auth/login` for standard accounts, or after
+    an admin completes the TOTP step, and is
+    `HttpOnly`, `SameSite=Strict`, `Secure` outside Development; standard sessions last 1 hour,
+    admin sessions last 15 minutes.
     The token is a HS256 JWT; there is no bearer-token flow and no refresh endpoint.
+    Admin MFA endpoints instead require a short-lived HttpOnly `Postern.AdminMfa` challenge cookie.
+    Admin-only authorization requires an `amr=totp` claim issued after MFA setup, and checks
+    the claim time against the current enrollment. Pre-MFA and superseded admin cookies are rejected.
 
     ## Authorization
     `403` means the caller is authenticated but lacks the required role (`admin`).
@@ -47,7 +54,9 @@ tags:
   - name: Account
     description: Forwarding-address changes and account deletion for the caller.
   - name: Administration
-    description: Admin-only operations (role `admin`), all audit-logged.
+    description: Admin-only operations require a current TOTP-verified admin session; operations are audit-logged.
+  - name: Invitations
+    description: Public invitation requests, administrator review, invite delivery and signed Resend webhooks.
 components:
   securitySchemes:
     sessionCookie:
@@ -55,6 +64,11 @@ components:
       in: cookie
       name: Postern.Auth
       description: HS256 JWT session cookie issued by `POST /api/auth/login`.
+    adminMfaChallenge:
+      type: apiKey
+      in: cookie
+      name: Postern.AdminMfa
+      description: Short-lived, HttpOnly cookie issued after admin password verification.
     ingestSecret:
       type: apiKey
       in: header
@@ -62,6 +76,11 @@ components:
       description: |
         Shared secret matching `Ingest:SharedSecret`. Only enforced when that setting is
         non-empty; an empty setting (Development only) accepts unauthenticated calls.
+    resendWebhookSignature:
+      type: apiKey
+      in: header
+      name: svix-signature
+      description: Resend/Svix signature, validated together with `svix-id` and `svix-timestamp`.
   parameters:
     AliasId:
       name: aliasId
@@ -161,12 +180,14 @@ components:
     # -- auth
     RegisterRequest:
       type: object
-      required: [email, password, inviteCode]
+      required: [password, inviteCode]
       properties:
         email:
           type: [string, 'null']
           format: email
-          description: Login identity. May be EAI/IDN; normalized server-side.
+          description: |
+            Optional for legacy clients. When omitted, the API derives the login identity from
+            the invite; if provided, it must match the email bound to that invite.
         password:
           type: [string, 'null']
           minLength: 12
@@ -175,6 +196,22 @@ components:
         inviteCode:
           type: [string, 'null']
           description: Single-use invite code. Signup is capped at 199 accounts.
+
+    InviteDetailsRequest:
+      type: object
+      required: [inviteCode]
+      properties:
+        inviteCode:
+          type: string
+          description: Single-use invitation code.
+
+    InviteDetailsResponse:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          description: Email address the invitation is bound to.
 
     LoginRequest:
       type: object
@@ -187,16 +224,42 @@ components:
 
     LoginResponse:
       type: object
-      required: [userId, email]
+      required: [userId, email, recoveryKey, mfaRequired, mfaSetupRequired]
       properties:
         userId:
-          type: string
+          type: [string, 'null']
           format: uuid
         email:
-          type: string
+          type: [string, 'null']
         recoveryKey:
           type: [string, 'null']
           description: Present only when the account had no recovery key yet.
+        mfaRequired:
+          type: boolean
+          description: Admin login requires a TOTP verification step.
+        mfaSetupRequired:
+          type: boolean
+          description: The provisioned admin must enroll TOTP before receiving a session.
+
+    AdminMfaCodeRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: [string, 'null']
+          pattern: '^[0-9]{6}$'
+
+    AdminTotpSetup:
+      type: object
+      required: [secret, authenticatorUri]
+      properties:
+        secret:
+          type: string
+          description: One-time TOTP secret for manual entry in the administrator's authenticator.
+        authenticatorUri:
+          type: string
+          format: uri
+          description: otpauth URI containing the TOTP enrollment secret.
 
     RecoveryRequest:
       type: object
@@ -235,10 +298,48 @@ components:
 
     DevelopmentInviteResponse:
       type: object
-      required: [code]
+      required: [code, email, registrationPath]
       properties:
         code:
           type: string
+        email:
+          type: string
+          format: email
+        registrationPath:
+          type: string
+          description: Local web path where the invitation can be accepted.
+
+    DevelopmentInviteRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    DevelopmentInviteListResponse:
+      type: object
+      required: [invites]
+      properties:
+        invites:
+          type: array
+          items:
+            type: object
+            required: [id, email, code, registrationPath, expiresAt]
+            properties:
+              id:
+                type: string
+                format: uuid
+              email:
+                type: string
+                format: email
+              code:
+                type: string
+              registrationPath:
+                type: string
+              expiresAt:
+                type: string
+                format: date-time
 
     #  aliases
     AliasStatus:
@@ -289,6 +390,9 @@ components:
           description: Trimmed and truncated server-side. Reserved labels are rejected.
         purposeMetadata:
           type: [string, 'null']
+        category:
+          type: [string, 'null']
+          description: Trimmed and truncated to 40 characters. Defaults to `personal`.
 
     UpdateAliasRequest:
       type: object
@@ -306,6 +410,9 @@ components:
           description: Label for the replacement alias. Defaults to `replaced`.
         purposeMetadata:
           type: [string, 'null']
+        category:
+          type: [string, 'null']
+          description: Trimmed and truncated to 40 characters. Defaults to `personal`.
 
     ExpectedSenderRequest:
       type: object
@@ -495,7 +602,8 @@ paths:
       tags: [Authentication]
       summary: Register a pending account
       description: |
-        Creates an account in `pending` status and consumes the invite code. The account can
+        Creates an account in `pending` status using the email bound to the invite and consumes
+        the invite code. `email` may be omitted; if supplied, it must match the invited address. The account can
         only log in after its forwarding destination is verified. Rate limited to 5 requests
         per hour per IP.
       security: []
@@ -532,14 +640,52 @@ paths:
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
+  /api/auth/invite-details:
+    post:
+      operationId: resolveInviteDetails
+      tags: [Authentication]
+      summary: Resolve the email address bound to an invitation
+      description: |
+        Returns the recipient address for a valid, unused invitation. The response is
+        `no-store`; the invitation code is sent in the request body rather than the URL.
+        Rate limited using the registration limit.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteDetailsRequest'
+      responses:
+        '200':
+          description: Invitation recipient.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteDetailsResponse'
+        '404':
+          description: Invitation is unknown, unbound, expired, used, or revoked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCode'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
   /api/auth/login:
     post:
       operationId: login
       tags: [Authentication]
-      summary: Log in and receive the session cookie
+      summary: Verify password and begin login
       description: |
-        On success the `Postern.Auth` cookie is set and must be sent on every protected call.
-        Rate limited to 10 requests per 15 minutes per IP.
+        Standard accounts receive `Postern.Auth` immediately. Admin accounts instead receive a
+        short-lived `Postern.AdminMfa` challenge cookie and must enroll or verify TOTP before a
+        session is issued. Rate limited to 10 requests per 15 minutes per IP.
       security: []
       requestBody:
         required: true
@@ -549,10 +695,10 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Authenticated; session cookie issued.
+          description: Standard account authenticated, or an admin MFA challenge started.
           headers:
             Set-Cookie:
-              description: '`Postern.Auth=<jwt>; HttpOnly; SameSite=Strict; Path=/`'
+              description: '`Postern.Auth=<jwt>` for standard accounts; `Postern.AdminMfa=<opaque>; HttpOnly; SameSite=Strict` for admins.'
               schema:
                 type: string
           content:
@@ -567,6 +713,78 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorCode'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/admin-mfa/setup:
+    post:
+      operationId: getAdminTotpSetup
+      tags: [Authentication]
+      summary: Get the initial admin authenticator setup
+      security:
+        - adminMfaChallenge: []
+      responses:
+        '200':
+          description: TOTP secret and authenticator URI. Response is no-store.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTotpSetup'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/admin-mfa/enable:
+    post:
+      operationId: enableAdminTotp
+      tags: [Authentication]
+      summary: Verify initial TOTP code and enable admin MFA
+      security:
+        - adminMfaChallenge: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminMfaCodeRequest'
+      responses:
+        '204':
+          description: TOTP enabled and authenticated admin session cookie issued.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/admin-mfa/verify:
+    post:
+      operationId: verifyAdminTotp
+      tags: [Authentication]
+      summary: Complete admin login with TOTP
+      security:
+        - adminMfaChallenge: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminMfaCodeRequest'
+      responses:
+        '204':
+          description: TOTP verified and authenticated admin session cookie issued.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
@@ -658,8 +876,14 @@ paths:
       operationId: createDevelopmentInvite
       tags: [Development]
       summary: Issue an invite code (development only)
-      description: Writes a new single-use invite code so local signup can be exercised.
+      description: Creates a recipient-bound single-use invite for local testing. No email is sent.
       security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevelopmentInviteRequest'
       responses:
         '201':
           description: Invite code created.
@@ -672,6 +896,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DevelopmentInviteResponse'
+    get:
+      operationId: listDevelopmentInvites
+      tags: [Development]
+      summary: List locally queued invitations (development only)
+      description: Returns unexpired invite codes queued by local admin approvals. Never sends email.
+      security: []
+      responses:
+        '200':
+          description: Locally queued invite codes.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevelopmentInviteListResponse'
 
   /api/aliases:
     get:
@@ -1118,6 +1360,267 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  /api/invite-requests:
+    post:
+      operationId: requestInvite
+      tags: [Invitations]
+      summary: Request an invitation for administrator review
+      description: Stores a pending request and does not send an email. Limited to 5 requests per hour per IP.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 320
+      responses:
+        '202':
+          description: The request was recorded or already exists for review.
+        '400':
+          $ref: '#/components/responses/ValidationProblem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/admin/invite-requests:
+    get:
+      operationId: listPendingInviteRequests
+      tags: [Invitations]
+      summary: List pending invitation requests
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Pending requests, oldest first (up to 500).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [requests]
+                properties:
+                  requests:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, email, requestedAt]
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        email:
+                          type: string
+                          format: email
+                        requestedAt:
+                          type: string
+                          format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/invites:
+    get:
+      operationId: getAdminInviteDashboard
+      tags: [Invitations]
+      summary: List issued invitations and available seat counts
+      description: Returns all invite records and computes free seats after registered users and valid outstanding invitations.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Admin invitation dashboard. The response is not cacheable.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [invites, seatsFree, outstandingInvites]
+                properties:
+                  seatsFree:
+                    type: integer
+                    minimum: 0
+                  outstandingInvites:
+                    type: integer
+                    minimum: 0
+                  invites:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, email, status, createdAt, canResend, canRevoke]
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        email:
+                          type: string
+                        status:
+                          type: string
+                          enum: [pending, sent, delivered, bounced, complained, accepted, revoked, failed, expired]
+                        createdAt:
+                          type: string
+                          format: date-time
+                        expiresAt:
+                          type: [string, 'null']
+                          format: date-time
+                        canResend:
+                          type: boolean
+                        canRevoke:
+                          type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/invite-requests/{requestId}/approve:
+    post:
+      operationId: approveInviteRequest
+      tags: [Invitations]
+      summary: Approve an invitation request and queue its email
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Approved and queued for email delivery.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/invite-requests/{requestId}/reject:
+    post:
+      operationId: rejectInviteRequest
+      tags: [Invitations]
+      summary: Reject a pending invitation request
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/invites/{inviteId}/resend:
+    post:
+      operationId: resendInvite
+      tags: [Invitations]
+      summary: Rotate an invite code and queue a new email
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: inviteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: New invite code queued for email delivery.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/invites/{inviteId}/revoke:
+    post:
+      operationId: revokeInvite
+      tags: [Invitations]
+      summary: Revoke an unused invite and cancel queued delivery
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: inviteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/webhooks/resend:
+    post:
+      operationId: receiveResendWebhook
+      tags: [Invitations]
+      summary: Receive signed Resend delivery events
+      security:
+        - resendWebhookSignature: []
+      parameters:
+        - name: svix-id
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: svix-timestamp
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: svix-signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, data]
+              properties:
+                type:
+                  type: string
+                  enum: [email.sent, email.delivered, email.bounced, email.complained]
+                data:
+                  type: object
+                  required: [email_id]
+                  properties:
+                    email_id:
+                      type: string
+      responses:
+        '200':
+          description: Event recorded (including duplicate delivery).
+        '400':
+          description: Invalid webhook payload.
+        '401':
+          description: Signature invalid or timestamp outside the allowed replay window.
+        '413':
+          description: Webhook body exceeds 64 KiB.
 
   /api/admin/suspended-users/rebuild:
     post:

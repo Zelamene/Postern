@@ -220,6 +220,9 @@ public sealed class AdministrationEndpointsTests(PosternFixture fixture) : IAsyn
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<BlockedDomainsBody>();
         Assert.Contains("listed.ru", body!.Domains);
+        var entry = Assert.Single(body.Entries, item => item.Domain == "listed.ru");
+        Assert.Equal("spam", entry.Reason);
+        Assert.NotEqual(default, entry.CreatedAt);
     }
 
     [Fact]
@@ -261,5 +264,9 @@ public sealed class AdministrationEndpointsTests(PosternFixture fixture) : IAsyn
             .ToList();
     }
 
-    private sealed record BlockedDomainsBody(IReadOnlyList<string> Domains);
+    private sealed record BlockedDomainsBody(
+        IReadOnlyList<string> Domains,
+        IReadOnlyList<BlockedDomainEntry> Entries);
+
+    private sealed record BlockedDomainEntry(string Domain, string Reason, DateTimeOffset CreatedAt);
 }

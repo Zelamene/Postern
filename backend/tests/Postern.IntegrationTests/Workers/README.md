@@ -9,5 +9,5 @@ the API:
 - `Constraints/DatabaseConstraintTests.cs` guards the storage invariants that make that audit trail
   trustworthy (tombstones keep their hash, subjects stay bounded, auth results stay enumerated).
 
-When the worker grows logic worth unit testing (MIME parsing, forwarding, retry handling), add a
-`worker/` Vitest suite and keep this folder for cross-boundary assertions only.
+Forwarding, KV gating, blocked-message decisions, and best-effort ingest are covered by the
+`worker/` Vitest suite (`npm test` there). Keep this folder for cross-boundary assertions only.

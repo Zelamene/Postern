@@ -21,6 +21,16 @@ public sealed class InMemoryAccountRepository : IAccountRepository
     public Task<PosternUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken) =>
         Task.FromResult(Find(userId));
 
+    public Task<PosternUser?> FindByAdminMfaChallengeAsync(
+        string challengeHash,
+        string purpose,
+        DateTimeOffset now,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(_users.Values.FirstOrDefault(user =>
+            user.AdminMfaChallengeHash == challengeHash
+            && user.AdminMfaChallengePurpose == purpose
+            && user.AdminMfaChallengeExpiresAt > now));
+
     public Task<PosternUser?> FindByNormalizedEmailAsync(
         string normalizedEmail,
         CancellationToken cancellationToken) =>
@@ -62,6 +72,96 @@ public sealed class InMemoryAccountRepository : IAccountRepository
         }
 
         user.RecoveryKeyHash = recoveryKeyHash;
+        return Task.FromResult(true);
+    }
+
+    public Task<bool> SetAdminMfaChallengeAsync(
+        Guid userId,
+        string challengeHash,
+        string purpose,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken)
+    {
+        var user = Find(userId);
+        if (user is not { IsAdmin: true, Status: "active" })
+        {
+            return Task.FromResult(false);
+        }
+
+        user.AdminMfaChallengeHash = challengeHash;
+        user.AdminMfaChallengePurpose = purpose;
+        user.AdminMfaChallengeExpiresAt = expiresAt;
+        return Task.FromResult(true);
+    }
+
+    public Task<bool> SetAdminTotpSecretAsync(
+        Guid userId,
+        string protectedSecret,
+        CancellationToken cancellationToken)
+    {
+        var user = Find(userId);
+        if (user is not { IsAdmin: true, Status: "active", AdminTotpEnabledAt: null, AdminTotpSecretProtected: null })
+        {
+            return Task.FromResult(false);
+        }
+
+        user.AdminTotpSecretProtected = protectedSecret;
+        return Task.FromResult(true);
+    }
+
+    public Task<bool> CompleteAdminTotpEnrollmentAsync(
+        Guid userId,
+        string challengeHash,
+        string protectedSecret,
+        long timeStep,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var user = Find(userId);
+        if (user is not
+            {
+                IsAdmin: true,
+                Status: "active",
+                AdminTotpEnabledAt: null
+            }
+            || user.AdminTotpSecretProtected != protectedSecret
+            || user.AdminMfaChallengeHash != challengeHash
+            || user.AdminMfaChallengePurpose != "setup"
+            || user.AdminMfaChallengeExpiresAt <= now
+            || (user.AdminTotpLastUsedStep is not null && user.AdminTotpLastUsedStep >= timeStep))
+        {
+            return Task.FromResult(false);
+        }
+
+        user.AdminTotpEnabledAt = now;
+        user.AdminTotpLastUsedStep = timeStep;
+        user.AdminMfaChallengeHash = null;
+        user.AdminMfaChallengePurpose = null;
+        user.AdminMfaChallengeExpiresAt = null;
+        return Task.FromResult(true);
+    }
+
+    public Task<bool> CompleteAdminMfaLoginAsync(
+        Guid userId,
+        string challengeHash,
+        long timeStep,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var user = Find(userId);
+        if (user is not { IsAdmin: true, Status: "active", AdminTotpEnabledAt: not null }
+            || user.AdminMfaChallengeHash != challengeHash
+            || user.AdminMfaChallengePurpose != "login"
+            || user.AdminMfaChallengeExpiresAt <= now
+            || (user.AdminTotpLastUsedStep is not null && user.AdminTotpLastUsedStep >= timeStep))
+        {
+            return Task.FromResult(false);
+        }
+
+        user.AdminTotpLastUsedStep = timeStep;
+        user.AdminMfaChallengeHash = null;
+        user.AdminMfaChallengePurpose = null;
+        user.AdminMfaChallengeExpiresAt = null;
         return Task.FromResult(true);
     }
 
@@ -114,6 +214,26 @@ public sealed class InMemoryAccountRepository : IAccountRepository
     {
         _invites[invite.CodeHash] = invite;
         return Task.CompletedTask;
+    }
+
+    public Task<InviteCode> CreateInviteAsync(
+        string email,
+        string emailNormalized,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var invite = new InviteCode
+        {
+            Id = Guid.NewGuid(),
+            CodeHash = AuthenticationService.HashInviteCode(
+                $"postern_invite_{AuthenticationService.GenerateUrlSafeToken()}"),
+            Email = email,
+            EmailNormalized = emailNormalized,
+            CreatedAt = now,
+            ExpiresAt = now.AddDays(7)
+        };
+        _invites[invite.CodeHash] = invite;
+        return Task.FromResult(invite);
     }
 
     public Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken)

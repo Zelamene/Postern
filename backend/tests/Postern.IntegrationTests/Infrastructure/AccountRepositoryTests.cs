@@ -15,7 +15,7 @@ public sealed class AccountRepositoryTests(PosternFixture fixture)
         var user = await fixture.AUserAsync();
 
         await using var db = fixture.CreateContext();
-        var repo = new EfAccountRepository(db);
+        var repo = new EfAccountRepository(db, allowUnboundDevelopmentInvites: false);
 
         Assert.True(await repo.UpdateForwardingAddressAsync(user.Id, "inbox@example.test", CancellationToken.None));
 
@@ -46,7 +46,7 @@ public sealed class AccountRepositoryTests(PosternFixture fixture)
     public async Task UpdateForwardingAddress_ReturnsFalse_ForUnknownUser()
     {
         await using var db = fixture.CreateContext();
-        var repo = new EfAccountRepository(db);
+        var repo = new EfAccountRepository(db, allowUnboundDevelopmentInvites: false);
 
         Assert.False(await repo.UpdateForwardingAddressAsync(
             Guid.NewGuid(), "inbox@example.test", CancellationToken.None));
@@ -59,7 +59,7 @@ public sealed class AccountRepositoryTests(PosternFixture fixture)
         var alias = await fixture.AnAliasAsync(user.Id);
 
         await using var db = fixture.CreateContext();
-        var repo = new EfAccountRepository(db);
+        var repo = new EfAccountRepository(db, allowUnboundDevelopmentInvites: false);
 
         Assert.True(await repo.DeleteAccountAsync(user.Id, DateTimeOffset.UtcNow, CancellationToken.None));
 
@@ -78,7 +78,7 @@ public sealed class AccountRepositoryTests(PosternFixture fixture)
     public async Task DeleteAccount_ReturnsFalse_ForUnknownUser()
     {
         await using var db = fixture.CreateContext();
-        var repo = new EfAccountRepository(db);
+        var repo = new EfAccountRepository(db, allowUnboundDevelopmentInvites: false);
 
         Assert.False(await repo.DeleteAccountAsync(Guid.NewGuid(), DateTimeOffset.UtcNow, CancellationToken.None));
     }

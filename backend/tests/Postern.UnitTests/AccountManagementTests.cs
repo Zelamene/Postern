@@ -195,6 +195,64 @@ public class AccountManagementTests
         Assert.Null(accounts.FindUserById(userId));
     }
 
+    [Fact]
+    public async Task ChangeForwardingAddress_UserMissing_ReturnsFalse()
+    {
+        var accounts = new InMemoryAccountRepository(new PosternUser { Id = Guid.NewGuid(), Email = "x@e.com", NormalizedEmail = "X@E.COM", PasswordHash = "h", Status = "active" });
+        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), new InMemoryDestinationService(), new Fakes.InMemoryKvWriter(), new FixedTimeProvider(DateTimeOffset.UtcNow));
+        Assert.False(await service.ChangeForwardingAddressAsync(Guid.NewGuid(), "new@example.com", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_WhenAddDestinationFails_ReturnsFalse()
+    {
+        var userId = Guid.NewGuid();
+        var user = new PosternUser { Id = userId, Email = "old@example.com", NormalizedEmail = "OLD@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
+        var service = new AccountManagementService(new InMemoryAccountRepository(user), new InMemoryAliasRepository(), new InMemoryDestinationService { ShouldFail = true }, new Fakes.InMemoryKvWriter(), new FixedTimeProvider(DateTimeOffset.UtcNow));
+        Assert.False(await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_RepublishesAliases_AndMarksDirtyOnKvFailure()
+    {
+        var userId = Guid.NewGuid();
+        var user = new PosternUser { Id = userId, Email = "old@example.com", NormalizedEmail = "OLD@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
+        var aliases = new InMemoryAliasRepository();
+        aliases.Seed(new Alias { Id = Guid.NewGuid(), UserId = userId, Label = "l", RandomSuffix = "s", FullAddress = "l-s@postern.local", FullAddressHash = "h", Status = AliasStatus.Active, CreatedAt = DateTimeOffset.UtcNow, KvDirty = false });
+        var kvWriter = new Fakes.InMemoryKvWriter { ShouldFail = true };
+        var service = new AccountManagementService(new InMemoryAccountRepository(user), aliases, new InMemoryDestinationService(), kvWriter, new FixedTimeProvider(DateTimeOffset.UtcNow));
+
+        var ok = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
+
+        Assert.True(ok);
+        Assert.NotEmpty(aliases.KvDirtyAliasIds);
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_RepublishesAliases_SkipsAliasWithoutAddress()
+    {
+        var userId = Guid.NewGuid();
+        var user = new PosternUser { Id = userId, Email = "old@example.com", NormalizedEmail = "OLD@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
+        var aliases = new InMemoryAliasRepository();
+        aliases.Seed(new Alias { Id = Guid.NewGuid(), UserId = userId, FullAddress = null, FullAddressHash = "h", Status = AliasStatus.Deleted, CreatedAt = DateTimeOffset.UtcNow, KvDirty = false });
+        var kvWriter = new Fakes.InMemoryKvWriter();
+        var service = new AccountManagementService(new InMemoryAccountRepository(user), aliases, new InMemoryDestinationService(), kvWriter, new FixedTimeProvider(DateTimeOffset.UtcNow));
+
+        var ok = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
+
+        Assert.True(ok);
+        Assert.Empty(kvWriter.Values);
+        Assert.Empty(aliases.KvDirtyAliasIds);
+    }
+
+    [Fact]
+    public async Task DeleteAccount_UserMissing_ReturnsFalse()
+    {
+        var accounts = new InMemoryAccountRepository(new PosternUser { Id = Guid.NewGuid(), Email = "x@e.com", NormalizedEmail = "X@E.COM", PasswordHash = "h", Status = "active" });
+        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), new InMemoryDestinationService(), new Fakes.InMemoryKvWriter(), new FixedTimeProvider(DateTimeOffset.UtcNow));
+        Assert.False(await service.DeleteAccountAsync(Guid.NewGuid(), CancellationToken.None));
+    }
+
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => utcNow;
@@ -226,6 +284,7 @@ public class AccountManagementTests
     private sealed class InMemoryAccountRepository : IAccountRepository
     {
         private readonly Dictionary<Guid, PosternUser> _users = new();
+        private readonly Dictionary<string, InviteCode> _invites = new(StringComparer.Ordinal);
         private readonly List<ExpectedSender> _expectedSenders = [];
         private readonly List<Domain.Activity.Message> _messages = [];
         private readonly List<BlockedMessage> _blockedMessages = [];
@@ -241,8 +300,13 @@ public class AccountManagementTests
         public Task<RegistrationResult> RegisterPendingUserAsync(PosternUser user, IReadOnlyCollection<string> legacyNormalizedEmails, string inviteCodeHash, int maximumUsers, DateTimeOffset now, CancellationToken cancellationToken) => throw new NotImplementedException();
         public Task<PosternUser?> FindByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken) => Task.FromResult(_users.Values.FirstOrDefault(u => u.NormalizedEmail == normalizedEmail));
         public Task<PosternUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken) => Task.FromResult(FindUserById(userId));
+        public Task<PosternUser?> FindByAdminMfaChallengeAsync(string challengeHash, string purpose, DateTimeOffset now, CancellationToken cancellationToken) => Task.FromResult<PosternUser?>(null);
         public Task<bool> ActivatePendingUserAsync(Guid userId, CancellationToken cancellationToken) => throw new NotImplementedException();
         public Task<bool> SetInitialRecoveryKeyHashAsync(Guid userId, string recoveryKeyHash, CancellationToken cancellationToken) => throw new NotImplementedException();
+        public Task<bool> SetAdminMfaChallengeAsync(Guid userId, string challengeHash, string purpose, DateTimeOffset expiresAt, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> SetAdminTotpSecretAsync(Guid userId, string protectedSecret, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> CompleteAdminTotpEnrollmentAsync(Guid userId, string challengeHash, string protectedSecret, long timeStep, DateTimeOffset now, CancellationToken cancellationToken) => Task.FromResult(false);
+        public Task<bool> CompleteAdminMfaLoginAsync(Guid userId, string challengeHash, long timeStep, DateTimeOffset now, CancellationToken cancellationToken) => Task.FromResult(false);
         public Task<bool> RotateRecoveryCredentialsAsync(string currentRecoveryKeyHash, string passwordHash, string nextRecoveryKeyHash, CancellationToken cancellationToken) => throw new NotImplementedException();
         public Task<bool> UpdateForwardingAddressAsync(Guid userId, string newForwardingAddress, CancellationToken cancellationToken)
         {
@@ -252,6 +316,26 @@ public class AccountManagementTests
         }
         public Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken) =>
             throw new NotImplementedException();
+
+        public Task<InviteCode> CreateInviteAsync(
+            string email,
+            string emailNormalized,
+            CancellationToken cancellationToken)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var invite = new InviteCode
+            {
+                Id = Guid.NewGuid(),
+                CodeHash = AuthenticationService.HashInviteCode(
+                    $"postern_invite_{AuthenticationService.GenerateUrlSafeToken()}"),
+                Email = email,
+                EmailNormalized = emailNormalized,
+                CreatedAt = now,
+                ExpiresAt = now.AddDays(7)
+            };
+            _invites[invite.CodeHash] = invite;
+            return Task.FromResult(invite);
+        }
 
         public Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyCollection<Guid>>(

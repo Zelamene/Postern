@@ -20,11 +20,44 @@ public interface IAccountRepository
         Guid userId,
         CancellationToken cancellationToken);
 
+    Task<PosternUser?> FindByAdminMfaChallengeAsync(
+        string challengeHash,
+        string purpose,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
+
     Task<bool> ActivatePendingUserAsync(Guid userId, CancellationToken cancellationToken);
 
     Task<bool> SetInitialRecoveryKeyHashAsync(
         Guid userId,
         string recoveryKeyHash,
+        CancellationToken cancellationToken);
+
+    Task<bool> SetAdminMfaChallengeAsync(
+        Guid userId,
+        string challengeHash,
+        string purpose,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken);
+
+    Task<bool> SetAdminTotpSecretAsync(
+        Guid userId,
+        string protectedSecret,
+        CancellationToken cancellationToken);
+
+    Task<bool> CompleteAdminTotpEnrollmentAsync(
+        Guid userId,
+        string challengeHash,
+        string protectedSecret,
+        long timeStep,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
+
+    Task<bool> CompleteAdminMfaLoginAsync(
+        Guid userId,
+        string challengeHash,
+        long timeStep,
+        DateTimeOffset now,
         CancellationToken cancellationToken);
 
     Task<bool> RotateRecoveryCredentialsAsync(
@@ -48,4 +81,6 @@ public interface IAccountRepository
     Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken);
 
     Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken);
+
+    Task<InviteCode> CreateInviteAsync(string email, string emailNormalized, CancellationToken cancellationToken);
 }

@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Postern.Api.Notifications;
+using Postern.Api.Realtime;
 using Postern.Application.Accounts;
+using Postern.Domain.Notifications;
 
 namespace Postern.Api.Endpoints;
 
@@ -18,6 +21,8 @@ public static class AccountManagementEndpoints
         ChangeForwardingAddressRequest request,
         ClaimsPrincipal user,
         AccountManagementService service,
+        IUserRealtimeNotifier realtimeNotifier,
+        INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId(user);
@@ -27,12 +32,27 @@ public static class AccountManagementEndpoints
         }
 
         var success = await service.ChangeForwardingAddressAsync(userId.Value, request.NewForwardingAddress ?? string.Empty, cancellationToken);
-        return success ? Results.NoContent() : Results.BadRequest();
+        if (!success)
+        {
+            return Results.BadRequest();
+        }
+
+        await realtimeNotifier.AccountChangedAsync(userId.Value);
+        await notifications.PublishUserAsync(
+            userId.Value,
+            NotificationKind.AccountChanged,
+            "Forwarding address updated",
+            request.NewForwardingAddress?.Trim(),
+            "/app/account",
+            cancellationToken);
+        return Results.NoContent();
     }
 
     private static async Task<IResult> DeleteAccountAsync(
         ClaimsPrincipal user,
         AccountManagementService service,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
         CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId(user);
@@ -42,7 +62,14 @@ public static class AccountManagementEndpoints
         }
 
         var success = await service.DeleteAccountAsync(userId.Value, cancellationToken);
-        return success ? Results.NoContent() : Results.NotFound();
+        if (!success)
+        {
+            return Results.NotFound();
+        }
+
+        await userRealtime.AccountChangedAsync(userId.Value);
+        await adminRealtime.OperationsChangedAsync();
+        return Results.NoContent();
     }
 
     private static Guid? GetCurrentUserId(ClaimsPrincipal user)

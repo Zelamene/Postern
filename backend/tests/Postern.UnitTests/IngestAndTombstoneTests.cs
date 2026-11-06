@@ -136,6 +136,9 @@ public class IngestAndTombstoneTests
         public Task<Alias?> FindAliasForIngestWithExpectedSendersAsync(string fullAddressHash, CancellationToken cancellationToken) =>
             Task.FromResult(_aliases.SingleOrDefault(alias => alias.FullAddressHash == fullAddressHash));
 
+        public Task<bool> MessageIdExistsAsync(Guid aliasId, string messageId, CancellationToken cancellationToken) =>
+            Task.FromResult(Messages.Any(message => message.AliasId == aliasId && message.MessageId == messageId));
+
         public Task<Message> RecordMessageAsync(Message message, CancellationToken cancellationToken)
         {
             Messages.Add(message);

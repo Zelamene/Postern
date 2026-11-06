@@ -9,12 +9,14 @@ public sealed class InMemoryKvWriter : IKvWriter
 
     public bool ShouldFail { get; set; }
 
+    public ISet<string> FailingKeys { get; } = new HashSet<string>(StringComparer.Ordinal);
+
     public IReadOnlyDictionary<string, string> Values => _values;
 
     public Task PutAsync(string key, string jsonValue, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        ThrowIfConfiguredToFail();
+        ThrowIfConfiguredToFail(key);
         _values[key] = jsonValue;
         return Task.CompletedTask;
     }
@@ -22,14 +24,14 @@ public sealed class InMemoryKvWriter : IKvWriter
     public Task DeleteAsync(string key, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        ThrowIfConfiguredToFail();
+        ThrowIfConfiguredToFail(key);
         _values.TryRemove(key, out _);
         return Task.CompletedTask;
     }
 
-    private void ThrowIfConfiguredToFail()
+    private void ThrowIfConfiguredToFail(string key)
     {
-        if (ShouldFail)
+        if (ShouldFail || FailingKeys.Contains(key))
         {
             throw new InvalidOperationException("The in-memory KV writer is configured to fail.");
         }

@@ -5,8 +5,13 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
-    exclude: ['src/**/*.integration.test.ts', 'src/**/*.integration.test.tsx'],
+    setupFiles: ['./test/setup.ts'],
+    include: ['test/unit/**/*.test.ts', 'test/unit/**/*.test.tsx'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/main.tsx', 'src/vite-env.d.ts', 'src/**/*.d.ts'],
+    },
   },
 })

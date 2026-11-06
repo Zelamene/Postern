@@ -1,13 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
+using System.Security.Cryptography;
 using Postern.Application.Accounts;
 using Postern.Domain.Accounts;
 using Postern.Infrastructure.Persistence;
 
 namespace Postern.Infrastructure.Accounts;
 
-public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRepository
+public sealed class EfAccountRepository(
+    PosternDbContext dbContext,
+    bool allowUnboundDevelopmentInvites) : IAccountRepository
 {
     private const long RegistrationLockId = 7243910081;
 
@@ -24,17 +27,40 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
             $"SELECT pg_advisory_xact_lock({RegistrationLockId})",
             cancellationToken);
 
+        // --- cap check at issue time: outstanding unexpired invites ≤ 199 − (pending + active) ---
+        var outstandingInvites = await dbContext.InviteCodes
+            .CountAsync(
+                item => item.UsedAt == null
+                    && item.RevokedAt == null
+                    && (item.ExpiresAt == null || item.ExpiresAt > now),
+                cancellationToken);
+        var pendingUsers = await dbContext.Users.CountAsync(
+            item => item.Status == "pending",
+            cancellationToken);
+        var activeUsers = await dbContext.Users.CountAsync(
+            item => item.Status == "active",
+            cancellationToken);
+        var seatCap = maximumUsers - pendingUsers - activeUsers;
+        if (outstandingInvites > seatCap)
+        {
+            return RegistrationResult.UserLimitReached;
+        }
+        // --- find invite matching code hash AND email normalisation ---
         var invite = await dbContext.InviteCodes
             .SingleOrDefaultAsync(
-                item => item.CodeHash == inviteCodeHash
+                item =>
+                    item.CodeHash == inviteCodeHash
+                    && (item.EmailNormalized == user.NormalizedEmail
+                        || (allowUnboundDevelopmentInvites && item.EmailNormalized == string.Empty))
                     && item.UsedAt == null
+                    && item.RevokedAt == null
                     && (item.ExpiresAt == null || item.ExpiresAt > now),
                 cancellationToken);
         if (invite is null)
         {
             return RegistrationResult.InvalidInvite;
         }
-
+        // --- idempotent: if this email is already registered under another invite, reject ---
         if (await dbContext.Users.AnyAsync(
                 item => item.NormalizedEmail == user.NormalizedEmail
                     || legacyNormalizedEmails.Contains(item.NormalizedEmail),
@@ -42,15 +68,22 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
         {
             return RegistrationResult.EmailAlreadyRegistered;
         }
-
         if (await dbContext.Users.CountAsync(cancellationToken) >= maximumUsers)
         {
             return RegistrationResult.UserLimitReached;
         }
-
         user.InviteCodeUsedId = invite.Id;
         invite.UsedAt = now;
         invite.UsedByUserId = user.Id;
+        invite.DeliveryStatus = InviteDeliveryStatus.Accepted;
+        invite.DeliveryUpdatedAt = now;
+        dbContext.AdminAuditLog.Add(new Postern.Domain.Administration.AdminAuditLogEntry
+        {
+            Id = Guid.NewGuid(),
+            Action = "invite.accepted",
+            TargetId = invite.Id.ToString(),
+            CreatedAt = now
+        });
         dbContext.Users.Add(user);
 
         try
@@ -80,6 +113,17 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
             .Include(user => user.Aliases)
             .SingleOrDefaultAsync(user => user.Id == userId, cancellationToken);
 
+    public Task<PosternUser?> FindByAdminMfaChallengeAsync(
+        string challengeHash,
+        string purpose,
+        DateTimeOffset now,
+        CancellationToken cancellationToken) =>
+        dbContext.Users.SingleOrDefaultAsync(
+            user => user.AdminMfaChallengeHash == challengeHash
+                && user.AdminMfaChallengePurpose == purpose
+                && user.AdminMfaChallengeExpiresAt > now,
+            cancellationToken);
+
     public async Task<bool> ActivatePendingUserAsync(Guid userId, CancellationToken cancellationToken) =>
         await dbContext.Users
             .Where(user => user.Id == userId && user.Status == "pending")
@@ -98,6 +142,87 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
                 && user.RecoveryKeyHash == null)
             .ExecuteUpdateAsync(
                 setters => setters.SetProperty(user => user.RecoveryKeyHash, recoveryKeyHash),
+                cancellationToken) == 1;
+
+    public async Task<bool> SetAdminMfaChallengeAsync(
+        Guid userId,
+        string challengeHash,
+        string purpose,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .Where(user => user.Id == userId && user.IsAdmin && user.Status == "active")
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(user => user.AdminMfaChallengeHash, challengeHash)
+                    .SetProperty(user => user.AdminMfaChallengePurpose, purpose)
+                    .SetProperty(user => user.AdminMfaChallengeExpiresAt, expiresAt),
+                cancellationToken) == 1;
+
+    public async Task<bool> SetAdminTotpSecretAsync(
+        Guid userId,
+        string protectedSecret,
+        CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .Where(user =>
+                user.Id == userId
+                && user.IsAdmin
+                && user.Status == "active"
+                && user.AdminTotpEnabledAt == null
+                && user.AdminTotpSecretProtected == null)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(user => user.AdminTotpSecretProtected, protectedSecret),
+                cancellationToken) == 1;
+
+    public async Task<bool> CompleteAdminTotpEnrollmentAsync(
+        Guid userId,
+        string challengeHash,
+        string protectedSecret,
+        long timeStep,
+        DateTimeOffset now,
+        CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .Where(user =>
+                user.Id == userId
+                && user.IsAdmin
+                && user.Status == "active"
+                && user.AdminTotpEnabledAt == null
+                && user.AdminTotpSecretProtected == protectedSecret
+                && user.AdminMfaChallengeHash == challengeHash
+                && user.AdminMfaChallengePurpose == "setup"
+                && user.AdminMfaChallengeExpiresAt > now
+                && (user.AdminTotpLastUsedStep == null || user.AdminTotpLastUsedStep < timeStep))
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(user => user.AdminTotpEnabledAt, now)
+                    .SetProperty(user => user.AdminTotpLastUsedStep, timeStep)
+                    .SetProperty(user => user.AdminMfaChallengeHash, (string?)null)
+                    .SetProperty(user => user.AdminMfaChallengePurpose, (string?)null)
+                    .SetProperty(user => user.AdminMfaChallengeExpiresAt, (DateTimeOffset?)null),
+                cancellationToken) == 1;
+
+    public async Task<bool> CompleteAdminMfaLoginAsync(
+        Guid userId,
+        string challengeHash,
+        long timeStep,
+        DateTimeOffset now,
+        CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .Where(user =>
+                user.Id == userId
+                && user.IsAdmin
+                && user.Status == "active"
+                && user.AdminTotpEnabledAt != null
+                && user.AdminMfaChallengeHash == challengeHash
+                && user.AdminMfaChallengePurpose == "login"
+                && user.AdminMfaChallengeExpiresAt > now
+                && (user.AdminTotpLastUsedStep == null || user.AdminTotpLastUsedStep < timeStep))
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(user => user.AdminTotpLastUsedStep, timeStep)
+                    .SetProperty(user => user.AdminMfaChallengeHash, (string?)null)
+                    .SetProperty(user => user.AdminMfaChallengePurpose, (string?)null)
+                    .SetProperty(user => user.AdminMfaChallengeExpiresAt, (DateTimeOffset?)null),
                 cancellationToken) == 1;
 
     public async Task<bool> RotateRecoveryCredentialsAsync(
@@ -179,6 +304,30 @@ public sealed class EfAccountRepository(PosternDbContext dbContext) : IAccountRe
         dbContext.InviteCodes.Add(invite);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<InviteCode> CreateInviteAsync(string email, string emailNormalized, CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var expiresAt = now.AddDays(7);
+        var invite = new InviteCode
+        {
+            Id = Guid.NewGuid(),
+            CodeHash = AuthenticationService.HashInviteCode($"postern_invite_{GenerateUrlSafeToken()}"),
+            Email = email,
+            EmailNormalized = emailNormalized,
+            CreatedAt = now,
+            ExpiresAt = expiresAt,
+        };
+        dbContext.InviteCodes.Add(invite);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return invite;
+    }
+
+    private static string GenerateUrlSafeToken() =>
+        Convert.ToBase64String(RandomNumberGenerator.GetBytes(18))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
 
     public async Task<bool> SetStatusAsync(
         Guid userId,

@@ -42,9 +42,42 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<string>("DeliveryMessageId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("delivery_message_id");
+
+                    b.Property<string>("DeliveryStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("pending")
+                        .HasColumnName("delivery_status");
+
+                    b.Property<DateTimeOffset?>("DeliveryUpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("delivery_updated_at");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("EmailNormalized")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email_normalized");
+
                     b.Property<DateTimeOffset?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
 
                     b.Property<DateTimeOffset?>("UsedAt")
                         .HasColumnType("timestamp with time zone")
@@ -60,7 +93,157 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_invite_codes_code_hash");
 
-                    b.ToTable("invite_codes", "postern");
+                    b.HasIndex("DeliveryMessageId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_invite_codes_delivery_message_id")
+                        .HasFilter("delivery_message_id IS NOT NULL");
+
+                    b.ToTable("invite_codes", "postern", t =>
+                        {
+                            t.HasCheckConstraint("ck_invite_codes_delivery_status", "delivery_status IN ('pending', 'sent', 'delivered', 'bounced', 'complained', 'accepted', 'revoked', 'failed')");
+                        });
+                });
+
+            modelBuilder.Entity("Postern.Domain.Accounts.InviteEmailOutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid>("InviteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invite_id");
+
+                    b.Property<string>("InviterName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("inviter_name");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset?>("LeaseExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_expires_at");
+
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<string>("ProtectedInviteCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("protected_invite_code");
+
+                    b.Property<string>("ProviderMessageId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("provider_message_id");
+
+                    b.Property<string>("RecipientEmail")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("recipient_email");
+
+                    b.Property<DateTimeOffset?>("SentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sent_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InviteId");
+
+                    b.HasIndex("Status", "NextAttemptAt", "CreatedAt")
+                        .HasDatabaseName("ix_invite_email_outbox_pending");
+
+                    b.ToTable("invite_email_outbox", "postern", t =>
+                        {
+                            t.HasCheckConstraint("ck_invite_email_outbox_status", "status IN ('pending', 'processing', 'sent', 'failed', 'cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("Postern.Domain.Accounts.InviteRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("EmailNormalized")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email_normalized");
+
+                    b.Property<Guid?>("InviteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invite_id");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewed_by_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmailNormalized")
+                        .IsUnique()
+                        .HasDatabaseName("ux_invite_requests_pending_email")
+                        .HasFilter("status = 'pending'");
+
+                    b.HasIndex("InviteId");
+
+                    b.HasIndex("RequestedAt")
+                        .HasDatabaseName("ix_invite_requests_requested_at");
+
+                    b.HasIndex("ReviewedByUserId");
+
+                    b.ToTable("invite_requests", "postern", t =>
+                        {
+                            t.HasCheckConstraint("ck_invite_requests_status", "status IN ('pending', 'approved', 'rejected')");
+                        });
                 });
 
             modelBuilder.Entity("Postern.Domain.Accounts.PosternUser", b =>
@@ -69,6 +252,33 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("AdminMfaChallengeExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("admin_mfa_challenge_expires_at");
+
+                    b.Property<string>("AdminMfaChallengeHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("admin_mfa_challenge_hash");
+
+                    b.Property<string>("AdminMfaChallengePurpose")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("admin_mfa_challenge_purpose");
+
+                    b.Property<DateTimeOffset?>("AdminTotpEnabledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("admin_totp_enabled_at");
+
+                    b.Property<long?>("AdminTotpLastUsedStep")
+                        .HasColumnType("bigint")
+                        .HasColumnName("admin_totp_last_used_step");
+
+                    b.Property<string>("AdminTotpSecretProtected")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("admin_totp_secret_protected");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -122,6 +332,11 @@ namespace Postern.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("InviteCodeUsedId");
 
+                    b.HasIndex("IsAdmin")
+                        .IsUnique()
+                        .HasDatabaseName("ux_users_single_admin")
+                        .HasFilter("is_admin = TRUE");
+
                     b.HasIndex("NormalizedEmail")
                         .IsUnique()
                         .HasDatabaseName("ux_users_normalized_email");
@@ -135,6 +350,36 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_users_status", "status IN ('pending', 'active', 'suspended')");
                         });
+                });
+
+            modelBuilder.Entity("Postern.Domain.Accounts.ResendWebhookEvent", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("ProviderMessageId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("provider_message_id");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("received_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceivedAt")
+                        .HasDatabaseName("ix_resend_webhook_events_received_at");
+
+                    b.ToTable("resend_webhook_events", "postern");
                 });
 
             modelBuilder.Entity("Postern.Domain.Activity.BlockedMessage", b =>
@@ -220,6 +465,11 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_flagged");
 
+                    b.Property<string>("MessageId")
+                        .HasMaxLength(998)
+                        .HasColumnType("character varying(998)")
+                        .HasColumnName("message_id");
+
                     b.Property<DateTimeOffset>("ReceivedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -232,6 +482,11 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasColumnName("subject");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AliasId", "MessageId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_messages_alias_id_message_id")
+                        .HasFilter("message_id IS NOT NULL");
 
                     b.HasIndex("AliasId", "ReceivedAt")
                         .HasDatabaseName("ix_messages_alias_id_received_at");
@@ -434,6 +689,93 @@ namespace Postern.Infrastructure.Persistence.Migrations
                     b.ToTable("expected_senders", "postern");
                 });
 
+            modelBuilder.Entity("Postern.Domain.Notifications.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Audience")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("audience");
+
+                    b.Property<string>("Body")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("link");
+
+                    b.Property<DateTimeOffset?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<Guid?>("RecipientUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipient_user_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientUserId");
+
+                    b.HasIndex("Audience", "RecipientUserId", "CreatedAt")
+                        .HasDatabaseName("ix_notifications_audience_recipient_created_at");
+
+                    b.ToTable("notifications", "postern", t =>
+                        {
+                            t.HasCheckConstraint("ck_notifications_audience", "audience IN ('user', 'admin')");
+                        });
+                });
+
+            modelBuilder.Entity("Postern.Domain.Accounts.InviteEmailOutboxMessage", b =>
+                {
+                    b.HasOne("Postern.Domain.Accounts.InviteCode", null)
+                        .WithMany()
+                        .HasForeignKey("InviteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_invite_email_outbox_invite_codes_invite_id");
+                });
+
+            modelBuilder.Entity("Postern.Domain.Accounts.InviteRequest", b =>
+                {
+                    b.HasOne("Postern.Domain.Accounts.InviteCode", null)
+                        .WithMany()
+                        .HasForeignKey("InviteId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_invite_requests_invite_codes_invite_id");
+
+                    b.HasOne("Postern.Domain.Accounts.PosternUser", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_invite_requests_users_reviewed_by_user_id");
+                });
+
             modelBuilder.Entity("Postern.Domain.Accounts.PosternUser", b =>
                 {
                     b.HasOne("Postern.Domain.Accounts.InviteCode", null)
@@ -512,6 +854,15 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_expected_senders_aliases_alias_id");
 
                     b.Navigation("Alias");
+                });
+
+            modelBuilder.Entity("Postern.Domain.Notifications.Notification", b =>
+                {
+                    b.HasOne("Postern.Domain.Accounts.PosternUser", null)
+                        .WithMany()
+                        .HasForeignKey("RecipientUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_notifications_users_recipient_user_id");
                 });
 
             modelBuilder.Entity("Postern.Domain.Accounts.PosternUser", b =>

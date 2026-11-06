@@ -103,6 +103,7 @@ async function ingestMessage(
 
     const subject = message.headers.get("subject") || "";
     const envelopeSender = message.from || "";
+    const messageId = message.headers.get("message-id");
 
     await fetch(env.INGEST_ENDPOINT, {
       method: "POST",
@@ -115,7 +116,8 @@ async function ingestMessage(
         envelopeSender,
         fromHeader,
         subject,
-        authenticationResult
+        authenticationResult,
+        messageId
       })
     });
   } catch {
@@ -153,6 +155,7 @@ async function ingestBlocked(
     }
 
     const subject = message.headers.get("subject") || "";
+    const messageId = message.headers.get("message-id");
 
     await fetch(env.INGEST_ENDPOINT, {
       method: "POST",
@@ -166,6 +169,7 @@ async function ingestBlocked(
         fromHeader,
         subject,
         authenticationResult,
+        messageId,
         blocked: true,
         reason
       })

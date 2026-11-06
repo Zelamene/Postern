@@ -14,12 +14,15 @@ public sealed class AliasService(
     AliasPolicy policy)
 {
     private const int AddressAttempts = 5;
+    private const int CategoryMaxLength = 40;
+    private const string DefaultCategory = "personal";
 
     public async Task<Alias?> CreateAsync(
         Guid userId,
         string label,
         string purposeMetadata,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? category = null)
     {
         var user = await accounts.FindByIdAsync(userId, cancellationToken);
         if (user is null)
@@ -58,7 +61,7 @@ public sealed class AliasService(
                 FullAddress = address,
                 FullAddressHash = addressHash,
                 PurposeMetadata = string.IsNullOrWhiteSpace(purposeMetadata) ? null : purposeMetadata,
-                Category = "personal",
+                Category = NormalizeCategory(category),
                 Status = AliasStatus.Active,
                 CreatedAt = now,
                 KvDirty = false
@@ -214,6 +217,17 @@ public sealed class AliasService(
 
     public static string HashAddress(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+
+    private static string NormalizeCategory(string? category)
+    {
+        if (string.IsNullOrWhiteSpace(category))
+        {
+            return DefaultCategory;
+        }
+
+        var trimmed = category.Trim();
+        return trimmed.Length > CategoryMaxLength ? trimmed[..CategoryMaxLength] : trimmed;
+    }
 
     private async Task PublishCurrentStateAsync(
         Guid userId,

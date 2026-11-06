@@ -20,6 +20,12 @@ public sealed class PosternUser
     public required string PasswordHash { get; set; }
     public string? RecoveryKeyHash { get; set; }
     public bool IsAdmin { get; set; }
+    public string? AdminTotpSecretProtected { get; set; }
+    public DateTimeOffset? AdminTotpEnabledAt { get; set; }
+    public long? AdminTotpLastUsedStep { get; set; }
+    public string? AdminMfaChallengeHash { get; set; }
+    public string? AdminMfaChallengePurpose { get; set; }
+    public DateTimeOffset? AdminMfaChallengeExpiresAt { get; set; }
     public required string Status { get; set; }
     public Guid? InviteCodeUsedId { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

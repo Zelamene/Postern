@@ -287,6 +287,26 @@ public sealed class AuthenticationServiceTests
             return Task.CompletedTask;
         }
 
+        public Task<Postern.Domain.Accounts.InviteCode> CreateInviteAsync(
+            string email,
+            string emailNormalized,
+            CancellationToken cancellationToken)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var invite = new Postern.Domain.Accounts.InviteCode
+            {
+                Id = Guid.NewGuid(),
+                CodeHash = AuthenticationService.HashInviteCode(
+                    $"postern_invite_{AuthenticationService.GenerateUrlSafeToken()}"),
+                Email = email,
+                EmailNormalized = emailNormalized,
+                CreatedAt = now,
+                ExpiresAt = now.AddDays(7)
+            };
+            _invites[invite.CodeHash] = invite;
+            return Task.FromResult(invite);
+        }
+
         public void AddInvite(string code)
         {
             var hash = HashSecret(code);
@@ -294,6 +314,8 @@ public sealed class AuthenticationServiceTests
             {
                 Id = Guid.NewGuid(),
                 CodeHash = hash,
+                Email = string.Empty,
+                EmailNormalized = string.Empty,
                 CreatedAt = DateTimeOffset.UtcNow
             });
         }
@@ -416,6 +438,44 @@ public sealed class AuthenticationServiceTests
 
         public Task<Postern.Domain.Accounts.PosternUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken) =>
             Task.FromResult(_users.SingleOrDefault(user => user.Id == userId));
+
+        public Task<Postern.Domain.Accounts.PosternUser?> FindByAdminMfaChallengeAsync(
+            string challengeHash,
+            string purpose,
+            DateTimeOffset now,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<Postern.Domain.Accounts.PosternUser?>(null);
+
+        public Task<bool> SetAdminMfaChallengeAsync(
+            Guid userId,
+            string challengeHash,
+            string purpose,
+            DateTimeOffset expiresAt,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(false);
+
+        public Task<bool> SetAdminTotpSecretAsync(
+            Guid userId,
+            string protectedSecret,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(false);
+
+        public Task<bool> CompleteAdminTotpEnrollmentAsync(
+            Guid userId,
+            string challengeHash,
+            string protectedSecret,
+            long timeStep,
+            DateTimeOffset now,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(false);
+
+        public Task<bool> CompleteAdminMfaLoginAsync(
+            Guid userId,
+            string challengeHash,
+            long timeStep,
+            DateTimeOffset now,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(false);
 
         public Task<bool> UpdateForwardingAddressAsync(Guid userId, string newEmail, CancellationToken cancellationToken)
         {

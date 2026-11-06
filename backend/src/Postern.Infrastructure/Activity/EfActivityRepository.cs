@@ -17,6 +17,11 @@ public sealed class EfActivityRepository(PosternDbContext dbContext) : IActivity
             .Include(alias => alias.ExpectedSenders)
             .SingleOrDefaultAsync(alias => alias.FullAddressHash == fullAddressHash, cancellationToken);
 
+    public Task<bool> MessageIdExistsAsync(Guid aliasId, string messageId, CancellationToken cancellationToken) =>
+        dbContext.Messages.AnyAsync(
+            message => message.AliasId == aliasId && message.MessageId == messageId,
+            cancellationToken);
+
     public async Task<Message> RecordMessageAsync(Message message, CancellationToken cancellationToken)
     {
         dbContext.Messages.Add(message);

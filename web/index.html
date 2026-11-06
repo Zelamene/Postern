@@ -1,12 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/postern.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#17253f" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#74172a" />
     <meta name="description" content="A single-purpose, auditable email alias platform." />
     <title>Postern</title>
+    <script>
+      (() => {
+        const stored = localStorage.getItem('postern-theme')
+        const dark = stored
+          ? stored === 'dark'
+          : window.matchMedia('(prefers-color-scheme: dark)').matches
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

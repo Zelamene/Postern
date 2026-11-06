@@ -177,6 +177,12 @@ public sealed class AuthenticationService(
     public static string HashInviteCode(string inviteCode) =>
         HashSecret(inviteCode.Trim());
 
+    public static string GenerateUrlSafeToken() =>
+        Convert.ToBase64String(RandomNumberGenerator.GetBytes(18))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+
     private static string NormalizeLegacyEmail(string email) => email.Trim().ToUpperInvariant();
 
     private static IReadOnlyCollection<string> GetLegacyIdentities(
