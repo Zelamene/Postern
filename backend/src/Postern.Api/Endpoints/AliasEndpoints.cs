@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Postern.Api.Realtime;
 using Postern.Application.Aliases;
 using Postern.Domain.Aliases;
 
@@ -58,6 +59,8 @@ public static class AliasEndpoints
         CreateAliasRequest request,
         ClaimsPrincipal user,
         AliasService service,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -67,15 +70,21 @@ public static class AliasEndpoints
         }
 
         var alias = await service.CreateAsync(currentUserId.Value, request.Label ?? string.Empty, request.PurposeMetadata ?? "", cancellationToken, request.Category);
-        return alias is null
-            ? Results.BadRequest(new { error = "reserved_or_invalid_label" })
-            : Results.Created($"/api/aliases/{alias.Id}", MapAliasResponse(alias));
+        if (alias is null)
+        {
+            return Results.BadRequest(new { error = "reserved_or_invalid_label" });
+        }
+
+        await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+        return Results.Created($"/api/aliases/{alias.Id}", MapAliasResponse(alias));
     }
 
     private static async Task<IResult> DisableAliasAsync(
         Guid aliasId,
         ClaimsPrincipal user,
         AliasService service,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -85,6 +94,11 @@ public static class AliasEndpoints
         }
 
         var success = await service.DisableAsync(currentUserId.Value, aliasId, cancellationToken);
+        if (success)
+        {
+            await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+        }
+
         return success ? Results.NoContent() : Results.NotFound();
     }
 
@@ -92,6 +106,8 @@ public static class AliasEndpoints
         Guid aliasId,
         ClaimsPrincipal user,
         AliasService service,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -101,6 +117,11 @@ public static class AliasEndpoints
         }
 
         var success = await service.DeleteAsync(currentUserId.Value, aliasId, cancellationToken);
+        if (success)
+        {
+            await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+        }
+
         return success ? Results.NoContent() : Results.NotFound();
     }
 
@@ -109,6 +130,8 @@ public static class AliasEndpoints
         Guid replacementAliasId,
         ClaimsPrincipal user,
         AliasService service,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -119,6 +142,11 @@ public static class AliasEndpoints
 
         await service.CopyExpectedSendersAsync(currentUserId.Value, aliasId, replacementAliasId, cancellationToken);
         var success = await service.ReplaceAsync(currentUserId.Value, aliasId, replacementAliasId, cancellationToken);
+        if (success)
+        {
+            await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+        }
+
         return success ? Results.NoContent() : Results.NotFound();
     }
 
@@ -127,6 +155,8 @@ public static class AliasEndpoints
         ReplaceAliasRequest request,
         ClaimsPrincipal user,
         AliasService service,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -143,6 +173,7 @@ public static class AliasEndpoints
 
         await service.CopyExpectedSendersAsync(currentUserId.Value, aliasId, replacement.Id, cancellationToken);
         var success = await service.ReplaceAsync(currentUserId.Value, aliasId, replacement.Id, cancellationToken);
+        await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
         return success ? Results.Ok(MapAliasResponse(replacement)) : Results.NotFound();
     }
 
@@ -151,6 +182,8 @@ public static class AliasEndpoints
         UpdateAliasRequest request,
         ClaimsPrincipal user,
         AliasService service,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
         CancellationToken cancellationToken)
     {
         var currentUserId = GetCurrentUserId(user);
@@ -162,12 +195,22 @@ public static class AliasEndpoints
         if (string.Equals(request.Action, "disable", StringComparison.OrdinalIgnoreCase))
         {
             var success = await service.DisableAsync(currentUserId.Value, aliasId, cancellationToken);
+            if (success)
+            {
+                await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+            }
+
             return success ? Results.NoContent() : Results.NotFound();
         }
 
         if (string.Equals(request.Action, "delete", StringComparison.OrdinalIgnoreCase))
         {
             var success = await service.DeleteAsync(currentUserId.Value, aliasId, cancellationToken);
+            if (success)
+            {
+                await NotifyAliasChangedAsync(userRealtime, adminRealtime, currentUserId.Value);
+            }
+
             return success ? Results.NoContent() : Results.NotFound();
         }
 
@@ -251,6 +294,15 @@ public static class AliasEndpoints
         {
             [nameof(BlockSenderRequest.SenderEtld1)] = ["Sender domain is required and must be <= 253 characters."]
         });
+    }
+
+    private static async Task NotifyAliasChangedAsync(
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
+        Guid userId)
+    {
+        await userRealtime.AliasesChangedAsync(userId);
+        await adminRealtime.OperationsChangedAsync();
     }
 
     private static Guid? GetCurrentUserId(ClaimsPrincipal user)

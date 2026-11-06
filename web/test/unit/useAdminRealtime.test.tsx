@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   lifecycle: {
     onclose: undefined as ((error?: Error) => void) | undefined,
     onreconnected: undefined as (() => void) | undefined,
-    onreconnecting: undefined as (() => void) | undefined,
+    onreconnecting: undefined as ((error?: Error) => void) | undefined,
   },
   off: vi.fn(),
   start: vi.fn(),
@@ -18,6 +18,8 @@ vi.mock('../../src/realtime/adminRealtime', () => ({
   adminRealtimeEvents: {
     inviteRequestReceived: 'InviteRequestReceived',
     invitationAccepted: 'InvitationAccepted',
+    invitesChanged: 'InvitesChanged',
+    operationsChanged: 'OperationsChanged',
   },
   createAdminRealtimeConnection: () => ({
     on: (event: string, handler: () => void) => mocks.handlers.set(event, handler),
@@ -28,7 +30,7 @@ vi.mock('../../src/realtime/adminRealtime', () => ({
     onreconnected: (handler: () => void) => {
       mocks.lifecycle.onreconnected = handler
     },
-    onreconnecting: (handler: () => void) => {
+    onreconnecting: (handler: (error?: Error) => void) => {
       mocks.lifecycle.onreconnecting = handler
     },
     start: mocks.start,
@@ -45,26 +47,74 @@ describe('useAdminRealtime', () => {
     mocks.lifecycle.onreconnecting = undefined
   })
 
-  it('refreshes dashboard data on invite events and when reconnecting', async () => {
+  it('refreshes the dashboard and operations when invite state changes', async () => {
     mocks.start.mockResolvedValue(undefined)
-    const refresh = vi.fn().mockResolvedValue(undefined)
-    renderHook(() => useAdminRealtime(true, refresh))
+    const refreshDashboard = vi.fn().mockResolvedValue(undefined)
+    const refreshOperations = vi.fn().mockResolvedValue(undefined)
+    renderHook(() =>
+      useAdminRealtime(true, {
+        onDashboardChanged: refreshDashboard,
+        onOperationsChanged: refreshOperations,
+      }),
+    )
 
     await waitFor(() => expect(mocks.start).toHaveBeenCalledOnce())
 
     act(() => mocks.handlers.get('InviteRequestReceived')?.())
     act(() => mocks.handlers.get('InvitationAccepted')?.())
-    act(() => mocks.lifecycle.onreconnected?.())
+    act(() => mocks.handlers.get('InvitesChanged')?.())
 
-    expect(refresh).toHaveBeenCalledTimes(3)
+    expect(refreshDashboard).toHaveBeenCalledTimes(3)
+    expect(refreshOperations).toHaveBeenCalledTimes(3)
+  })
+
+  it('refreshes operations without reloading invites when operations change', async () => {
+    mocks.start.mockResolvedValue(undefined)
+    const refreshDashboard = vi.fn().mockResolvedValue(undefined)
+    const refreshOperations = vi.fn().mockResolvedValue(undefined)
+    renderHook(() =>
+      useAdminRealtime(true, {
+        onDashboardChanged: refreshDashboard,
+        onOperationsChanged: refreshOperations,
+      }),
+    )
+
+    await waitFor(() => expect(mocks.start).toHaveBeenCalledOnce())
+
+    act(() => mocks.handlers.get('OperationsChanged')?.())
+    expect(refreshOperations).toHaveBeenCalledOnce()
+    expect(refreshDashboard).not.toHaveBeenCalled()
+  })
+
+  it('refreshes both dashboards after the connection is restored', async () => {
+    mocks.start.mockResolvedValue(undefined)
+    const refreshDashboard = vi.fn().mockResolvedValue(undefined)
+    const refreshOperations = vi.fn().mockResolvedValue(undefined)
+    renderHook(() =>
+      useAdminRealtime(true, {
+        onDashboardChanged: refreshDashboard,
+        onOperationsChanged: refreshOperations,
+      }),
+    )
+
+    await waitFor(() => expect(mocks.start).toHaveBeenCalledOnce())
+
+    act(() => mocks.lifecycle.onreconnected?.())
+    expect(refreshDashboard).toHaveBeenCalledOnce()
+    expect(refreshOperations).toHaveBeenCalledOnce()
   })
 
   it('stops the connection and removes event handlers when disabled', async () => {
     mocks.start.mockResolvedValue(undefined)
     mocks.stop.mockResolvedValue(undefined)
-    const refresh = vi.fn().mockResolvedValue(undefined)
+    const refreshDashboard = vi.fn().mockResolvedValue(undefined)
+    const refreshOperations = vi.fn().mockResolvedValue(undefined)
     const { rerender } = renderHook(
-      ({ enabled }) => useAdminRealtime(enabled, refresh),
+      ({ enabled }) =>
+        useAdminRealtime(enabled, {
+          onDashboardChanged: refreshDashboard,
+          onOperationsChanged: refreshOperations,
+        }),
       { initialProps: { enabled: true } },
     )
 
@@ -72,6 +122,6 @@ describe('useAdminRealtime', () => {
     rerender({ enabled: false })
 
     await waitFor(() => expect(mocks.stop).toHaveBeenCalledOnce())
-    expect(mocks.off).toHaveBeenCalledTimes(2)
+    expect(mocks.off).toHaveBeenCalledTimes(4)
   })
 })

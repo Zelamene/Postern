@@ -12,6 +12,7 @@ export type AccountSession =
 export interface AccountSessionState {
   session: AccountSession
   retry: () => void
+  refresh: () => Promise<void>
 }
 
 const SLOW_AFTER_MS = 3_000
@@ -28,6 +29,17 @@ export function useAccountSession(): AccountSessionState {
   const retry = useCallback(() => {
     setSession({ status: 'checking' })
     setAttempt((current) => current + 1)
+  }, [])
+
+  const refresh = useCallback(async () => {
+    try {
+      const account = await fetchCurrentAccount()
+      setSession({ status: 'ready', account })
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        setSession({ status: 'anonymous' })
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -70,5 +82,5 @@ export function useAccountSession(): AccountSessionState {
     }
   }, [attempt])
 
-  return { session, retry }
+  return { session, retry, refresh }
 }

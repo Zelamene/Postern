@@ -27,6 +27,7 @@ export interface AliasesController {
   pendingAliasId: string | null
   isCreating: boolean
   reload: () => void
+  refresh: () => Promise<void>
   create: (input: CreateAliasInput) => Promise<CreateAliasOutcome>
   disable: (aliasId: string) => Promise<boolean>
   remove: (aliasId: string) => Promise<boolean>
@@ -107,6 +108,17 @@ export function useAliases(enabled: boolean): AliasesController {
     setStatus('loading')
     setLoadError(null)
     setLoadCount((current) => current + 1)
+  }, [])
+
+  const refresh = useCallback(async () => {
+    try {
+      const list = await fetchAliases()
+      setAliases(list)
+      setLoadError(null)
+      setStatus('ready')
+    } catch (error) {
+      console.error('Unable to refresh aliases', error)
+    }
   }, [])
 
   const create = useCallback(
@@ -211,6 +223,7 @@ export function useAliases(enabled: boolean): AliasesController {
     pendingAliasId,
     isCreating,
     reload,
+    refresh,
     create,
     disable,
     remove,

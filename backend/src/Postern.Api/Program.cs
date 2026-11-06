@@ -154,6 +154,7 @@ builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddScoped<AdminMfaService>();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IAdminRealtimeNotifier, AdminRealtimeNotifier>();
+builder.Services.AddSingleton<IUserRealtimeNotifier, UserRealtimeNotifier>();
 builder.Services.AddScoped<AccountManagementService>();
 builder.Services.AddScoped<AliasService>();
 builder.Services.AddScoped<IngestService>();
@@ -247,6 +248,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapHub<AdminEventsHub>("/api/admin/events").RequireAuthorization("admin");
+app.MapHub<UserEventsHub>("/api/user/events").RequireAuthorization();
 app.MapAuthenticationEndpoints();
 app.MapAccountManagementEndpoints();
 app.MapInviteEndpoints();

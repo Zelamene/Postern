@@ -10,6 +10,7 @@ import { AccountSettings } from '../components/app/AccountSettings'
 import { useAccountSession } from '../hooks/useAccountSession'
 import { useAliasMessages, useBlockedMessages } from '../hooks/useActivity'
 import { useAliases } from '../hooks/useAliases'
+import { useUserRealtime } from '../hooks/useUserRealtime'
 import { signOut } from '../services/accountService'
 import { addressDomain } from '../services/aliasService'
 import { REPLY_WARNING } from '../services/productCopy'
@@ -24,12 +25,22 @@ interface AppPageProps {
 }
 
 export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProps>) {
-  const { session, retry } = useAccountSession()
+  const { session, retry, refresh: refreshAccount } = useAccountSession()
   const route = readAppRoute(pathname)
   const isSignedIn = session.status === 'ready'
   const aliases = useAliases(isSignedIn)
   const messages = useAliasMessages(isSignedIn ? route.aliasId : null)
   const blocked = useBlockedMessages(isSignedIn && route.view === 'blocked')
+
+  useUserRealtime(isSignedIn, {
+    onAliasesChanged: aliases.refresh,
+    onMessageReceived: (aliasId) =>
+      route.aliasId === aliasId ? messages.refresh() : undefined,
+    onBlockedMessageReceived: () =>
+      route.view === 'blocked' ? blocked.refresh() : undefined,
+    onAccountChanged: refreshAccount,
+  })
+
   const [recoveryKey, setRecoveryKey] = useState<string | null>(() => takeRecoveryKey())
   const [forwardingAddress, setForwardingAddress] = useState<string | null>(null)
   const [isSigningOut, setIsSigningOut] = useState(false)

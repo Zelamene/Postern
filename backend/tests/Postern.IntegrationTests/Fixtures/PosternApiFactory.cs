@@ -30,6 +30,7 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
     private readonly bool _configureInviteWorker;
     private readonly IInviteEmailSender? _inviteEmailSender;
     private readonly IAdminRealtimeNotifier? _adminRealtimeNotifier;
+    private readonly IUserRealtimeNotifier? _userRealtimeNotifier;
 
     public PosternApiFactory(
         PosternFixture fixture,
@@ -40,7 +41,8 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
         IInviteEmailSender? inviteEmailSender = null,
         bool configureInviteWorker = false,
         IAdminRealtimeNotifier? adminRealtimeNotifier = null,
-        string? jobSecret = null)
+        string? jobSecret = null,
+        IUserRealtimeNotifier? userRealtimeNotifier = null)
     {
         _fixture = fixture;
         _kvWriter = kvWriter ?? new NoOpKvWriter();
@@ -51,6 +53,7 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
         _configureInviteWorker = configureInviteWorker;
         _inviteEmailSender = inviteEmailSender;
         _adminRealtimeNotifier = adminRealtimeNotifier;
+        _userRealtimeNotifier = userRealtimeNotifier;
     }
 
     public DevelopmentDestinationService Destinations =>
@@ -116,6 +119,11 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
             {
                 services.RemoveAll<IAdminRealtimeNotifier>();
                 services.AddSingleton(_adminRealtimeNotifier);
+            }
+            if (_userRealtimeNotifier is not null)
+            {
+                services.RemoveAll<IUserRealtimeNotifier>();
+                services.AddSingleton(_userRealtimeNotifier);
             }
         });
     }

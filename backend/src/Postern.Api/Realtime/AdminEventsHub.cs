@@ -13,6 +13,10 @@ public interface IAdminEventsClient
     Task InviteRequestReceived();
 
     Task InvitationAccepted();
+
+    Task InvitesChanged();
+
+    Task OperationsChanged();
 }
 
 public interface IAdminRealtimeNotifier
@@ -20,6 +24,10 @@ public interface IAdminRealtimeNotifier
     Task InviteRequestReceivedAsync();
 
     Task InvitationAcceptedAsync();
+
+    Task InvitesChangedAsync();
+
+    Task OperationsChangedAsync();
 }
 
 public sealed class AdminRealtimeNotifier(
@@ -35,6 +43,16 @@ public sealed class AdminRealtimeNotifier(
         NotifyAsync(
             "invitation acceptance",
             clients => clients.InvitationAccepted());
+
+    public Task InvitesChangedAsync() =>
+        NotifyAsync(
+            "invite change",
+            clients => clients.InvitesChanged());
+
+    public Task OperationsChangedAsync() =>
+        NotifyAsync(
+            "operations change",
+            clients => clients.OperationsChanged());
 
     private async Task NotifyAsync(string eventName, Func<IAdminEventsClient, Task> send)
     {

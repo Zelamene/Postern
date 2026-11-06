@@ -34,7 +34,8 @@ public sealed class AuthorizationTests
         { "POST", "/api/admin/kv-sync" },
         { "POST", "/api/admin/suspended-users/rebuild" },
         { "POST", "/api/admin/users/00000000-0000-0000-0000-000000000001/suspend" },
-        { "POST", "/api/admin/global-blocklist" }
+        { "POST", "/api/admin/global-blocklist" },
+        { "POST", "/api/user/events/negotiate?negotiateVersion=1" }
     };
 
     [Theory]

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { HubConnection } from '@microsoft/signalr'
 import {
   adminRealtimeEvents,
@@ -7,10 +7,18 @@ import {
 
 const INITIAL_RETRY_DELAY_MS = 5_000
 
-export function useAdminRealtime(
-  enabled: boolean,
-  onDashboardChanged: () => Promise<void>,
-): void {
+export interface AdminRealtimeHandlers {
+  onDashboardChanged: () => void | Promise<void>
+  onOperationsChanged: () => void | Promise<void>
+}
+
+export function useAdminRealtime(enabled: boolean, handlers: AdminRealtimeHandlers): void {
+  const handlersRef = useRef(handlers)
+
+  useEffect(() => {
+    handlersRef.current = handlers
+  }, [handlers])
+
   useEffect(() => {
     if (!enabled) {
       return
@@ -20,11 +28,20 @@ export function useAdminRealtime(
     let retryTimer: ReturnType<typeof setTimeout> | undefined
     const connection = createAdminRealtimeConnection()
     const refreshDashboard = () => {
-      void onDashboardChanged()
+      void handlersRef.current.onDashboardChanged()
+    }
+    const refreshOperations = () => {
+      void handlersRef.current.onOperationsChanged()
+    }
+    const refreshInvites = () => {
+      refreshDashboard()
+      refreshOperations()
     }
 
-    connection.on(adminRealtimeEvents.inviteRequestReceived, refreshDashboard)
-    connection.on(adminRealtimeEvents.invitationAccepted, refreshDashboard)
+    connection.on(adminRealtimeEvents.inviteRequestReceived, refreshInvites)
+    connection.on(adminRealtimeEvents.invitationAccepted, refreshInvites)
+    connection.on(adminRealtimeEvents.invitesChanged, refreshInvites)
+    connection.on(adminRealtimeEvents.operationsChanged, refreshOperations)
     connection.onreconnecting((error) => {
       if (error) {
         console.warn('Admin real-time connection is reconnecting', error)
@@ -32,7 +49,7 @@ export function useAdminRealtime(
     })
     connection.onreconnected(() => {
       if (!disposed) {
-        refreshDashboard()
+        refreshInvites()
       }
     })
     connection.onclose((error) => {
@@ -67,11 +84,13 @@ export function useAdminRealtime(
         clearTimeout(retryTimer)
       }
 
-      connection.off(adminRealtimeEvents.inviteRequestReceived, refreshDashboard)
-      connection.off(adminRealtimeEvents.invitationAccepted, refreshDashboard)
+      connection.off(adminRealtimeEvents.inviteRequestReceived, refreshInvites)
+      connection.off(adminRealtimeEvents.invitationAccepted, refreshInvites)
+      connection.off(adminRealtimeEvents.invitesChanged, refreshInvites)
+      connection.off(adminRealtimeEvents.operationsChanged, refreshOperations)
       void stopConnection(connection)
     }
-  }, [enabled, onDashboardChanged])
+  }, [enabled])
 }
 
 async function stopConnection(connection: HubConnection): Promise<void> {

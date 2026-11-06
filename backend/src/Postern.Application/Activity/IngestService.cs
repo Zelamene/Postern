@@ -17,11 +17,32 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         CancellationToken cancellationToken,
         bool blocked = false,
         string? reason = null,
+        string? messageId = null) =>
+        (await IngestWithOutcomeAsync(
+            recipientAddress,
+            envelopeSender,
+            fromHeader,
+            subject,
+            authenticationResult,
+            cancellationToken,
+            blocked,
+            reason,
+            messageId)).Result;
+
+    public async Task<IngestOutcome> IngestWithOutcomeAsync(
+        string recipientAddress,
+        string envelopeSender,
+        string fromHeader,
+        string? subject,
+        string authenticationResult,
+        CancellationToken cancellationToken,
+        bool blocked = false,
+        string? reason = null,
         string? messageId = null)
     {
         if (string.IsNullOrWhiteSpace(recipientAddress))
         {
-            return IngestResult.Dropped;
+            return new IngestOutcome(IngestResult.Dropped);
         }
 
         var hash = HashAddress(recipientAddress.Trim().ToLowerInvariant());
@@ -29,7 +50,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         var alias = await activityRepository.FindAliasForIngestWithExpectedSendersAsync(hash, cancellationToken);
         if (alias is null)
         {
-            return IngestResult.UnknownAlias;
+            return new IngestOutcome(IngestResult.UnknownAlias);
         }
 
         var decodedSubject = Rfc2047Decoder.Decode(subject);
@@ -48,7 +69,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
             };
 
             await activityRepository.RecordBlockedMessageAsync(blockedMessage, cancellationToken);
-            return IngestResult.Blocked;
+            return new IngestOutcome(IngestResult.Blocked, alias.Id, alias.UserId);
         }
 
         if (alias.Status == AliasStatus.Deleted || alias.Status == AliasStatus.Replaced || alias.Status == AliasStatus.Disabled)
@@ -64,7 +85,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
             };
 
             await activityRepository.RecordBlockedMessageAsync(statusBlocked, cancellationToken);
-            return IngestResult.Blocked;
+            return new IngestOutcome(IngestResult.Blocked, alias.Id, alias.UserId);
         }
 
         if (alias.Status == AliasStatus.Active)
@@ -76,7 +97,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
             if (normalizedMessageId is not null
                 && await activityRepository.MessageIdExistsAsync(alias.Id, normalizedMessageId, cancellationToken))
             {
-                return IngestResult.Duplicate;
+                return new IngestOutcome(IngestResult.Duplicate, alias.Id, alias.UserId);
             }
 
             if (alias.ExpectedSenders is not null && alias.ExpectedSenders.Count > 0)
@@ -99,7 +120,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                     };
 
                     await activityRepository.RecordMessageAsync(expectedMessage, cancellationToken);
-                    return IngestResult.Accepted;
+                    return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
                 }
 
                 if (authResult == "pass")
@@ -119,7 +140,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                     };
 
                     await activityRepository.RecordMessageAsync(flaggedMessagePass, cancellationToken);
-                    return IngestResult.Accepted;
+                    return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
                 }
 
                 if (authResult == "none")
@@ -139,7 +160,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                     };
 
                     await activityRepository.RecordMessageAsync(flaggedMessageNone, cancellationToken);
-                    return IngestResult.Accepted;
+                    return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
                 }
 
                 if (authResult == "fail")
@@ -159,7 +180,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                     };
 
                     await activityRepository.RecordMessageAsync(flaggedMessageFail, cancellationToken);
-                    return IngestResult.Accepted;
+                    return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
                 }
             }
             else
@@ -185,10 +206,10 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
             };
 
             await activityRepository.RecordMessageAsync(finalMessage, cancellationToken);
-            return IngestResult.Accepted;
+            return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
         }
 
-        return IngestResult.Dropped;
+        return new IngestOutcome(IngestResult.Dropped, alias.Id, alias.UserId);
     }
 
     private static string HashAddress(string value) =>

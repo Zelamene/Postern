@@ -27,6 +27,7 @@ export interface AdminOperations {
   kvError: string | null
   isSyncingKv: boolean
   reload: () => Promise<void>
+  refresh: () => Promise<void>
   addDomain: (domain: string, reason: string) => Promise<boolean>
   removeDomain: (domain: string) => Promise<boolean>
   syncKv: () => Promise<void>
@@ -94,6 +95,31 @@ export function useAdminOperations(enabled: boolean): AdminOperations {
     setIsBlocklistLoading(true)
     await Promise.all([loadAnalytics(windowHours), loadBlocklist()])
   }, [loadAnalytics, loadBlocklist, windowHours])
+
+  const refresh = useCallback(async () => {
+    if (!enabled) {
+      return
+    }
+
+    const [analyticsResult, blocklistResult] = await Promise.allSettled([
+      fetchAdminAnalytics(windowHours),
+      fetchBlocklist(),
+    ])
+
+    if (analyticsResult.status === 'fulfilled') {
+      setAnalytics(analyticsResult.value)
+      setAnalyticsError(null)
+    } else {
+      console.error('Admin analytics refresh failed', analyticsResult.reason)
+    }
+
+    if (blocklistResult.status === 'fulfilled') {
+      setBlocklist(blocklistResult.value)
+      setBlocklistError(null)
+    } else {
+      console.error('Admin blocklist refresh failed', blocklistResult.reason)
+    }
+  }, [enabled, windowHours])
 
   useEffect(() => {
     if (!enabled) {
@@ -218,6 +244,7 @@ export function useAdminOperations(enabled: boolean): AdminOperations {
     kvError,
     isSyncingKv,
     reload,
+    refresh,
     addDomain,
     removeDomain,
     syncKv,

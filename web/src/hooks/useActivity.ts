@@ -19,6 +19,7 @@ export interface ActivityFeed<T> {
   hasMore: boolean
   isLoadingMore: boolean
   loadMore: () => Promise<void>
+  refresh: () => Promise<void>
 }
 
 function describeFeedError(error: unknown): string {
@@ -107,6 +108,22 @@ function useActivityFeed<T>(loader: PageLoader<T> | null): ActivityFeed<T> {
     }
   }, [isLoadingMore, loader, nextCursor])
 
+  const refresh = useCallback(async () => {
+    if (loader === null) {
+      return
+    }
+
+    try {
+      const page = await loader(null, new AbortController().signal)
+      setItems(page.items)
+      setNextCursor(page.nextCursor)
+      setError(null)
+      setStatus('ready')
+    } catch (loadError) {
+      console.error('Unable to refresh activity', loadError)
+    }
+  }, [loader])
+
   return {
     items,
     status,
@@ -114,6 +131,7 @@ function useActivityFeed<T>(loader: PageLoader<T> | null): ActivityFeed<T> {
     hasMore: nextCursor !== null,
     isLoadingMore,
     loadMore,
+    refresh,
   }
 }
 

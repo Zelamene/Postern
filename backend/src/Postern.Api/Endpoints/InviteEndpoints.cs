@@ -81,6 +81,7 @@ public static class InviteEndpoints
         Guid requestId,
         ClaimsPrincipal user,
         InviteManagementService service,
+        IAdminRealtimeNotifier realtimeNotifier,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -94,13 +95,20 @@ public static class InviteEndpoints
             adminUserId.Value,
             user.FindFirstValue(ClaimTypes.Email) ?? "An admin",
             cancellationToken);
-        return approved ? Results.Accepted() : Results.NotFound();
+        if (!approved)
+        {
+            return Results.NotFound();
+        }
+
+        await realtimeNotifier.InvitesChangedAsync();
+        return Results.Accepted();
     }
 
     private static async Task<IResult> RejectInviteRequestAsync(
         Guid requestId,
         ClaimsPrincipal user,
         InviteManagementService service,
+        IAdminRealtimeNotifier realtimeNotifier,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -109,15 +117,21 @@ public static class InviteEndpoints
             return Results.Unauthorized();
         }
 
-        return await service.RejectRequestAsync(requestId, adminUserId.Value, cancellationToken)
-            ? Results.NoContent()
-            : Results.NotFound();
+        var rejected = await service.RejectRequestAsync(requestId, adminUserId.Value, cancellationToken);
+        if (!rejected)
+        {
+            return Results.NotFound();
+        }
+
+        await realtimeNotifier.InvitesChangedAsync();
+        return Results.NoContent();
     }
 
     private static async Task<IResult> ResendInviteAsync(
         Guid inviteId,
         ClaimsPrincipal user,
         InviteManagementService service,
+        IAdminRealtimeNotifier realtimeNotifier,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -126,19 +140,25 @@ public static class InviteEndpoints
             return Results.Unauthorized();
         }
 
-        return await service.ResendAsync(
+        var resent = await service.ResendAsync(
             inviteId,
             adminUserId.Value,
             user.FindFirstValue(ClaimTypes.Email) ?? "An admin",
-            cancellationToken)
-            ? Results.Accepted()
-            : Results.NotFound();
+            cancellationToken);
+        if (!resent)
+        {
+            return Results.NotFound();
+        }
+
+        await realtimeNotifier.InvitesChangedAsync();
+        return Results.Accepted();
     }
 
     private static async Task<IResult> RevokeInviteAsync(
         Guid inviteId,
         ClaimsPrincipal user,
         InviteManagementService service,
+        IAdminRealtimeNotifier realtimeNotifier,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -147,9 +167,14 @@ public static class InviteEndpoints
             return Results.Unauthorized();
         }
 
-        return await service.RevokeAsync(inviteId, adminUserId.Value, cancellationToken)
-            ? Results.NoContent()
-            : Results.NotFound();
+        var revoked = await service.RevokeAsync(inviteId, adminUserId.Value, cancellationToken);
+        if (!revoked)
+        {
+            return Results.NotFound();
+        }
+
+        await realtimeNotifier.InvitesChangedAsync();
+        return Results.NoContent();
     }
 
     private static async Task<IResult> HandleResendWebhookAsync(

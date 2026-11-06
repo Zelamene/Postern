@@ -191,6 +191,7 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
             $"/api/admin/invite-requests/{request.Id}/approve",
             content: null);
         Assert.Equal(HttpStatusCode.Accepted, approval.StatusCode);
+        Assert.Equal(1, _realtimeNotifier.InvitesChangedCount);
 
         await using var approvedDb = fixture.CreateContext();
         var invite = await approvedDb.InviteCodes.SingleAsync(item => item.Email == email);
@@ -213,6 +214,7 @@ public sealed class InviteDeliveryEndpointsTests(PosternFixture fixture) : IAsyn
             $"/api/admin/invites/{invite.Id}/resend",
             content: null);
         Assert.Equal(HttpStatusCode.Accepted, resend.StatusCode);
+        Assert.Equal(2, _realtimeNotifier.InvitesChangedCount);
 
         await using var resentDb = fixture.CreateContext();
         var reloadedInvite = await resentDb.InviteCodes.SingleAsync(item => item.Id == invite.Id);

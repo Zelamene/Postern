@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Postern.Api.Realtime;
 using Postern.Application.Accounts;
 using Postern.Application.Administration;
 
@@ -26,9 +27,11 @@ public static class AdministrationEndpoints
 
     private static async Task<IResult> RebuildSuspendedUsersAsync(
         SuspendedUserService service,
+        IAdminRealtimeNotifier realtimeNotifier,
         CancellationToken cancellationToken)
     {
         await service.RebuildAsync(cancellationToken);
+        await realtimeNotifier.OperationsChangedAsync();
         return Results.NoContent();
     }
 
@@ -37,6 +40,8 @@ public static class AdministrationEndpoints
         SuspendUserRequest? request,
         ClaimsPrincipal user,
         AdministrationService service,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -51,6 +56,12 @@ public static class AdministrationEndpoints
             request?.Reason,
             cancellationToken);
 
+        if (outcome == AdminOutcome.Succeeded)
+        {
+            await userRealtime.AccountChangedAsync(userId);
+            await adminRealtime.OperationsChangedAsync();
+        }
+
         return ToResult(outcome);
     }
 
@@ -59,6 +70,8 @@ public static class AdministrationEndpoints
         ResumeUserRequest? request,
         ClaimsPrincipal user,
         AdministrationService service,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -73,6 +86,12 @@ public static class AdministrationEndpoints
             request?.Reason,
             cancellationToken);
 
+        if (outcome == AdminOutcome.Succeeded)
+        {
+            await userRealtime.AccountChangedAsync(userId);
+            await adminRealtime.OperationsChangedAsync();
+        }
+
         return ToResult(outcome);
     }
 
@@ -80,6 +99,7 @@ public static class AdministrationEndpoints
         BlockDomainRequest request,
         ClaimsPrincipal user,
         AdministrationService service,
+        IAdminRealtimeNotifier realtimeNotifier,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -94,6 +114,11 @@ public static class AdministrationEndpoints
             request.Reason,
             cancellationToken);
 
+        if (outcome == AdminOutcome.Succeeded)
+        {
+            await realtimeNotifier.OperationsChangedAsync();
+        }
+
         return ToResult(outcome);
     }
 
@@ -101,6 +126,7 @@ public static class AdministrationEndpoints
         string domain,
         ClaimsPrincipal user,
         AdministrationService service,
+        IAdminRealtimeNotifier realtimeNotifier,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -110,6 +136,11 @@ public static class AdministrationEndpoints
         }
 
         var outcome = await service.UnblockDomainAsync(adminUserId.Value, domain, cancellationToken);
+        if (outcome == AdminOutcome.Succeeded)
+        {
+            await realtimeNotifier.OperationsChangedAsync();
+        }
+
         return ToResult(outcome);
     }
 
@@ -144,6 +175,7 @@ public static class AdministrationEndpoints
     private static async Task<IResult> SyncKvAsync(
         ClaimsPrincipal user,
         AdminKvSyncService service,
+        IAdminRealtimeNotifier realtimeNotifier,
         CancellationToken cancellationToken)
     {
         var adminUserId = GetCurrentUserId(user);
@@ -153,6 +185,7 @@ public static class AdministrationEndpoints
         }
 
         var result = await service.SyncAsync(adminUserId.Value, cancellationToken);
+        await realtimeNotifier.OperationsChangedAsync();
         return Results.Ok(result);
     }
 

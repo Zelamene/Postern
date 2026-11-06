@@ -52,6 +52,7 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
     kvError,
     isSyncingKv,
     reload: reloadOperations,
+    refresh: refreshOperations,
     addDomain,
     removeDomain,
     syncKv,
@@ -113,7 +114,10 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
     }
   }, [applyDashboard, applyDashboardError])
 
-  useAdminRealtime(access === 'dashboard', refreshDashboard)
+  useAdminRealtime(access === 'dashboard', {
+    onDashboardChanged: refreshDashboard,
+    onOperationsChanged: refreshOperations,
+  })
 
   useEffect(() => {
     let active = true

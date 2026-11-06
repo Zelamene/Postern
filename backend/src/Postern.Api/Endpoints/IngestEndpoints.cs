@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Postern.Api.Realtime;
 using Postern.Application.Activity;
 
 namespace Postern.Api.Endpoints;
@@ -18,6 +19,8 @@ public static class IngestEndpoints
         IngestService ingestService,
         RateLimitService rateLimits,
         IConfiguration configuration,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime,
         CancellationToken cancellationToken)
     {
         if (!IsAuthorized(context, configuration))
@@ -30,7 +33,7 @@ public static class IngestEndpoints
             return Results.BadRequest(new { status = "dropped" });
         }
 
-        var result = await ingestService.IngestAsync(
+        var outcome = await ingestService.IngestWithOutcomeAsync(
             request.RecipientAddress ?? string.Empty,
             request.EnvelopeSender ?? string.Empty,
             request.FromHeader ?? string.Empty,
@@ -41,12 +44,14 @@ public static class IngestEndpoints
             request.Reason,
             request.MessageId);
 
-        if (result == IngestResult.Accepted)
+        if (outcome.Result == IngestResult.Accepted)
         {
             await rateLimits.RebuildRateLimitedUsersAsync(cancellationToken);
         }
 
-        return result switch
+        await NotifyAsync(outcome, userRealtime, adminRealtime);
+
+        return outcome.Result switch
         {
             IngestResult.Accepted => Results.Accepted("/api/ingest", new { status = "accepted" }),
             IngestResult.Duplicate => Results.Ok(new { status = "duplicate" }),
@@ -55,6 +60,29 @@ public static class IngestEndpoints
             IngestResult.Dropped => Results.BadRequest(new { status = "dropped" }),
             _ => Results.BadRequest(new { status = "dropped" })
         };
+    }
+
+    private static async Task NotifyAsync(
+        IngestOutcome outcome,
+        IUserRealtimeNotifier userRealtime,
+        IAdminRealtimeNotifier adminRealtime)
+    {
+        if (outcome.AliasId is not { } aliasId || outcome.UserId is not { } userId)
+        {
+            return;
+        }
+
+        switch (outcome.Result)
+        {
+            case IngestResult.Accepted:
+                await userRealtime.MessageReceivedAsync(userId, aliasId);
+                await adminRealtime.OperationsChangedAsync();
+                break;
+            case IngestResult.Blocked:
+                await userRealtime.BlockedMessageReceivedAsync(userId, aliasId);
+                await adminRealtime.OperationsChangedAsync();
+                break;
+        }
     }
 
     private static bool IsAuthorized(HttpContext context, IConfiguration configuration)
