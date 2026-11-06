@@ -24,7 +24,7 @@ interface AppPageProps {
 }
 
 export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProps>) {
-  const session = useAccountSession()
+  const { session, retry } = useAccountSession()
   const route = readAppRoute(pathname)
   const isSignedIn = session.status === 'ready'
   const aliases = useAliases(isSignedIn)
@@ -52,19 +52,29 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
     try {
       await signOut()
       navigate('/login', { replace: true })
-    } catch (error) {
-      console.error('Sign out failed', error)
+    } catch {
       setSignOutError('Sign out failed. Please try again.')
       setIsSigningOut(false)
     }
   }
 
-  if (session.status === 'checking' || session.status === 'anonymous') {
+  if (session.status === 'checking' || session.status === 'slow' || session.status === 'anonymous') {
+    const message =
+      session.status === 'anonymous'
+        ? 'Taking you to sign in'
+        : session.status === 'slow'
+          ? 'Getting things ready. This can take a moment.'
+          : 'Loading your account'
+
     return (
       <main className="flex min-h-screen items-center justify-center bg-bg px-4 text-text">
-        <div className="flex items-center gap-3 text-sm text-text-muted" role="status">
+        <div
+          className="flex w-full max-w-sm flex-col items-center gap-3 rounded-2xl border border-hairline bg-surface px-6 py-8 text-center shadow-sm"
+          role="status"
+          aria-live="polite"
+        >
           <span className="spinner" aria-hidden="true" />
-          {session.status === 'anonymous' ? 'Taking you to sign in' : 'Checking your session'}
+          <p className="text-sm text-text-muted">{message}</p>
         </div>
       </main>
     )
@@ -75,16 +85,12 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
       <main className="flex min-h-screen items-center justify-center bg-bg px-4 py-12 text-text">
         <section className="w-full max-w-md rounded-2xl border border-hairline bg-surface p-6 shadow-sm sm:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Connection</p>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Postern is unreachable</h1>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight">We couldn’t connect right now</h1>
           <p className="mt-3 text-sm text-text-muted">
-            We could not confirm your session. Check the API connection and try again.
+            Check your connection, then try again.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => window.location.reload()}
-            >
+            <button type="button" className="btn btn--primary" onClick={retry}>
               Try again
             </button>
             <AppLink to="/login" className="btn btn--secondary">
