@@ -222,12 +222,17 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
             entity.Property(message => message.AliasId).HasColumnName("alias_id");
             entity.Property(message => message.FromHeader).HasColumnName("from_header").HasMaxLength(998).IsRequired();
             entity.Property(message => message.EnvelopeSender).HasColumnName("envelope_sender").HasMaxLength(320).IsRequired();
+            entity.Property(message => message.MessageId).HasColumnName("message_id").HasMaxLength(998);
             entity.Property(message => message.Subject).HasColumnName("subject").HasMaxLength(60);
             entity.Property(message => message.ReceivedAt).HasColumnName("received_at").HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(message => message.AuthenticationResult).HasColumnName("authentication_result").HasMaxLength(16).IsRequired();
             entity.Property(message => message.IsFlagged).HasColumnName("is_flagged");
             entity.Property(message => message.FlagReason).HasColumnName("flag_reason").HasMaxLength(64);
             entity.HasIndex(message => new { message.AliasId, message.ReceivedAt }).HasDatabaseName("ix_messages_alias_id_received_at");
+            entity.HasIndex(message => new { message.AliasId, message.MessageId })
+                .IsUnique()
+                .HasFilter("message_id IS NOT NULL")
+                .HasDatabaseName("ux_messages_alias_id_message_id");
             entity.HasOne(message => message.Alias)
                 .WithMany(alias => alias.Messages)
                 .HasForeignKey(message => message.AliasId)

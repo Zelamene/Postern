@@ -119,6 +119,15 @@ The solution contains API, application, domain, and infrastructure projects, plu
 
 `Postern.UnitTests` runs anywhere. `Postern.IntegrationTests` needs Docker: it starts a disposable PostgreSQL container per test collection, runs the real API pipeline against it, and removes the container when the run ends. See `backend/tests/Postern.IntegrationTests/README.md` for the folder layout and seeding helpers.
 
+Run the email worker tests from `worker/`:
+
+```powershell
+npm test
+npm run typecheck
+```
+
+The Vitest suite exercises forwarding, KV policy gates, blocked-message decisions, and best-effort ingest with in-memory fakes, so it needs no Wrangler or Cloudflare account.
+
 ### Signed-in app
 
 A successful regular-user sign-in lands on `/app` instead of returning to the marketing page. The app shell checks `GET /api/auth/me` before rendering and sends anonymous visitors back to `/login`; an administrator account is still routed to `/admin` for its TOTP step. The first successful login displays the one-time recovery key inside the shell, handed over from the login page in session storage and removed as soon as it is read.

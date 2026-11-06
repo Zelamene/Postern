@@ -105,6 +105,87 @@ public class IngestServiceCoverageTests
         Assert.Null(repo.Messages.Single().Subject);
     }
 
+    [Fact]
+    public async Task Ingest_RepeatedMessageId_ReturnsDuplicateWithoutRecordingAgain()
+    {
+        var repo = new InMemoryActivityRepository();
+        var alias = CreateAlias(AliasStatus.Active);
+        repo.AddAlias(alias);
+        var service = new IngestService(repo, new FixedTimeProvider(Now));
+        const string messageId = "<same-message@example.com>";
+
+        var first = await service.IngestAsync(
+            alias.FullAddress!,
+            "orders@example.com",
+            "Shop <orders@example.com>",
+            "first delivery",
+            "pass",
+            CancellationToken.None,
+            messageId: messageId);
+        var duplicate = await service.IngestAsync(
+            alias.FullAddress!,
+            "orders@example.com",
+            "Shop <orders@example.com>",
+            "second delivery",
+            "pass",
+            CancellationToken.None,
+            messageId: messageId);
+
+        Assert.Equal(IngestResult.Accepted, first);
+        Assert.Equal(IngestResult.Duplicate, duplicate);
+        var stored = Assert.Single(repo.Messages);
+        Assert.Equal(messageId, stored.MessageId);
+        Assert.Equal("first delivery", stored.Subject);
+    }
+
+    [Fact]
+    public async Task Ingest_WhitespaceMessageId_IsStoredAsNull()
+    {
+        var repo = new InMemoryActivityRepository();
+        var alias = CreateAlias(AliasStatus.Active);
+        repo.AddAlias(alias);
+        var service = new IngestService(repo, new FixedTimeProvider(Now));
+
+        var result = await service.IngestAsync(
+            alias.FullAddress!,
+            "orders@example.com",
+            "Shop <orders@example.com>",
+            "hello",
+            "pass",
+            CancellationToken.None,
+            messageId: "   ");
+
+        Assert.Equal(IngestResult.Accepted, result);
+        Assert.Null(Assert.Single(repo.Messages).MessageId);
+    }
+
+    [Fact]
+    public async Task Ingest_SameMessageIdForDifferentAliases_RecordsBoth()
+    {
+        var repo = new InMemoryActivityRepository();
+        var firstAlias = CreateAlias(AliasStatus.Active);
+        var secondAlias = CreateAlias(AliasStatus.Active);
+        repo.AddAlias(firstAlias);
+        repo.AddAlias(secondAlias);
+        var service = new IngestService(repo, new FixedTimeProvider(Now));
+        const string messageId = "<shared-message@example.com>";
+
+        foreach (var alias in new[] { firstAlias, secondAlias })
+        {
+            var result = await service.IngestAsync(
+                alias.FullAddress!,
+                "orders@example.com",
+                "Shop <orders@example.com>",
+                "hello",
+                "pass",
+                CancellationToken.None,
+                messageId: messageId);
+            Assert.Equal(IngestResult.Accepted, result);
+        }
+
+        Assert.Equal(2, repo.Messages.Count);
+    }
+
     private static Alias CreateAlias(AliasStatus status)
     {
         var address = $"test-{Guid.NewGuid():N}@postern.local";

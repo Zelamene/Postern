@@ -16,7 +16,8 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         string authenticationResult,
         CancellationToken cancellationToken,
         bool blocked = false,
-        string? reason = null)
+        string? reason = null,
+        string? messageId = null)
     {
         if (string.IsNullOrWhiteSpace(recipientAddress))
         {
@@ -70,6 +71,13 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         {
             var authResult = NormalizeAuthenticationResult(authenticationResult);
             var senderEtld1 = Etld1Normalizer.Normalize(fromHeader);
+            var normalizedMessageId = NormalizeMessageId(messageId);
+
+            if (normalizedMessageId is not null
+                && await activityRepository.MessageIdExistsAsync(alias.Id, normalizedMessageId, cancellationToken))
+            {
+                return IngestResult.Duplicate;
+            }
 
             if (alias.ExpectedSenders is not null && alias.ExpectedSenders.Count > 0)
             {
@@ -82,6 +90,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                         AliasId = alias.Id,
                         FromHeader = TruncateHeader(fromHeader),
                         EnvelopeSender = envelopeSender.Trim(),
+                        MessageId = normalizedMessageId,
                         Subject = truncatedSubject,
                         ReceivedAt = timeProvider.GetUtcNow(),
                         AuthenticationResult = authResult,
@@ -101,6 +110,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                         AliasId = alias.Id,
                         FromHeader = TruncateHeader(fromHeader),
                         EnvelopeSender = envelopeSender.Trim(),
+                        MessageId = normalizedMessageId,
                         Subject = truncatedSubject,
                         ReceivedAt = timeProvider.GetUtcNow(),
                         AuthenticationResult = authResult,
@@ -120,6 +130,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                         AliasId = alias.Id,
                         FromHeader = TruncateHeader(fromHeader),
                         EnvelopeSender = envelopeSender.Trim(),
+                        MessageId = normalizedMessageId,
                         Subject = truncatedSubject,
                         ReceivedAt = timeProvider.GetUtcNow(),
                         AuthenticationResult = authResult,
@@ -139,6 +150,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                         AliasId = alias.Id,
                         FromHeader = TruncateHeader(fromHeader),
                         EnvelopeSender = envelopeSender.Trim(),
+                        MessageId = normalizedMessageId,
                         Subject = truncatedSubject,
                         ReceivedAt = timeProvider.GetUtcNow(),
                         AuthenticationResult = authResult,
@@ -164,6 +176,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                 AliasId = alias.Id,
                 FromHeader = TruncateHeader(fromHeader),
                 EnvelopeSender = envelopeSender.Trim(),
+                MessageId = normalizedMessageId,
                 Subject = truncatedSubject,
                 ReceivedAt = timeProvider.GetUtcNow(),
                 AuthenticationResult = authResult,
@@ -189,6 +202,17 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         }
 
         var trimmed = header.Trim();
+        return trimmed.Length > 998 ? trimmed[..998] : trimmed;
+    }
+
+    private static string? NormalizeMessageId(string? messageId)
+    {
+        if (string.IsNullOrWhiteSpace(messageId))
+        {
+            return null;
+        }
+
+        var trimmed = messageId.Trim();
         return trimmed.Length > 998 ? trimmed[..998] : trimmed;
     }
 

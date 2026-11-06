@@ -46,7 +46,7 @@ function useActivityFeed<T>(loader: PageLoader<T> | null): ActivityFeed<T> {
   // A different alias (or a disabled feed) resets the stored page during render
   // so the effect below only ever performs the request.
   if (activeLoader !== loader) {
-    setActiveLoader(loader)
+    setActiveLoader(() => loader)
     setItems([])
     setNextCursor(null)
     setError(null)

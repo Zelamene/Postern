@@ -465,6 +465,11 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_flagged");
 
+                    b.Property<string>("MessageId")
+                        .HasMaxLength(998)
+                        .HasColumnType("character varying(998)")
+                        .HasColumnName("message_id");
+
                     b.Property<DateTimeOffset>("ReceivedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -477,6 +482,11 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasColumnName("subject");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AliasId", "MessageId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_messages_alias_id_message_id")
+                        .HasFilter("message_id IS NOT NULL");
 
                     b.HasIndex("AliasId", "ReceivedAt")
                         .HasDatabaseName("ix_messages_alias_id_received_at");

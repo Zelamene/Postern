@@ -14,7 +14,7 @@ public static class IngestEndpoints
 
     private static async Task<IResult> IngestAsync(
         HttpContext context,
-        IngestRequest request,
+        IngestRequest? request,
         IngestService ingestService,
         RateLimitService rateLimits,
         IConfiguration configuration,
@@ -25,6 +25,11 @@ public static class IngestEndpoints
             return Results.Unauthorized();
         }
 
+        if (request is null)
+        {
+            return Results.BadRequest(new { status = "dropped" });
+        }
+
         var result = await ingestService.IngestAsync(
             request.RecipientAddress ?? string.Empty,
             request.EnvelopeSender ?? string.Empty,
@@ -33,7 +38,8 @@ public static class IngestEndpoints
             request.AuthenticationResult ?? "unknown",
             cancellationToken,
             request.Blocked ?? false,
-            request.Reason);
+            request.Reason,
+            request.MessageId);
 
         if (result == IngestResult.Accepted)
         {
@@ -43,6 +49,7 @@ public static class IngestEndpoints
         return result switch
         {
             IngestResult.Accepted => Results.Accepted("/api/ingest", new { status = "accepted" }),
+            IngestResult.Duplicate => Results.Ok(new { status = "duplicate" }),
             IngestResult.Blocked => Results.Ok(new { status = "blocked" }),
             IngestResult.UnknownAlias => Results.NotFound(new { status = "unknown_alias" }),
             IngestResult.Dropped => Results.BadRequest(new { status = "dropped" }),

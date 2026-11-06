@@ -6,5 +6,6 @@ public sealed record IngestRequest(
     string? FromHeader,
     string? Subject,
     string? AuthenticationResult,
+    string? MessageId = null,
     bool? Blocked = null,
     string? Reason = null);

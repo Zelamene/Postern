@@ -9,6 +9,8 @@ public interface IActivityRepository
 
     Task<Alias?> FindAliasForIngestWithExpectedSendersAsync(string fullAddressHash, CancellationToken cancellationToken);
 
+    Task<bool> MessageIdExistsAsync(Guid aliasId, string messageId, CancellationToken cancellationToken);
+
     Task<Message> RecordMessageAsync(Message message, CancellationToken cancellationToken);
 
     Task<BlockedMessage> RecordBlockedMessageAsync(BlockedMessage blockedMessage, CancellationToken cancellationToken);

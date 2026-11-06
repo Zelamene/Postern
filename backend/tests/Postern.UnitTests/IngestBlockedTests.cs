@@ -150,6 +150,9 @@ public class IngestBlockedTests
             CancellationToken cancellationToken) =>
             Task.FromResult(Alias);
 
+        public Task<bool> MessageIdExistsAsync(Guid aliasId, string messageId, CancellationToken cancellationToken) =>
+            Task.FromResult(Messages.Any(message => message.AliasId == aliasId && message.MessageId == messageId));
+
         public Task<Message> RecordMessageAsync(Message message, CancellationToken cancellationToken)
         {
             Messages.Add(message);
