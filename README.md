@@ -111,7 +111,7 @@ npm run test:a11y
 npm run build
 ```
 
-Frontend tests live under `web/test/`, grouped into `unit/`, `integration/`, and `e2e/`. Vitest runs the unit and integration suites; Playwright runs browser end-to-end tests. Shared Vitest setup and MSW handlers live in `web/test/`. `test:a11y` runs axe-core against the browser-rendered page using WCAG 2.2 AA rules.
+Frontend tests live under `web/test/`, grouped into `unit/`, `integration/`, and `e2e/`. Browser E2E specs are grouped by journey in `web/test/e2e/public/`, `user/`, and `admin/`, with shared test helpers in `support/`. `test:e2e` runs Playwright against an isolated PostgreSQL database and the real .NET API, with no API interception. Its runner generates fresh, short-lived test-only database passwords, API signing material, ingest credentials, and account passwords for each run; none are shared with development or production. User journeys cover invitation registration and verification, alias lifecycle and replacement, persisted activity and CSV export, sender controls and blocked-mail review, forwarding, notifications, theme, sign-out, and account deletion. Admin journeys cover MFA, invite request and delivery lifecycle, analytics, global blocklist, key-value synchronization, and notifications. Public homepage, theme, and brand-guide checks are included. `test:a11y` runs the brand-guide accessibility checks through the same full-stack runner. The runner applies EF Core migrations and removes its uniquely named database volume and containers when finished. It requires Docker, the .NET 10 SDK, installed npm dependencies, and Playwright Chromium (`npm run test:e2e:install`); it does not use or modify the regular development database.
 
 Run backend tests from the repository root:
 

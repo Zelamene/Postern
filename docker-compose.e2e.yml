@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      - POSTGRES_DB=postern_e2e
+      - POSTGRES_USER=postern
+      - POSTGRES_PASSWORD
+      - POSTERN_MIGRATOR_ROLE=postern_migrator
+      - POSTERN_MIGRATOR_PASSWORD
+      - POSTERN_APP_ROLE=postern_app
+      - POSTERN_APP_PASSWORD
+    ports:
+      - "127.0.0.1:${POSTERN_E2E_DB_PORT:?run npm run test:e2e}:5432"
+    volumes:
+      - postern-e2e-db:/var/lib/postgresql/data
+      - ./database/init/10-postern-roles.sql:/docker-entrypoint-initdb.d/10-postern-roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+      - Authentication__SigningKey
+      - Authentication__Issuer=Postern
+      - Authentication__Audience=Postern.Web
+      - ConnectionStrings__Postgres
+      - Alias__Domain=alias.postern.test
+      - Alias__SuffixLength=8
+      - Ingest__SharedSecret
+    ports:
+      - "127.0.0.1:${POSTERN_E2E_API_PORT:?run npm run test:e2e}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postern-e2e-db:
