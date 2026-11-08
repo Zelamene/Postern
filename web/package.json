@@ -11,8 +11,8 @@
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:e2e": "playwright test",
-    "test:a11y": "playwright test test/e2e/accessibility.spec.ts",
+    "test:e2e": "node scripts/run-e2e.mjs",
+    "test:a11y": "npm run test:e2e -- test/e2e/public/brand-guide.spec.ts",
     "test:e2e:install": "playwright install chromium",
     "check:contrast": "node scripts/contrast-audit.mjs --check",
     "test:coverage": "vitest run --config vitest.config.ts --coverage"
