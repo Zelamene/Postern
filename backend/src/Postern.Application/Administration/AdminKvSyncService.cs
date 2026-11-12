@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Postern.Application.Accounts;
+using Postern.Application.Activity;
+using Postern.Application.Aliases;
 using Postern.Application.Integrations;
 using Postern.Domain.Administration;
 
@@ -8,36 +10,53 @@ namespace Postern.Application.Administration;
 public sealed record AdminKvSyncResult(
     int AliasesSynced,
     int AliasesFailed,
+    int AliasesDeleted,
     int RemainingDirtyAliases,
     bool GlobalBlocklistRebuilt,
     bool SuspendedUsersRebuilt);
 
 public sealed class AdminKvSyncService(
     IAdministrationRepository administration,
+    IAliasRepository aliases,
     GlobalBlocklistService globalBlocklist,
     SuspendedUserService suspendedUsers,
     IKvWriter kvWriter,
     TimeProvider timeProvider)
 {
-    public const int BatchSize = 250;
-
     public async Task<AdminKvSyncResult> SyncAsync(
         Guid? adminUserId,
         CancellationToken cancellationToken)
     {
-        var aliases = await administration.ListDirtyAliasesAsync(BatchSize, cancellationToken);
-        var syncedAliasIds = new List<Guid>(aliases.Count);
+        var desired = await administration.ListAliasesForKvAsync(cancellationToken);
+        var desiredByKey = desired.ToDictionary(
+            alias => alias.FullAddress.ToLowerInvariant(),
+            StringComparer.Ordinal);
+        var existingKeys = await kvWriter.ListKeysAsync(cancellationToken);
+
+        var confirmedAliasIds = new List<Guid>(desired.Count);
+        var synced = 0;
+        var deleted = 0;
         var failed = 0;
 
-        foreach (var alias in aliases)
+        foreach (var alias in desired)
         {
+            var key = alias.FullAddress.ToLowerInvariant();
+            var payload = AliasKvRecord.Serialize(
+                alias.Destination,
+                alias.Status,
+                alias.UserId,
+                alias.BlockedSenders);
+
             try
             {
-                await kvWriter.PutAsync(
-                    alias.FullAddress.ToLowerInvariant(),
-                    AliasKvRecord.Serialize(alias.Destination, alias.Status, alias.UserId),
-                    cancellationToken);
-                syncedAliasIds.Add(alias.AliasId);
+                var current = await kvWriter.GetAsync(key, cancellationToken);
+                if (!string.Equals(current, payload, StringComparison.Ordinal))
+                {
+                    await kvWriter.PutAsync(key, payload, cancellationToken);
+                    synced += 1;
+                }
+
+                confirmedAliasIds.Add(alias.AliasId);
             }
             catch (OperationCanceledException)
             {
@@ -46,10 +65,37 @@ public sealed class AdminKvSyncService(
             catch
             {
                 failed += 1;
+                await aliases.MarkKvDirtyAsync(alias.AliasId, cancellationToken);
             }
         }
 
-        await administration.ClearKvDirtyAsync(syncedAliasIds, cancellationToken);
+        var reserved = new HashSet<string>(StringComparer.Ordinal)
+        {
+            GlobalBlocklistService.KvKey,
+            SuspendedUserService.KvKey,
+            RateLimitService.KvKey
+        };
+
+        foreach (var key in existingKeys)
+        {
+            if (desiredByKey.ContainsKey(key) || reserved.Contains(key))
+            {
+                continue;
+            }
+
+            try
+            {
+                await kvWriter.DeleteAsync(key, cancellationToken);
+                deleted += 1;
+            }
+            catch
+            {
+                failed += 1;
+            }
+        }
+
+        await administration.ClearKvDirtyAsync(confirmedAliasIds, cancellationToken);
+
         var globalBlocklistRebuilt = await TryRebuildAsync(
             token => globalBlocklist.RebuildAsync(token),
             cancellationToken);
@@ -67,7 +113,8 @@ public sealed class AdminKvSyncService(
                 TargetId = null,
                 Metadata = JsonSerializer.Serialize(new
                 {
-                    aliasesSynced = syncedAliasIds.Count,
+                    aliasesSynced = synced,
+                    aliasesDeleted = deleted,
                     aliasesFailed = failed,
                     remainingDirtyAliases = remaining,
                     globalBlocklistRebuilt,
@@ -78,8 +125,9 @@ public sealed class AdminKvSyncService(
             cancellationToken);
 
         return new AdminKvSyncResult(
-            syncedAliasIds.Count,
+            synced,
             failed,
+            deleted,
             remaining,
             globalBlocklistRebuilt,
             suspendedUsersRebuilt);

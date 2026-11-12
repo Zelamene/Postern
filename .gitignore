@@ -38,6 +38,7 @@ ScaffoldingReadMe.txt
 
 # dotenv environment variables file
 .env
+.dev.vars
 env/*.env
 .keys/
 
@@ -66,3 +67,5 @@ playwright/.cache/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+DEPLOYMENT.md

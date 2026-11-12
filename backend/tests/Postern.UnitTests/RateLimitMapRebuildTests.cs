@@ -11,7 +11,7 @@ public class RateLimitMapRebuildTests
     private static readonly DateTimeOffset Now = new(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task Rebuild_WhenNoUserExceedsTheCap_DoesNotWriteToKv()
+    public async Task Rebuild_WhenNoUserExceedsTheCap_ClearsTheMap()
     {
         var repository = new CountingActivityRepository(new Dictionary<Guid, int>
         {
@@ -23,10 +23,11 @@ public class RateLimitMapRebuildTests
         await service.RebuildRateLimitedUsersAsync(CancellationToken.None);
 
         Assert.False(kvWriter.Values.ContainsKey(RateLimitService.KvKey));
+        Assert.Equal(1, kvWriter.Deletes);
     }
 
     [Fact]
-    public async Task Rebuild_WhenAUserExceedsTheCap_WritesTheirIdWithAFutureExpiry()
+    public async Task Rebuild_WhenAUserExceedsTheCap_WritesTheirIdWithAHourStableExpiry()
     {
         var limitedUser = Guid.NewGuid();
         var repository = new CountingActivityRepository(new Dictionary<Guid, int>
@@ -40,7 +41,10 @@ public class RateLimitMapRebuildTests
 
         var users = ReadUsers(kvWriter);
         var until = users.GetProperty(limitedUser.ToString()).GetInt64();
-        Assert.Equal(Now.AddHours(24).ToUnixTimeSeconds(), until);
+        var expected = new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero)
+            .AddHours(25)
+            .ToUnixTimeSeconds();
+        Assert.Equal(expected, until);
         Assert.True(until > Now.ToUnixTimeSeconds());
     }
 
@@ -77,6 +81,45 @@ public class RateLimitMapRebuildTests
     }
 
     [Fact]
+    public async Task Rebuild_DoesNotRewriteAnUnchangedMap()
+    {
+        var limitedUser = Guid.NewGuid();
+        var repository = new CountingActivityRepository(new Dictionary<Guid, int>
+        {
+            [limitedUser] = RateLimitService.DailyForwardingLimit + 1
+        });
+        var kvWriter = new InMemoryKvWriter();
+        var service = new RateLimitService(repository, kvWriter, new FixedTimeProvider(Now));
+
+        await service.RebuildRateLimitedUsersAsync(CancellationToken.None);
+        var putsAfterFirst = kvWriter.Puts;
+        await service.RebuildRateLimitedUsersAsync(CancellationToken.None);
+
+        Assert.Equal(putsAfterFirst, kvWriter.Puts);
+        Assert.True(kvWriter.Values.ContainsKey(RateLimitService.KvKey));
+    }
+
+    [Fact]
+    public async Task Rebuild_DropsTheMapWhenTheLimitedSetEmpties()
+    {
+        var limitedUser = Guid.NewGuid();
+        var repository = new CountingActivityRepository(new Dictionary<Guid, int>
+        {
+            [limitedUser] = RateLimitService.DailyForwardingLimit + 1
+        });
+        var kvWriter = new InMemoryKvWriter();
+        var service = new RateLimitService(repository, kvWriter, new FixedTimeProvider(Now));
+
+        await service.RebuildRateLimitedUsersAsync(CancellationToken.None);
+        Assert.True(kvWriter.Values.ContainsKey(RateLimitService.KvKey));
+
+        repository.Counts = new Dictionary<Guid, int> { [limitedUser] = 5 };
+        await service.RebuildRateLimitedUsersAsync(CancellationToken.None);
+
+        Assert.False(kvWriter.Values.ContainsKey(RateLimitService.KvKey));
+    }
+
+    [Fact]
     public async Task Rebuild_WhenTheKvWriteFails_DoesNotBreakIngest()
     {
         var repository = new CountingActivityRepository(new Dictionary<Guid, int>
@@ -106,6 +149,8 @@ public class RateLimitMapRebuildTests
     {
         public DateTimeOffset? LastWindowStart { get; private set; }
 
+        public IReadOnlyDictionary<Guid, int> Counts { get; set; } = counts;
+
         public Task<Alias?> FindAliasForIngestAsync(string fullAddressHash, CancellationToken cancellationToken) => Task.FromResult<Alias?>(null);
         public Task<Alias?> FindAliasForIngestWithExpectedSendersAsync(string fullAddressHash, CancellationToken cancellationToken) => Task.FromResult<Alias?>(null);
         public Task<bool> MessageIdExistsAsync(Guid aliasId, string messageId, CancellationToken cancellationToken) =>
@@ -117,7 +162,7 @@ public class RateLimitMapRebuildTests
         public Task<IReadOnlyDictionary<Guid, int>> CountForwardedMessagesPerUserAsync(DateTimeOffset receivedAfter, CancellationToken cancellationToken)
         {
             LastWindowStart = receivedAfter;
-            return Task.FromResult(counts);
+            return Task.FromResult(Counts);
         }
 
         public Task<IReadOnlyList<Message>> ListMessagesAsync(Guid aliasId, DateTimeOffset receivedAfter, DateTimeOffset? beforeReceivedAt, Guid? beforeId, int limit, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Message>>(Array.Empty<Message>());

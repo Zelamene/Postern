@@ -1,4 +1,5 @@
 import type { ApiRequestOptions } from '../types'
+import { apiUrl } from './apiBase'
 
 export class ApiError extends Error {
   readonly status: number
@@ -94,7 +95,7 @@ async function fetchOnce(
   const merged = mergeSignal(signal, REQUEST_TIMEOUT_MS)
 
   try {
-    const response = await fetch(path, {
+    const response = await fetch(apiUrl(path), {
       method,
       credentials: 'include',
       cache: 'no-store',

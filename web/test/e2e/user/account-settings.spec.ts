@@ -1,10 +1,20 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '@playwright/test'
 
-test('updates and reloads the forwarding destination', async ({ page }) => {
+test('updates and reloads the forwarding destination after verification', async ({ page }) => {
   const forwardingAddress = `forward-${randomUUID()}@example.test`
   await page.goto('/app/account')
   await page.getByLabel('Destination address').fill(forwardingAddress)
+  await page.getByRole('button', { name: 'Update destination' }).click()
+  await expect(
+    page.getByText('Confirm the new destination from the verification email, then save again.'),
+  ).toBeVisible()
+
+  const verification = await page.request.post(
+    `/api/dev/destinations/${encodeURIComponent(forwardingAddress)}/verify`,
+  )
+  expect(verification.status()).toBe(204)
+
   await page.getByRole('button', { name: 'Update destination' }).click()
   await expect(page.getByText('Forwarding address updated. New mail is delivered there.')).toBeVisible()
 

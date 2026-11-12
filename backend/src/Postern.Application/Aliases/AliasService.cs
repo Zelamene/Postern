@@ -205,7 +205,23 @@ public sealed class AliasService(
             return false;
         }
 
-        return await aliases.BlockSenderAsync(aliasId, userId, normalized, cancellationToken);
+        var success = await aliases.BlockSenderAsync(aliasId, userId, normalized, cancellationToken);
+        if (!success)
+        {
+            return false;
+        }
+
+        var alias = await aliases.GetOwnedAliasAsync(aliasId, userId, cancellationToken);
+        if (alias is not null)
+        {
+            await PublishCurrentStateAsync(
+                userId,
+                aliasId,
+                alias.Status.ToString().ToLowerInvariant(),
+                cancellationToken);
+        }
+
+        return true;
     }
 
     public async Task<IReadOnlyCollection<ExpectedSender>> CopyExpectedSendersAsync(
@@ -261,11 +277,19 @@ public sealed class AliasService(
             return;
         }
 
+        var blockedSenders = (await aliases.ListExpectedSendersAsync(
+                alias.Id,
+                alias.UserId.Value,
+                cancellationToken))
+            .Where(sender => sender.IsBlocked)
+            .Select(sender => sender.SenderEtld1)
+            .ToArray();
+
         try
         {
             await kvWriter.PutAsync(
                 alias.FullAddress.ToLowerInvariant(),
-                AliasKvRecord.Serialize(destination, status, alias.UserId.Value),
+                AliasKvRecord.Serialize(destination, status, alias.UserId.Value, blockedSenders),
                 cancellationToken);
         }
         catch

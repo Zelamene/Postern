@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Postern.Domain.Accounts;
 using Postern.Domain.Activity;
@@ -7,8 +8,10 @@ using Postern.Domain.Notifications;
 
 namespace Postern.Infrastructure.Persistence;
 
-public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options) : DbContext(options)
+public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
+    : DbContext(options), IDataProtectionKeyContext
 {
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     public DbSet<PosternUser> Users => Set<PosternUser>();
     public DbSet<Alias> Aliases => Set<Alias>();
     public DbSet<Message> Messages => Set<Message>();
@@ -249,6 +252,10 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
             entity.Property(sender => sender.Id).HasColumnName("id");
             entity.Property(sender => sender.AliasId).HasColumnName("alias_id");
             entity.Property(sender => sender.SenderEtld1).HasColumnName("sender_etld1").HasMaxLength(253).IsRequired();
+            entity.Property(sender => sender.IsBlocked)
+                .HasColumnName("is_blocked")
+                .HasDefaultValue(false)
+                .IsRequired();
             entity.Property(sender => sender.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.HasIndex(sender => new { sender.AliasId, sender.SenderEtld1 }).IsUnique().HasDatabaseName("ux_expected_senders_alias_id_sender_etld1");
             entity.HasOne(sender => sender.Alias)
@@ -339,6 +346,15 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
                 .HasForeignKey(notification => notification.RecipientUserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("fk_notifications_users_recipient_user_id");
+        });
+
+        modelBuilder.Entity<DataProtectionKey>(entity =>
+        {
+            entity.ToTable("data_protection_keys");
+            entity.HasKey(key => key.Id);
+            entity.Property(key => key.Id).HasColumnName("id");
+            entity.Property(key => key.FriendlyName).HasColumnName("friendly_name").HasMaxLength(256);
+            entity.Property(key => key.Xml).HasColumnName("xml").IsRequired();
         });
     }
 

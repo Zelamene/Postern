@@ -19,6 +19,10 @@ function describeError(error: unknown, fallback: string): string {
     return 'Your session has ended. Sign in again to change your account.'
   }
 
+  if (error instanceof ApiError && error.status === 409) {
+    return 'Confirm the new destination from the verification email, then save again.'
+  }
+
   return fallback
 }
 

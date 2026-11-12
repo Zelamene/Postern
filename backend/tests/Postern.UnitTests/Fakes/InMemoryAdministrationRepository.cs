@@ -3,13 +3,17 @@ using Postern.Domain.Administration;
 
 namespace Postern.UnitTests.Fakes;
 
-public sealed class InMemoryAdministrationRepository : IAdministrationRepository
+public sealed class InMemoryAdministrationRepository(InMemoryAliasRepository? aliases = null) : IAdministrationRepository
 {
     private readonly Dictionary<string, GlobalBlockedDomain> _domains = new(StringComparer.Ordinal);
 
     public List<AdminAuditLogEntry> AuditEntries { get; } = [];
 
-    public List<AdminKvSyncAlias> DirtyAliases { get; } = [];
+    public List<AdminKvSyncAlias> Aliases { get; } = [];
+
+    public List<StalePendingUser> StalePendingUsers { get; } = [];
+
+    public List<Guid> DeletedPendingUserIds { get; } = [];
 
     public List<Guid> ClearedAliasIds { get; } = [];
 
@@ -36,6 +40,8 @@ public sealed class InMemoryAdministrationRepository : IAdministrationRepository
     public DateTimeOffset? WebhookEventsCutoff { get; private set; }
 
     public DateTimeOffset? InviteRequestsCutoff { get; private set; }
+
+    public DateTimeOffset? StalePendingUsersCutoff { get; private set; }
 
     public IReadOnlyCollection<GlobalBlockedDomain> Domains => _domains.Values;
 
@@ -104,19 +110,17 @@ public sealed class InMemoryAdministrationRepository : IAdministrationRepository
                 .ToList()));
     }
 
-    public Task<IReadOnlyCollection<AdminKvSyncAlias>> ListDirtyAliasesAsync(
-        int limit,
+    public Task<IReadOnlyCollection<AdminKvSyncAlias>> ListAliasesForKvAsync(
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult<IReadOnlyCollection<AdminKvSyncAlias>>(
-            DirtyAliases.Take(limit).ToList());
+        return Task.FromResult<IReadOnlyCollection<AdminKvSyncAlias>>(Aliases.ToList());
     }
 
     public Task<int> CountDirtyAliasesAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(DirtyAliases.Count);
+        return Task.FromResult(aliases?.KvDirtyAliasIds.Count ?? 0);
     }
 
     public Task ClearKvDirtyAsync(
@@ -125,8 +129,29 @@ public sealed class InMemoryAdministrationRepository : IAdministrationRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
         ClearedAliasIds.AddRange(aliasIds);
-        DirtyAliases.RemoveAll(alias => aliasIds.Contains(alias.AliasId));
+        aliases?.ClearDirty(aliasIds);
         return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyCollection<StalePendingUser>> ListStalePendingUsersAsync(
+        DateTimeOffset cutoff,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        StalePendingUsersCutoff = cutoff;
+        return Task.FromResult<IReadOnlyCollection<StalePendingUser>>(StalePendingUsers.ToList());
+    }
+
+    public Task<bool> DeletePendingUserAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var removed = StalePendingUsers.RemoveAll(user => user.UserId == userId) > 0;
+        if (removed)
+        {
+            DeletedPendingUserIds.Add(userId);
+        }
+
+        return Task.FromResult(removed);
     }
 
     public Task<int> DeleteMessagesBeforeAsync(DateTimeOffset cutoff, CancellationToken cancellationToken)

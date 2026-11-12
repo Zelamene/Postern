@@ -1,0 +1,5 @@
+INGEST_ENDPOINT=http://localhost:8080/api/ingest
+API_BASE_URL=http://localhost:8080
+POSTERN_DOMAIN=postern.local
+INGEST_SECRET=replace-with-local-ingest-secret
+JOB_SECRET=replace-with-local-job-secret

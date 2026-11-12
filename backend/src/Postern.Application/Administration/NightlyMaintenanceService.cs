@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Postern.Application.Accounts;
+using Postern.Application.Integrations;
 using Postern.Domain.Administration;
 
 namespace Postern.Application.Administration;
@@ -10,16 +12,20 @@ public sealed record NightlyJobResult(
     int DeletedBlockedMessages,
     int DeletedWebhookEvents,
     int DeletedInviteRequests,
+    int DeletedPendingUsers,
     AdminKvSyncResult KvSync);
 
 public sealed class NightlyMaintenanceService(
     IAdministrationRepository administration,
+    IAccountRepository accounts,
+    IDestinationService destinations,
     AdminKvSyncService kvSync,
     TimeProvider timeProvider)
 {
     public static readonly TimeSpan ActivityRetention = TimeSpan.FromDays(90);
     public static readonly TimeSpan WebhookRetention = TimeSpan.FromDays(30);
     public static readonly TimeSpan InviteRequestRetention = TimeSpan.FromDays(30);
+    public static readonly TimeSpan PendingUserRetention = TimeSpan.FromDays(7);
 
     public async Task<NightlyJobResult> RunAsync(CancellationToken cancellationToken)
     {
@@ -35,6 +41,9 @@ public sealed class NightlyMaintenanceService(
             cancellationToken);
         var deletedInviteRequests = await administration.DeletePendingInviteRequestsBeforeAsync(
             startedAt - InviteRequestRetention,
+            cancellationToken);
+        var deletedPendingUsers = await DeleteStalePendingUsersAsync(
+            startedAt - PendingUserRetention,
             cancellationToken);
         var kvSyncResult = await kvSync.SyncAsync(null, cancellationToken);
         var completedAt = timeProvider.GetUtcNow();
@@ -52,7 +61,9 @@ public sealed class NightlyMaintenanceService(
                     deletedBlockedMessages,
                     deletedWebhookEvents,
                     deletedInviteRequests,
+                    deletedPendingUsers,
                     aliasesSynced = kvSyncResult.AliasesSynced,
+                    aliasesDeleted = kvSyncResult.AliasesDeleted,
                     aliasesFailed = kvSyncResult.AliasesFailed,
                     remainingDirtyAliases = kvSyncResult.RemainingDirtyAliases
                 }),
@@ -67,6 +78,40 @@ public sealed class NightlyMaintenanceService(
             deletedBlockedMessages,
             deletedWebhookEvents,
             deletedInviteRequests,
+            deletedPendingUsers,
             kvSyncResult);
+    }
+
+    private async Task<int> DeleteStalePendingUsersAsync(
+        DateTimeOffset cutoff,
+        CancellationToken cancellationToken)
+    {
+        var staleUsers = await administration.ListStalePendingUsersAsync(cutoff, cancellationToken);
+        var deleted = 0;
+
+        foreach (var user in staleUsers)
+        {
+            try
+            {
+                var shared = await accounts.CountUsersUsingForwardingAddressAsync(
+                    user.ForwardingAddress,
+                    user.UserId,
+                    cancellationToken);
+                if (shared == 0)
+                {
+                    await destinations.RemoveAsync(user.ForwardingAddress, cancellationToken);
+                }
+            }
+            catch
+            {
+            }
+
+            if (await administration.DeletePendingUserAsync(user.UserId, cancellationToken))
+            {
+                deleted += 1;
+            }
+        }
+
+        return deleted;
     }
 }

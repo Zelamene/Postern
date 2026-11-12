@@ -1,4 +1,5 @@
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
+import { apiUrl } from '../services/apiBase'
 
 export const userRealtimeEvents = {
   aliasesChanged: 'AliasesChanged',
@@ -9,7 +10,7 @@ export const userRealtimeEvents = {
 
 export function createUserRealtimeConnection() {
   return new HubConnectionBuilder()
-    .withUrl('/api/user/events', { withCredentials: true })
+    .withUrl(apiUrl('/api/user/events'), { withCredentials: true })
     .withAutomaticReconnect()
     .configureLogging(LogLevel.Warning)
     .build()

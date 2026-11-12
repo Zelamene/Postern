@@ -1,5 +1,6 @@
 using Postern.Application.Accounts;
 using Postern.Domain.Accounts;
+using Postern.Domain.Aliases;
 
 namespace Postern.UnitTests.Fakes;
 
@@ -7,6 +8,16 @@ public sealed class InMemoryAccountRepository : IAccountRepository
 {
     private readonly Dictionary<Guid, PosternUser> _users = new();
     private readonly Dictionary<string, InviteCode> _invites = new(StringComparer.Ordinal);
+
+    public InMemoryAccountRepository(params PosternUser[] users)
+    {
+        foreach (var user in users)
+        {
+            _users[user.Id] = user;
+        }
+
+        AutoCreateUsers = users.Length == 0;
+    }
 
     public IReadOnlyCollection<InviteCode> Invites => _invites.Values;
 
@@ -17,6 +28,9 @@ public sealed class InMemoryAccountRepository : IAccountRepository
     public IReadOnlyCollection<PosternUser> Users => _users.Values;
 
     public void Add(PosternUser user) => _users[user.Id] = user;
+
+    public PosternUser? FindUserById(Guid userId) =>
+        _users.TryGetValue(userId, out var user) ? user : null;
 
     public Task<PosternUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken) =>
         Task.FromResult(Find(userId));
@@ -197,11 +211,44 @@ public sealed class InMemoryAccountRepository : IAccountRepository
         return Task.FromResult(true);
     }
 
+    public Task<int> CountUsersUsingForwardingAddressAsync(
+        string forwardingAddress,
+        Guid? excludingUserId,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(_users.Values.Count(user =>
+            user.Id != excludingUserId
+            && string.Equals(
+                user.ForwardingAddress ?? user.Email,
+                forwardingAddress,
+                StringComparison.OrdinalIgnoreCase)));
+
     public Task<bool> DeleteAccountAsync(
         Guid userId,
         DateTimeOffset deletedAt,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(_users.Remove(userId));
+        CancellationToken cancellationToken)
+    {
+        if (!_users.TryGetValue(userId, out var user))
+        {
+            return Task.FromResult(false);
+        }
+
+        foreach (var alias in user.Aliases.Where(item => item.Status != AliasStatus.Deleted))
+        {
+            alias.Status = AliasStatus.Deleted;
+            alias.UserId = null;
+            alias.Label = null;
+            alias.RandomSuffix = null;
+            alias.FullAddress = null;
+            alias.PurposeMetadata = null;
+            alias.Category = null;
+            alias.ReplacedByAliasId = null;
+            alias.KvDirty = false;
+            alias.DeletedAt = deletedAt;
+        }
+
+        _users.Remove(userId);
+        return Task.FromResult(true);
+    }
 
     public Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyCollection<Guid>>(

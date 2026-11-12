@@ -31,8 +31,26 @@ public static class AccountManagementEndpoints
             return Results.Unauthorized();
         }
 
-        var success = await service.ChangeForwardingAddressAsync(userId.Value, request.NewForwardingAddress ?? string.Empty, cancellationToken);
-        if (!success)
+        var outcome = await service.ChangeForwardingAddressAsync(
+            userId.Value,
+            request.NewForwardingAddress ?? string.Empty,
+            cancellationToken);
+
+        if (outcome == ForwardingChangeResult.VerificationRequired)
+        {
+            return Results.Conflict(new
+            {
+                error = "Confirm the new destination from the verification email, then try again.",
+                code = "verification_required"
+            });
+        }
+
+        if (outcome == ForwardingChangeResult.NotFound)
+        {
+            return Results.NotFound();
+        }
+
+        if (outcome != ForwardingChangeResult.Success)
         {
             return Results.BadRequest();
         }

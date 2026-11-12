@@ -71,6 +71,11 @@ public interface IAccountRepository
         string newForwardingAddress,
         CancellationToken cancellationToken);
 
+    Task<int> CountUsersUsingForwardingAddressAsync(
+        string forwardingAddress,
+        Guid? excludingUserId,
+        CancellationToken cancellationToken);
+
     Task<bool> DeleteAccountAsync(
         Guid userId,
         DateTimeOffset deletedAt,

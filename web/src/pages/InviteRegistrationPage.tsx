@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { apiUrl } from '../services/apiBase'
 
 interface InviteRegistrationPageProps {
   inviteCode: string
@@ -28,7 +29,7 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
 
     const resolveInvite = async () => {
       try {
-        const response = await fetch('/api/auth/invite-details', {
+        const response = await fetch(apiUrl('/api/auth/invite-details'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ inviteCode }),
@@ -83,7 +84,7 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
 
     setState({ ...state, error: null, submitting: true })
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(apiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

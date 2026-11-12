@@ -12,6 +12,8 @@ public sealed class InMemoryDestinationService : IDestinationService
 
     public IReadOnlyCollection<string> Destinations => _destinations.Keys.ToArray();
 
+    public List<string> Removed { get; } = [];
+
     public Task AddAsync(string emailAddress, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -33,6 +35,7 @@ public sealed class InMemoryDestinationService : IDestinationService
         ThrowIfConfiguredToFail();
         _destinations.TryRemove(emailAddress, out _);
         _verifiedDestinations.TryRemove(emailAddress, out _);
+        Removed.Add(emailAddress);
         return Task.CompletedTask;
     }
 

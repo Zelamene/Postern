@@ -25,7 +25,13 @@ public sealed record AdminKvSyncAlias(
     string FullAddress,
     Guid UserId,
     string Destination,
-    string Status);
+    string Status,
+    IReadOnlyList<string> BlockedSenders);
+
+public sealed record StalePendingUser(
+    Guid UserId,
+    string Email,
+    string ForwardingAddress);
 
 public interface IAdministrationRepository
 {
@@ -41,8 +47,7 @@ public interface IAdministrationRepository
         int recentAuditLimit,
         CancellationToken cancellationToken);
 
-    Task<IReadOnlyCollection<AdminKvSyncAlias>> ListDirtyAliasesAsync(
-        int limit,
+    Task<IReadOnlyCollection<AdminKvSyncAlias>> ListAliasesForKvAsync(
         CancellationToken cancellationToken);
 
     Task<int> CountDirtyAliasesAsync(CancellationToken cancellationToken);
@@ -50,6 +55,12 @@ public interface IAdministrationRepository
     Task ClearKvDirtyAsync(
         IReadOnlyCollection<Guid> aliasIds,
         CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<StalePendingUser>> ListStalePendingUsersAsync(
+        DateTimeOffset cutoff,
+        CancellationToken cancellationToken);
+
+    Task<bool> DeletePendingUserAsync(Guid userId, CancellationToken cancellationToken);
 
     Task<int> DeleteMessagesBeforeAsync(DateTimeOffset cutoff, CancellationToken cancellationToken);
 
