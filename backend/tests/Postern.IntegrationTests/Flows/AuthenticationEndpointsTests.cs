@@ -580,6 +580,17 @@ public sealed class AuthenticationEndpointsTests
             }
         }
 
+        public Task<int> CountUsersUsingForwardingAddressAsync(
+            string forwardingAddress,
+            Guid? excludingUserId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(_users.Values.Count(user =>
+                user.Id != excludingUserId
+                && string.Equals(
+                    user.ForwardingAddress ?? user.Email,
+                    forwardingAddress,
+                    StringComparison.OrdinalIgnoreCase)));
+
         public Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken)
         {
             _invites[invite.CodeHash] = invite;

@@ -106,6 +106,18 @@ public sealed class EfAccountRepository(
             user => user.NormalizedEmail == normalizedEmail,
             cancellationToken);
 
+    public Task<int> CountUsersUsingForwardingAddressAsync(
+        string forwardingAddress,
+        Guid? excludingUserId,
+        CancellationToken cancellationToken)
+    {
+        var normalized = forwardingAddress.ToLowerInvariant();
+        return dbContext.Users.CountAsync(
+            user => user.Id != excludingUserId
+                && (user.ForwardingAddress ?? user.Email).ToLower() == normalized,
+            cancellationToken);
+    }
+
     public Task<PosternUser?> FindByIdAsync(
         Guid userId,
         CancellationToken cancellationToken) =>

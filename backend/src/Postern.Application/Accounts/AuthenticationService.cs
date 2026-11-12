@@ -61,7 +61,13 @@ public sealed class AuthenticationService(
 
         if (result == RegistrationResult.Created)
         {
-            await destinations.AddAsync(normalizedEmail, cancellationToken);
+            try
+            {
+                await destinations.AddAsync(normalizedEmail, cancellationToken);
+            }
+            catch
+            {
+            }
         }
 
         return result;
@@ -107,8 +113,15 @@ public sealed class AuthenticationService(
         if (user.Status == "pending")
         {
             var forwardingAddress = user.EffectiveForwardingAddress;
-            await destinations.AddAsync(forwardingAddress, cancellationToken);
-            if (!await destinations.IsVerifiedAsync(forwardingAddress, cancellationToken))
+            try
+            {
+                await destinations.AddAsync(forwardingAddress, cancellationToken);
+                if (!await destinations.IsVerifiedAsync(forwardingAddress, cancellationToken))
+                {
+                    return (AuthenticationResult.VerificationRequired, null);
+                }
+            }
+            catch
             {
                 return (AuthenticationResult.VerificationRequired, null);
             }

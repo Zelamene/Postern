@@ -2,6 +2,8 @@ interface Env {
   POSTERN_KV: KVNamespace;
   INGEST_ENDPOINT: string;
   INGEST_SECRET: string;
+  API_BASE_URL: string;
+  JOB_SECRET: string;
   POSTERN_DOMAIN: string;
 }
 
@@ -23,6 +25,10 @@ interface SuspendedUsers {
 interface RateLimitedUsers {
   users: Record<string, number>;
 }
+
+const SECOND_LEVEL_TLDS = new Set([
+  "co.uk", "org.uk", "ac.uk", "gov.uk", "net.uk", "com.au", "net.au", "org.au"
+]);
 
 export default {
   async email(message: ForwardableEmailMessage, env: Env, ctx: ExecutionContext): Promise<void> {
@@ -81,6 +87,24 @@ export default {
     }
 
     ctx.waitUntil(ingestMessage(message, aliasRecord, fromHeader, env));
+  },
+
+  async scheduled(
+    controller: ScheduledController,
+    env: Env,
+    ctx: ExecutionContext
+  ): Promise<void> {
+    if (controller.cron === "5 3 * * *") {
+      ctx.waitUntil(
+        fetch(`${env.API_BASE_URL}/api/jobs/nightly`, {
+          method: "POST",
+          headers: { "X-Postern-Job-Secret": env.JOB_SECRET }
+        })
+      );
+      return;
+    }
+
+    ctx.waitUntil(fetch(`${env.API_BASE_URL}/health`));
   }
 };
 
@@ -121,7 +145,6 @@ async function ingestMessage(
       })
     });
   } catch {
-    // Best effort - logs may be lost if backend unavailable
   }
 }
 
@@ -175,7 +198,6 @@ async function ingestBlocked(
       })
     });
   } catch {
-    // Best effort
   }
 }
 
@@ -189,10 +211,13 @@ function extractEtld1(header: string): string | null {
     return null;
   }
 
-  const domain = emailMatch[1].toLowerCase();
-  const parts = domain.split(".");
-  if (parts.length >= 2) {
-    return parts.slice(-2).join(".");
+  const parts = emailMatch[1].toLowerCase().replace(/\.+$/, "").split(".");
+  if (parts.length <= 2) {
+    return parts.join(".");
   }
-  return domain;
+
+  const lastTwo = parts.slice(-2).join(".");
+  return SECOND_LEVEL_TLDS.has(lastTwo)
+    ? parts.slice(-3).join(".")
+    : lastTwo;
 }

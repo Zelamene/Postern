@@ -30,6 +30,12 @@ public sealed class AccountManagementEndpointsTests(PosternFixture fixture) : IA
         var user = await fixture.AUserAsync();
         using var client = _factory.CreateAuthenticatedClient(user.Id, user.Email);
 
+        var pending = await client.PostAsJsonAsync(
+            "/api/users/change-forwarding-address",
+            new { newForwardingAddress = "  inbox@example.test  " });
+        Assert.Equal(HttpStatusCode.Conflict, pending.StatusCode);
+
+        _factory.Destinations.MarkVerified("inbox@example.test");
         var response = await client.PostAsJsonAsync(
             "/api/users/change-forwarding-address",
             new { newForwardingAddress = "  inbox@example.test  " });
@@ -53,6 +59,12 @@ public sealed class AccountManagementEndpointsTests(PosternFixture fixture) : IA
         using var factory = new PosternApiFactory(fixture, kv);
         using var client = factory.CreateAuthenticatedClient(user.Id, user.Email);
 
+        var pending = await client.PostAsJsonAsync(
+            "/api/users/change-forwarding-address",
+            new { newForwardingAddress = "new-inbox@example.test" });
+        Assert.Equal(HttpStatusCode.Conflict, pending.StatusCode);
+
+        factory.Destinations.MarkVerified("new-inbox@example.test");
         var response = await client.PostAsJsonAsync(
             "/api/users/change-forwarding-address",
             new { newForwardingAddress = "new-inbox@example.test" });
@@ -75,6 +87,10 @@ public sealed class AccountManagementEndpointsTests(PosternFixture fixture) : IA
         using var factory = new PosternApiFactory(fixture, kv);
         using var client = factory.CreateAuthenticatedClient(user.Id, user.Email);
 
+        await client.PostAsJsonAsync(
+            "/api/users/change-forwarding-address",
+            new { newForwardingAddress = "new-inbox@example.test" });
+        factory.Destinations.MarkVerified("new-inbox@example.test");
         var response = await client.PostAsJsonAsync(
             "/api/users/change-forwarding-address",
             new { newForwardingAddress = "new-inbox@example.test" });
@@ -98,7 +114,7 @@ public sealed class AccountManagementEndpointsTests(PosternFixture fixture) : IA
     }
 
     [Fact]
-    public async Task ChangeForwardingAddress_ForMissingAccountReturnsBadRequest()
+    public async Task ChangeForwardingAddress_ForMissingAccountReturnsNotFound()
     {
         using var client = _factory.CreateAuthenticatedClient(Guid.NewGuid(), "ghost@example.test");
 
@@ -106,7 +122,7 @@ public sealed class AccountManagementEndpointsTests(PosternFixture fixture) : IA
             "/api/users/change-forwarding-address",
             new { newForwardingAddress = "inbox@example.test" });
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]

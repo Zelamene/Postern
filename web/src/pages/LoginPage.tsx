@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { apiUrl } from '../services/apiBase'
 import { navigate } from '../services/navigation'
 import { stashRecoveryKey } from '../services/pendingRecoveryKey'
 
@@ -26,7 +27,7 @@ export function LoginPage() {
     setError(null)
     setAdminSignIn(false)
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         credentials: 'include',
         cache: 'no-store',

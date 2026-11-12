@@ -76,6 +76,8 @@ SELECT format(
 )
 \gexec
 
+SELECT format('GRANT %I TO %I', :'migrator_role', current_user) \gexec
+
 SELECT format(
     'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA postern GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I',
     :'migrator_role',

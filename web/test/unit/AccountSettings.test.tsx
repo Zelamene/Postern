@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AccountSettings } from '../../src/components/app/AccountSettings'
+import { ApiError } from '../../src/services/apiClient'
 
 const changeForwardingAddress = vi.fn()
 const deleteAccount = vi.fn()
@@ -52,6 +53,30 @@ describe('AccountSettings', () => {
     await waitFor(() => expect(changeForwardingAddress).toHaveBeenCalledWith('new@example.com'))
     expect(onForwardingAddressChange).toHaveBeenCalledWith('new@example.com')
     expect(await screen.findByText(/forwarding address updated/i)).toBeInTheDocument()
+  })
+
+  it('explains that the new destination needs verification first', async () => {
+    const user = userEvent.setup()
+    const onForwardingAddressChange = vi.fn()
+    changeForwardingAddress.mockRejectedValue(new ApiError(409))
+
+    render(
+      <AccountSettings
+        account={account}
+        onForwardingAddressChange={onForwardingAddressChange}
+        onAccountDeleted={vi.fn()}
+      />,
+    )
+
+    const input = screen.getByLabelText(/destination address/i)
+    await user.clear(input)
+    await user.type(input, 'new@example.com')
+    await user.click(screen.getByRole('button', { name: /update destination/i }))
+
+    expect(
+      await screen.findByText(/confirm the new destination from the verification email/i),
+    ).toBeInTheDocument()
+    expect(onForwardingAddressChange).not.toHaveBeenCalled()
   })
 
   it('requires typed confirmation before deleting the account', async () => {

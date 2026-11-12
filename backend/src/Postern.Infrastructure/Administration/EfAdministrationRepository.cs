@@ -149,24 +149,24 @@ public sealed class EfAdministrationRepository(PosternDbContext dbContext) : IAd
             recentAudit);
     }
 
-    public async Task<IReadOnlyCollection<AdminKvSyncAlias>> ListDirtyAliasesAsync(
-        int limit,
+    public async Task<IReadOnlyCollection<AdminKvSyncAlias>> ListAliasesForKvAsync(
         CancellationToken cancellationToken)
     {
         var rows = await dbContext.Aliases
             .AsNoTracking()
-            .Where(alias => alias.KvDirty
-                && alias.UserId != null
-                && alias.FullAddress != null)
+            .Where(alias => alias.UserId != null && alias.FullAddress != null)
             .OrderBy(alias => alias.CreatedAt)
-            .Take(limit)
             .Select(alias => new
             {
                 AliasId = alias.Id,
                 FullAddress = alias.FullAddress!,
                 UserId = alias.UserId!.Value,
                 Destination = alias.User!.ForwardingAddress ?? alias.User.Email,
-                alias.Status
+                alias.Status,
+                BlockedSenders = alias.ExpectedSenders
+                    .Where(sender => sender.IsBlocked)
+                    .Select(sender => sender.SenderEtld1)
+                    .ToList()
             })
             .ToListAsync(cancellationToken);
 
@@ -176,7 +176,8 @@ public sealed class EfAdministrationRepository(PosternDbContext dbContext) : IAd
                 row.FullAddress,
                 row.UserId,
                 row.Destination,
-                row.Status.ToString().ToLowerInvariant()))
+                row.Status.ToString().ToLowerInvariant(),
+                row.BlockedSenders))
             .ToArray();
     }
 
@@ -198,6 +199,23 @@ public sealed class EfAdministrationRepository(PosternDbContext dbContext) : IAd
                 setters => setters.SetProperty(alias => alias.KvDirty, false),
                 cancellationToken);
     }
+
+    public async Task<IReadOnlyCollection<StalePendingUser>> ListStalePendingUsersAsync(
+        DateTimeOffset cutoff,
+        CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .AsNoTracking()
+            .Where(user => user.Status == "pending" && user.CreatedAt < cutoff)
+            .Select(user => new StalePendingUser(
+                user.Id,
+                user.Email,
+                user.ForwardingAddress ?? user.Email))
+            .ToListAsync(cancellationToken);
+
+    public async Task<bool> DeletePendingUserAsync(Guid userId, CancellationToken cancellationToken) =>
+        await dbContext.Users
+            .Where(user => user.Id == userId && user.Status == "pending")
+            .ExecuteDeleteAsync(cancellationToken) == 1;
 
     public Task<int> DeleteMessagesBeforeAsync(
         DateTimeOffset cutoff,

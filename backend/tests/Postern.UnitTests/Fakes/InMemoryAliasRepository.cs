@@ -8,10 +8,13 @@ public sealed class InMemoryAliasRepository : IAliasRepository
     private readonly List<Alias> _aliases = [];
     private readonly List<ExpectedSender> _expectedSenders = [];
     private readonly HashSet<string> _tombstonedHashes = new(StringComparer.Ordinal);
+    private readonly HashSet<Guid> _dirtyAliasIds = [];
 
     public IReadOnlyList<Alias> Aliases => _aliases;
 
-    public List<Guid> KvDirtyAliasIds { get; } = [];
+    public IReadOnlyCollection<Guid> KvDirtyAliasIds => _dirtyAliasIds;
+
+    public IReadOnlyList<ExpectedSender> ExpectedSenders => _expectedSenders;
 
     public Func<string, bool>? TombstoneCheck { get; set; }
 
@@ -19,7 +22,17 @@ public sealed class InMemoryAliasRepository : IAliasRepository
 
     public void Seed(Alias alias) => _aliases.Add(alias);
 
+    public void SeedExpectedSender(ExpectedSender sender) => _expectedSenders.Add(sender);
+
     public void Tombstone(string fullAddressHash) => _tombstonedHashes.Add(fullAddressHash);
+
+    public void ClearDirty(IEnumerable<Guid> aliasIds)
+    {
+        foreach (var aliasId in aliasIds)
+        {
+            _dirtyAliasIds.Remove(aliasId);
+        }
+    }
 
     public Task<Alias> CreateAsync(Alias alias, CancellationToken cancellationToken)
     {
@@ -98,7 +111,7 @@ public sealed class InMemoryAliasRepository : IAliasRepository
 
     public Task MarkKvDirtyAsync(Guid aliasId, CancellationToken cancellationToken)
     {
-        KvDirtyAliasIds.Add(aliasId);
+        _dirtyAliasIds.Add(aliasId);
         return Task.CompletedTask;
     }
 
@@ -120,6 +133,7 @@ public sealed class InMemoryAliasRepository : IAliasRepository
             sender.AliasId == aliasId && sender.SenderEtld1 == senderEtld1);
         if (existing is not null)
         {
+            existing.IsBlocked = false;
             return Task.FromResult<ExpectedSender?>(existing);
         }
 
@@ -139,8 +153,34 @@ public sealed class InMemoryAliasRepository : IAliasRepository
         Guid aliasId,
         Guid userId,
         string senderEtld1,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(true);
+        CancellationToken cancellationToken)
+    {
+        var alias = _aliases.SingleOrDefault(item => item.Id == aliasId && item.UserId == userId);
+        if (alias is null)
+        {
+            return Task.FromResult(false);
+        }
+
+        var sender = _expectedSenders.FirstOrDefault(item =>
+            item.AliasId == aliasId && item.SenderEtld1 == senderEtld1);
+        if (sender is null)
+        {
+            _expectedSenders.Add(new ExpectedSender
+            {
+                Id = Guid.NewGuid(),
+                AliasId = aliasId,
+                SenderEtld1 = senderEtld1,
+                IsBlocked = true,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+        }
+        else
+        {
+            sender.IsBlocked = true;
+        }
+
+        return Task.FromResult(true);
+    }
 
     public Task<IReadOnlyCollection<ExpectedSender>> CopyExpectedSendersAsync(
         Guid sourceAliasId,
@@ -155,6 +195,7 @@ public sealed class InMemoryAliasRepository : IAliasRepository
                 Id = Guid.NewGuid(),
                 AliasId = targetAliasId,
                 SenderEtld1 = sender.SenderEtld1,
+                IsBlocked = sender.IsBlocked,
                 CreatedAt = sender.CreatedAt
             })
             .ToList();

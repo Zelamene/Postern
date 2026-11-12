@@ -79,6 +79,8 @@ function createEnv(kv: KVNamespace) {
     POSTERN_KV: kv,
     INGEST_ENDPOINT: IngestEndpoint,
     INGEST_SECRET: 'worker-test-secret',
+    API_BASE_URL: 'https://api.postern.test',
+    JOB_SECRET: 'worker-test-job-secret',
     POSTERN_DOMAIN: 'postern.local',
   } as unknown as WorkerEnv
 }
@@ -335,5 +337,58 @@ describe('Postern email worker', () => {
     await settle()
 
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('Postern scheduled handler', () => {
+  it('posts the nightly job with the job secret on the 03:05 trigger', async () => {
+    const fetchMock = stubFetch(async () => new Response(null, { status: 200 }))
+    const { namespace } = createKv({})
+    const { context, settle } = createContext()
+
+    await worker.scheduled(
+      { cron: '5 3 * * *' } as ScheduledController,
+      createEnv(namespace),
+      context,
+    )
+    await settle()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.postern.test/api/jobs/nightly',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ 'X-Postern-Job-Secret': 'worker-test-job-secret' }),
+      }),
+    )
+  })
+
+  it('pings the health endpoint on the ten minute trigger', async () => {
+    const fetchMock = stubFetch(async () => new Response(null, { status: 200 }))
+    const { namespace } = createKv({})
+    const { context, settle } = createContext()
+
+    await worker.scheduled(
+      { cron: '*/10 * * * *' } as ScheduledController,
+      createEnv(namespace),
+      context,
+    )
+    await settle()
+
+    expect(fetchMock).toHaveBeenCalledWith('https://api.postern.test/health')
+  })
+})
+
+describe('Postern worker eTLD+1 handling', () => {
+  it('matches a blocked sender on a second-level domain', async () => {
+    const { namespace } = createKv(aliasRecords({ blockedSenders: ['shop.co.uk'] }))
+    const fetchMock = stubFetch(async () => new Response(null, { status: 200 }))
+    const { message, forward } = createMessage({ headers: { from: 'Shop <orders@mail.shop.co.uk>' } })
+    const { context, settle } = createContext()
+
+    await worker.email(message, createEnv(namespace), context)
+    await settle()
+
+    expect(forward).not.toHaveBeenCalled()
+    expect(await ingestPayload(fetchMock)).toMatchObject({ blocked: true, reason: 'blocked_sender' })
   })
 })

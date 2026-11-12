@@ -3,6 +3,14 @@ using Postern.Application.Integrations;
 
 namespace Postern.Application.Accounts;
 
+public enum ForwardingChangeResult
+{
+    Success,
+    Invalid,
+    VerificationRequired,
+    NotFound
+}
+
 public sealed class AccountManagementService(
     IAccountRepository accounts,
     IAliasRepository aliases,
@@ -10,31 +18,27 @@ public sealed class AccountManagementService(
     IKvWriter kvWriter,
     TimeProvider timeProvider)
 {
-    public async Task<bool> ChangeForwardingAddressAsync(
+    public async Task<ForwardingChangeResult> ChangeForwardingAddressAsync(
         Guid userId,
         string newForwardingAddress,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(newForwardingAddress))
+        if (!EmailAddressNormalizer.TryNormalize(newForwardingAddress, out var nextAddress))
         {
-            return false;
+            return ForwardingChangeResult.Invalid;
         }
 
         var user = await accounts.FindByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return false;
+            return ForwardingChangeResult.NotFound;
         }
 
         var previousAddress = user.EffectiveForwardingAddress;
-        var nextAddress = newForwardingAddress.Trim();
 
-        try
+        if (string.Equals(previousAddress, nextAddress, StringComparison.OrdinalIgnoreCase))
         {
-            await destinations.RemoveAsync(previousAddress, cancellationToken);
-        }
-        catch
-        {
+            return ForwardingChangeResult.Success;
         }
 
         try
@@ -43,16 +47,37 @@ public sealed class AccountManagementService(
         }
         catch
         {
-            return false;
+            return ForwardingChangeResult.Invalid;
+        }
+
+        if (!await destinations.IsVerifiedAsync(nextAddress, cancellationToken))
+        {
+            return ForwardingChangeResult.VerificationRequired;
         }
 
         if (!await accounts.UpdateForwardingAddressAsync(userId, nextAddress, cancellationToken))
         {
-            return false;
+            return ForwardingChangeResult.NotFound;
         }
 
         await RepublishAliasesAsync(userId, nextAddress, cancellationToken);
-        return true;
+
+        var stillUsed = await accounts.CountUsersUsingForwardingAddressAsync(
+            previousAddress,
+            userId,
+            cancellationToken);
+        if (stillUsed == 0)
+        {
+            try
+            {
+                await destinations.RemoveAsync(previousAddress, cancellationToken);
+            }
+            catch
+            {
+            }
+        }
+
+        return ForwardingChangeResult.Success;
     }
 
     public async Task<bool> DeleteAccountAsync(
@@ -103,11 +128,23 @@ public sealed class AccountManagementService(
                 continue;
             }
 
+            var blockedSenders = (await aliases.ListExpectedSendersAsync(
+                    alias.Id,
+                    userId,
+                    cancellationToken))
+                .Where(sender => sender.IsBlocked)
+                .Select(sender => sender.SenderEtld1)
+                .ToArray();
+
             try
             {
                 await kvWriter.PutAsync(
                     alias.FullAddress.ToLowerInvariant(),
-                    AliasKvRecord.Serialize(destination, alias.Status.ToString().ToLowerInvariant(), userId),
+                    AliasKvRecord.Serialize(
+                        destination,
+                        alias.Status.ToString().ToLowerInvariant(),
+                        userId,
+                        blockedSenders),
                     cancellationToken);
             }
             catch

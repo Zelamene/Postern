@@ -1,4 +1,5 @@
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
+import { apiUrl } from '../services/apiBase'
 
 export const adminRealtimeEvents = {
   inviteRequestReceived: 'InviteRequestReceived',
@@ -9,7 +10,7 @@ export const adminRealtimeEvents = {
 
 export function createAdminRealtimeConnection() {
   return new HubConnectionBuilder()
-    .withUrl('/api/admin/events', { withCredentials: true })
+    .withUrl(apiUrl('/api/admin/events'), { withCredentials: true })
     .withAutomaticReconnect()
     .configureLogging(LogLevel.Warning)
     .build()

@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Postern.Api.Endpoints;
@@ -65,11 +66,6 @@ var resendWebhookSecret =
     builder.Configuration["Resend:WebhookSecret"] ?? builder.Configuration["RESEND_WEBHOOK_SECRET"];
 var resendFrom = builder.Configuration["Resend:From"];
 var publicInviteBaseUrl = builder.Configuration["Invites:PublicBaseUrl"];
-var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
-if (builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(dataProtectionKeysPath))
-{
-    dataProtectionKeysPath = Path.Combine(builder.Environment.ContentRootPath, ".keys");
-}
 var inviteWorkerEnabled = !builder.Environment.IsDevelopment()
     && (builder.Configuration.GetValue<bool?>("Invites:WorkerEnabled")
         ?? !string.IsNullOrWhiteSpace(resendApiKey));
@@ -77,11 +73,10 @@ if (!builder.Environment.IsDevelopment()
     && (string.IsNullOrWhiteSpace(resendApiKey)
         || string.IsNullOrWhiteSpace(resendWebhookSecret)
         || string.IsNullOrWhiteSpace(resendFrom)
-        || string.IsNullOrWhiteSpace(publicInviteBaseUrl)
-        || string.IsNullOrWhiteSpace(dataProtectionKeysPath)))
+        || string.IsNullOrWhiteSpace(publicInviteBaseUrl)))
 {
     throw new InvalidOperationException(
-        "Production invite delivery requires Resend credentials, Resend:From, Invites:PublicBaseUrl, and a persistent DataProtection:KeysPath.");
+        "Production invite delivery requires Resend credentials, Resend:From, and Invites:PublicBaseUrl.");
 }
 
 if (inviteWorkerEnabled
@@ -131,12 +126,10 @@ builder.Services.AddScoped<IInviteRepository, EfInviteRepository>();
 builder.Services.AddScoped<InviteManagementService>();
 builder.Services.AddSingleton<IInviteCodeProtector, DataProtectionInviteCodeProtector>();
 builder.Services.AddSingleton<ResendWebhookSignatureVerifier>();
-var dataProtection = builder.Services.AddDataProtection().SetApplicationName("Postern");
-if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
-{
-    Directory.CreateDirectory(dataProtectionKeysPath);
-    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
-}
+builder.Services
+    .AddDataProtection()
+    .SetApplicationName("Postern")
+    .PersistKeysToDbContext<PosternDbContext>();
 builder.Services.AddHttpClient("resend-email", client =>
 {
     client.BaseAddress = new Uri("https://api.resend.com/");
@@ -176,18 +169,77 @@ builder.Services.AddScoped<IAdministrationRepository, EfAdministrationRepository
 builder.Services.AddSingleton(aliasPolicy);
 builder.Services.AddSingleton<IPasswordHashingService, AspNetPasswordHashingService>();
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<IKvWriter, NoOpKvWriter>();
+var cloudflareOptions = builder.Configuration
+    .GetSection(CloudflareOptions.SectionName)
+    .Get<CloudflareOptions>() ?? new CloudflareOptions();
 
-if (builder.Environment.IsDevelopment())
+if (!builder.Environment.IsDevelopment())
 {
+    cloudflareOptions.Validate();
+}
+
+builder.Services.AddSingleton(cloudflareOptions);
+builder.Services.AddHttpClient("cloudflare", client =>
+{
+    client.BaseAddress = new Uri("https://api.cloudflare.com/client/v4/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Authorization =
+        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", cloudflareOptions.ApiToken);
+});
+
+if (cloudflareOptions.IsConfigured)
+{
+    builder.Services.AddSingleton<IKvWriter>(services =>
+        new CloudflareKvWriter(
+            services.GetRequiredService<IHttpClientFactory>().CreateClient("cloudflare"),
+            cloudflareOptions,
+            services.GetRequiredService<ILogger<CloudflareKvWriter>>()));
+
+    builder.Services.AddSingleton<IDestinationService>(services =>
+        new CloudflareDestinationService(
+            services.GetRequiredService<IHttpClientFactory>().CreateClient("cloudflare"),
+            cloudflareOptions,
+            services.GetRequiredService<ILogger<CloudflareDestinationService>>()));
+}
+else if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddSingleton<IKvWriter, NoOpKvWriter>();
     builder.Services.AddSingleton<DevelopmentDestinationService>();
     builder.Services.AddSingleton<IDestinationService>(
         services => services.GetRequiredService<DevelopmentDestinationService>());
 }
 else
 {
-    builder.Services.AddSingleton<IDestinationService, UnconfiguredDestinationService>();
+    throw new InvalidOperationException(
+        "Cloudflare integration configuration is required outside Development.");
 }
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+    options.ForwardLimit = 1;
+});
+
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? [];
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        if (allowedOrigins.Length > 0)
+        {
+            policy
+                .WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        }
+    });
+});
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -241,6 +293,8 @@ if (builder.Environment.IsDevelopment())
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

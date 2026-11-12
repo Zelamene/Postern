@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { apiUrl } from '../../services/apiBase'
 
 export interface RequestInviteState {
   email: string
@@ -28,7 +29,7 @@ export function RequestInvite() {
     setState({ ...state, submitting: true, error: null, success: null })
 
     try {
-      const result = await fetch('/api/invite-requests', {
+      const result = await fetch(apiUrl('/api/invite-requests'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

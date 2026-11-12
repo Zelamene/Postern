@@ -85,7 +85,7 @@ public sealed class AdminKvSyncEndpointsTests(PosternFixture fixture) : IAsyncLi
     }
 
     [Fact]
-    public async Task KvSync_LeavesAlreadyCleanAliasesUntouched()
+    public async Task KvSync_WritesAliasesThatAreMissingFromKvEvenWhenClean()
     {
         var admin = await fixture.AUserAsync(isAdmin: true);
         var user = await fixture.AUserAsync(forwardingAddress: "forwarding@example.test");
@@ -97,7 +97,7 @@ public sealed class AdminKvSyncEndpointsTests(PosternFixture fixture) : IAsyncLi
         var response = await client.PostAsync("/api/admin/kv-sync", null);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Null(kv.Get(alias.FullAddress!.ToLowerInvariant()));
+        Assert.NotNull(kv.Get(alias.FullAddress!.ToLowerInvariant()));
 
         await using var db = fixture.CreateContext();
         Assert.False(await db.Aliases

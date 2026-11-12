@@ -125,10 +125,18 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
             return null;
         }
 
-        var exists = await dbContext.ExpectedSenders.AnyAsync(sender => sender.AliasId == aliasId && sender.SenderEtld1 == senderEtld1, cancellationToken);
-        if (exists)
+        var existing = await dbContext.ExpectedSenders.SingleOrDefaultAsync(
+            sender => sender.AliasId == aliasId && sender.SenderEtld1 == senderEtld1,
+            cancellationToken);
+        if (existing is not null)
         {
-            return await dbContext.ExpectedSenders.SingleOrDefaultAsync(sender => sender.AliasId == aliasId && sender.SenderEtld1 == senderEtld1, cancellationToken);
+            if (existing.IsBlocked)
+            {
+                existing.IsBlocked = false;
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            return existing;
         }
 
         var entry = new ExpectedSender
@@ -156,6 +164,27 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
             return false;
         }
 
+        var sender = await dbContext.ExpectedSenders.SingleOrDefaultAsync(
+            item => item.AliasId == aliasId && item.SenderEtld1 == senderEtld1,
+            cancellationToken);
+
+        if (sender is null)
+        {
+            dbContext.ExpectedSenders.Add(new ExpectedSender
+            {
+                Id = Guid.NewGuid(),
+                AliasId = aliasId,
+                SenderEtld1 = senderEtld1,
+                IsBlocked = true,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+        }
+        else
+        {
+            sender.IsBlocked = true;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
         await MarkKvDirtyAsync(aliasId, cancellationToken);
         return true;
     }
@@ -191,6 +220,7 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
                 Id = Guid.NewGuid(),
                 AliasId = targetAliasId,
                 SenderEtld1 = sender.SenderEtld1,
+                IsBlocked = sender.IsBlocked,
                 CreatedAt = DateTimeOffset.UtcNow
             };
 

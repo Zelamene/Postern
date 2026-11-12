@@ -7,6 +7,7 @@ import type {
   InviteRequest,
   KvSyncResult,
 } from '../types'
+import { apiUrl } from './apiBase'
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
@@ -21,7 +22,7 @@ export class AdminApiError extends Error {
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     credentials: 'include',
     cache: 'no-store',
     ...init,
@@ -35,7 +36,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function requestEmpty(path: string, init?: RequestInit): Promise<void> {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     credentials: 'include',
     cache: 'no-store',
     ...init,

@@ -11,7 +11,7 @@ namespace Postern.UnitTests;
 public class AccountManagementTests
 {
     [Fact]
-    public async Task ChangeForwardingAddress_RemovesOldDestination_AddsNew_UpdatesForwardingAddressOnly()
+    public async Task ChangeForwardingAddress_SwitchesAfterVerification_AndRemovesOldDestination()
     {
         var userId = Guid.NewGuid();
         var user = new PosternUser
@@ -25,25 +25,29 @@ public class AccountManagementTests
 
         var accounts = new InMemoryAccountRepository(user);
         var destinations = new InMemoryDestinationService();
-        var kvWriter = new Fakes.InMemoryKvWriter();
-        var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
-        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
+        var kvWriter = new InMemoryKvWriter();
+        var service = new AccountManagementService(
+            accounts,
+            new InMemoryAliasRepository(),
+            destinations,
+            kvWriter,
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
 
         var result = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
-        Assert.True(result);
+
+        Assert.Equal(ForwardingChangeResult.Success, result);
         Assert.Equal(["old@example.com"], destinations.Removed);
-        Assert.Equal(["new@example.com"], destinations.Added);
+        Assert.Equal(["new@example.com"], destinations.Destinations);
         Assert.Equal("new@example.com", user.ForwardingAddress);
         Assert.Equal("new@example.com", user.EffectiveForwardingAddress);
 
-        // Login identity must survive a forwarding change.
         Assert.Equal("old@example.com", user.Email);
         Assert.Equal("OLD@EXAMPLE.COM", user.NormalizedEmail);
         Assert.NotNull(await accounts.FindByNormalizedEmailAsync("OLD@EXAMPLE.COM", CancellationToken.None));
     }
 
     [Fact]
-    public async Task ChangeForwardingAddress_SecondChange_RemovesCurrentForwardingAddressNotLoginEmail()
+    public async Task ChangeForwardingAddress_UnverifiedDestination_LeavesTheAccountUntouched()
     {
         var userId = Guid.NewGuid();
         var user = new PosternUser
@@ -57,21 +61,63 @@ public class AccountManagementTests
         };
 
         var accounts = new InMemoryAccountRepository(user);
-        var destinations = new InMemoryDestinationService();
-        var kvWriter = new Fakes.InMemoryKvWriter();
-        var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
-        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
+        var destinations = new InMemoryDestinationService { AutoVerify = false };
+        var service = new AccountManagementService(
+            accounts,
+            new InMemoryAliasRepository(),
+            destinations,
+            new InMemoryKvWriter(),
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
 
-        Assert.True(await service.ChangeForwardingAddressAsync(userId, "second@example.com", CancellationToken.None));
+        var result = await service.ChangeForwardingAddressAsync(userId, "second@example.com", CancellationToken.None);
 
-        Assert.Equal(["first@example.com"], destinations.Removed);
-        Assert.Equal(["second@example.com"], destinations.Added);
-        Assert.Equal("login@example.com", user.Email);
-        Assert.Equal("LOGIN@EXAMPLE.COM", user.NormalizedEmail);
+        Assert.Equal(ForwardingChangeResult.VerificationRequired, result);
+        Assert.Equal("first@example.com", user.ForwardingAddress);
+        Assert.Empty(destinations.Removed);
+        Assert.Equal(["second@example.com"], destinations.Destinations);
     }
 
     [Fact]
-    public async Task ChangeForwardingAddress_WithoutPriorForwardingAddress_UsesLoginEmail()
+    public async Task ChangeForwardingAddress_KeepsADestinationAnotherUserShares()
+    {
+        var userId = Guid.NewGuid();
+        var sharedAddress = "shared@example.com";
+        var user = new PosternUser
+        {
+            Id = userId,
+            Email = "login@example.com",
+            NormalizedEmail = "LOGIN@EXAMPLE.COM",
+            ForwardingAddress = sharedAddress,
+            PasswordHash = "hash",
+            Status = "active"
+        };
+        var accounts = new InMemoryAccountRepository(user);
+        accounts.Add(new PosternUser
+        {
+            Id = Guid.NewGuid(),
+            Email = "other@example.com",
+            NormalizedEmail = "OTHER@EXAMPLE.COM",
+            ForwardingAddress = sharedAddress,
+            PasswordHash = "hash",
+            Status = "active"
+        });
+        var destinations = new InMemoryDestinationService();
+        var service = new AccountManagementService(
+            accounts,
+            new InMemoryAliasRepository(),
+            destinations,
+            new InMemoryKvWriter(),
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
+
+        var result = await service.ChangeForwardingAddressAsync(userId, "second@example.com", CancellationToken.None);
+
+        Assert.Equal(ForwardingChangeResult.Success, result);
+        Assert.Empty(destinations.Removed);
+        Assert.Equal("second@example.com", user.ForwardingAddress);
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_SameAddress_DoesNothing()
     {
         var userId = Guid.NewGuid();
         var user = new PosternUser
@@ -79,35 +125,184 @@ public class AccountManagementTests
             Id = userId,
             Email = "login@example.com",
             NormalizedEmail = "LOGIN@EXAMPLE.COM",
+            ForwardingAddress = "same@example.com",
             PasswordHash = "hash",
             Status = "active"
         };
-
-        var accounts = new InMemoryAccountRepository(user);
         var destinations = new InMemoryDestinationService();
-        var kvWriter = new Fakes.InMemoryKvWriter();
-        var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
-        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
+        var service = new AccountManagementService(
+            new InMemoryAccountRepository(user),
+            new InMemoryAliasRepository(),
+            destinations,
+            new InMemoryKvWriter(),
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
 
-        Assert.True(await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None));
+        var result = await service.ChangeForwardingAddressAsync(userId, "SAME@example.com", CancellationToken.None);
 
-        Assert.Equal(["login@example.com"], destinations.Removed);
-        Assert.Equal(["new@example.com"], destinations.Added);
+        Assert.Equal(ForwardingChangeResult.Success, result);
+        Assert.Empty(destinations.Destinations);
+        Assert.Empty(destinations.Removed);
     }
 
     [Fact]
-    public async Task ChangeForwardingAddress_EmptyAddress_ReturnsFalse()
+    public async Task ChangeForwardingAddress_InvalidAddress_ReturnsInvalid()
     {
         var userId = Guid.NewGuid();
-        var user = new PosternUser { Id = userId, Email = "old@example.com", NormalizedEmail = "OLD@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
-        var accounts = new InMemoryAccountRepository(user);
-        var destinations = new InMemoryDestinationService();
-        var kvWriter = new Fakes.InMemoryKvWriter();
-        var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
-        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
+        var user = new PosternUser
+        {
+            Id = userId,
+            Email = "old@example.com",
+            NormalizedEmail = "OLD@EXAMPLE.COM",
+            PasswordHash = "hash",
+            Status = "active"
+        };
+        var service = new AccountManagementService(
+            new InMemoryAccountRepository(user),
+            new InMemoryAliasRepository(),
+            new InMemoryDestinationService(),
+            new InMemoryKvWriter(),
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
 
         var result = await service.ChangeForwardingAddressAsync(userId, "   ", CancellationToken.None);
-        Assert.False(result);
+
+        Assert.Equal(ForwardingChangeResult.Invalid, result);
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_UserMissing_ReturnsNotFound()
+    {
+        var service = new AccountManagementService(
+            new InMemoryAccountRepository(new PosternUser
+            {
+                Id = Guid.NewGuid(),
+                Email = "x@e.com",
+                NormalizedEmail = "X@E.COM",
+                PasswordHash = "h",
+                Status = "active"
+            }),
+            new InMemoryAliasRepository(),
+            new InMemoryDestinationService(),
+            new InMemoryKvWriter(),
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
+
+        var result = await service.ChangeForwardingAddressAsync(Guid.NewGuid(), "new@example.com", CancellationToken.None);
+
+        Assert.Equal(ForwardingChangeResult.NotFound, result);
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_WhenAddDestinationFails_ReturnsInvalid()
+    {
+        var userId = Guid.NewGuid();
+        var user = new PosternUser
+        {
+            Id = userId,
+            Email = "old@example.com",
+            NormalizedEmail = "OLD@EXAMPLE.COM",
+            PasswordHash = "hash",
+            Status = "active"
+        };
+        var service = new AccountManagementService(
+            new InMemoryAccountRepository(user),
+            new InMemoryAliasRepository(),
+            new InMemoryDestinationService { ShouldFail = true },
+            new InMemoryKvWriter(),
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
+
+        var result = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
+
+        Assert.Equal(ForwardingChangeResult.Invalid, result);
+    }
+
+    [Fact]
+    public async Task ChangeForwardingAddress_RepublishesAliasesWithBlockedSenders_AndMarksDirtyOnKvFailure()
+    {
+        var userId = Guid.NewGuid();
+        var user = new PosternUser
+        {
+            Id = userId,
+            Email = "old@example.com",
+            NormalizedEmail = "OLD@EXAMPLE.COM",
+            PasswordHash = "hash",
+            Status = "active"
+        };
+        var alias = new Alias
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Label = "l",
+            RandomSuffix = "s",
+            FullAddress = "l-s@postern.local",
+            FullAddressHash = "h",
+            Status = AliasStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow,
+            KvDirty = false
+        };
+        var aliases = new InMemoryAliasRepository();
+        aliases.Seed(alias);
+        aliases.SeedExpectedSender(new ExpectedSender
+        {
+            Id = Guid.NewGuid(),
+            AliasId = alias.Id,
+            SenderEtld1 = "spam.example",
+            IsBlocked = true,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        var kvWriter = new InMemoryKvWriter();
+        var service = new AccountManagementService(
+            new InMemoryAccountRepository(user),
+            aliases,
+            new InMemoryDestinationService(),
+            kvWriter,
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
+
+        var result = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
+
+        Assert.Equal(ForwardingChangeResult.Success, result);
+        var payload = System.Text.Json.JsonDocument.Parse(kvWriter.Values["l-s@postern.local"]).RootElement;
+        Assert.Equal("new@example.com", payload.GetProperty("destination").GetString());
+        Assert.Equal(
+            new[] { "spam.example" },
+            payload.GetProperty("blockedSenders").EnumerateArray().Select(item => item.GetString()));
+
+        var failing = new AccountManagementService(
+            new InMemoryAccountRepository(user),
+            aliases,
+            new InMemoryDestinationService(),
+            new InMemoryKvWriter { ShouldFail = true },
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
+        var secondUser = new PosternUser
+        {
+            Id = Guid.NewGuid(),
+            Email = "second@example.com",
+            NormalizedEmail = "SECOND@EXAMPLE.COM",
+            PasswordHash = "hash",
+            Status = "active"
+        };
+        var failingAliases = new InMemoryAliasRepository();
+        failingAliases.Seed(new Alias
+        {
+            Id = Guid.NewGuid(),
+            UserId = secondUser.Id,
+            Label = "l",
+            RandomSuffix = "s",
+            FullAddress = "second-s@postern.local",
+            FullAddressHash = "h2",
+            Status = AliasStatus.Active,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        var failingService = new AccountManagementService(
+            new InMemoryAccountRepository(secondUser),
+            failingAliases,
+            new InMemoryDestinationService(),
+            new InMemoryKvWriter { ShouldFail = true },
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
+
+        Assert.Equal(
+            ForwardingChangeResult.Success,
+            await failingService.ChangeForwardingAddressAsync(secondUser.Id, "newer@example.com", CancellationToken.None));
+        Assert.NotEmpty(failingAliases.KvDirtyAliasIds);
+        _ = failing;
     }
 
     [Fact]
@@ -141,10 +336,15 @@ public class AccountManagementTests
 
         var accounts = new InMemoryAccountRepository(user);
         var destinations = new InMemoryDestinationService();
-        var kvWriter = new Fakes.InMemoryKvWriter();
-        kvWriter.PutAsync("test-abcd1234@postern.local", "{}", CancellationToken.None).GetAwaiter().GetResult();
+        var kvWriter = new InMemoryKvWriter();
+        await kvWriter.PutAsync("test-abcd1234@postern.local", "{}", CancellationToken.None);
         var timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 10, 28, 13, 0, 0, TimeSpan.Zero));
-        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
+        var service = new AccountManagementService(
+            accounts,
+            new InMemoryAliasRepository(),
+            destinations,
+            kvWriter,
+            timeProvider);
 
         var result = await service.DeleteAccountAsync(userId, CancellationToken.None);
         Assert.True(result);
@@ -165,7 +365,7 @@ public class AccountManagementTests
     }
 
     [Fact]
-    public async Task DeleteAccount_BestEffort_WhenKvFails_StillDeletesAccount()
+    public async Task DeleteAccount_BestEffort_WhenKvAndDestinationFail_StillDeletesAccount()
     {
         var userId = Guid.NewGuid();
         var alias = new Alias
@@ -182,74 +382,46 @@ public class AccountManagementTests
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        var user = new PosternUser { Id = userId, Email = "user@example.com", NormalizedEmail = "USER@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
+        var user = new PosternUser
+        {
+            Id = userId,
+            Email = "user@example.com",
+            NormalizedEmail = "USER@EXAMPLE.COM",
+            PasswordHash = "hash",
+            Status = "active"
+        };
         user.Aliases.Add(alias);
         var accounts = new InMemoryAccountRepository(user);
-        var destinations = new InMemoryDestinationService { ShouldFail = true };
-        var kvWriter = new Fakes.InMemoryKvWriter { ShouldFail = true };
-        var timeProvider = new FixedTimeProvider(DateTimeOffset.UtcNow);
-        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), destinations, kvWriter, timeProvider);
+        var service = new AccountManagementService(
+            accounts,
+            new InMemoryAliasRepository(),
+            new InMemoryDestinationService { ShouldFail = true },
+            new InMemoryKvWriter { ShouldFail = true },
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
 
         var result = await service.DeleteAccountAsync(userId, CancellationToken.None);
+
         Assert.True(result);
         Assert.Null(accounts.FindUserById(userId));
     }
 
     [Fact]
-    public async Task ChangeForwardingAddress_UserMissing_ReturnsFalse()
-    {
-        var accounts = new InMemoryAccountRepository(new PosternUser { Id = Guid.NewGuid(), Email = "x@e.com", NormalizedEmail = "X@E.COM", PasswordHash = "h", Status = "active" });
-        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), new InMemoryDestinationService(), new Fakes.InMemoryKvWriter(), new FixedTimeProvider(DateTimeOffset.UtcNow));
-        Assert.False(await service.ChangeForwardingAddressAsync(Guid.NewGuid(), "new@example.com", CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task ChangeForwardingAddress_WhenAddDestinationFails_ReturnsFalse()
-    {
-        var userId = Guid.NewGuid();
-        var user = new PosternUser { Id = userId, Email = "old@example.com", NormalizedEmail = "OLD@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
-        var service = new AccountManagementService(new InMemoryAccountRepository(user), new InMemoryAliasRepository(), new InMemoryDestinationService { ShouldFail = true }, new Fakes.InMemoryKvWriter(), new FixedTimeProvider(DateTimeOffset.UtcNow));
-        Assert.False(await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task ChangeForwardingAddress_RepublishesAliases_AndMarksDirtyOnKvFailure()
-    {
-        var userId = Guid.NewGuid();
-        var user = new PosternUser { Id = userId, Email = "old@example.com", NormalizedEmail = "OLD@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
-        var aliases = new InMemoryAliasRepository();
-        aliases.Seed(new Alias { Id = Guid.NewGuid(), UserId = userId, Label = "l", RandomSuffix = "s", FullAddress = "l-s@postern.local", FullAddressHash = "h", Status = AliasStatus.Active, CreatedAt = DateTimeOffset.UtcNow, KvDirty = false });
-        var kvWriter = new Fakes.InMemoryKvWriter { ShouldFail = true };
-        var service = new AccountManagementService(new InMemoryAccountRepository(user), aliases, new InMemoryDestinationService(), kvWriter, new FixedTimeProvider(DateTimeOffset.UtcNow));
-
-        var ok = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
-
-        Assert.True(ok);
-        Assert.NotEmpty(aliases.KvDirtyAliasIds);
-    }
-
-    [Fact]
-    public async Task ChangeForwardingAddress_RepublishesAliases_SkipsAliasWithoutAddress()
-    {
-        var userId = Guid.NewGuid();
-        var user = new PosternUser { Id = userId, Email = "old@example.com", NormalizedEmail = "OLD@EXAMPLE.COM", PasswordHash = "hash", Status = "active" };
-        var aliases = new InMemoryAliasRepository();
-        aliases.Seed(new Alias { Id = Guid.NewGuid(), UserId = userId, FullAddress = null, FullAddressHash = "h", Status = AliasStatus.Deleted, CreatedAt = DateTimeOffset.UtcNow, KvDirty = false });
-        var kvWriter = new Fakes.InMemoryKvWriter();
-        var service = new AccountManagementService(new InMemoryAccountRepository(user), aliases, new InMemoryDestinationService(), kvWriter, new FixedTimeProvider(DateTimeOffset.UtcNow));
-
-        var ok = await service.ChangeForwardingAddressAsync(userId, "new@example.com", CancellationToken.None);
-
-        Assert.True(ok);
-        Assert.Empty(kvWriter.Values);
-        Assert.Empty(aliases.KvDirtyAliasIds);
-    }
-
-    [Fact]
     public async Task DeleteAccount_UserMissing_ReturnsFalse()
     {
-        var accounts = new InMemoryAccountRepository(new PosternUser { Id = Guid.NewGuid(), Email = "x@e.com", NormalizedEmail = "X@E.COM", PasswordHash = "h", Status = "active" });
-        var service = new AccountManagementService(accounts, new InMemoryAliasRepository(), new InMemoryDestinationService(), new Fakes.InMemoryKvWriter(), new FixedTimeProvider(DateTimeOffset.UtcNow));
+        var service = new AccountManagementService(
+            new InMemoryAccountRepository(new PosternUser
+            {
+                Id = Guid.NewGuid(),
+                Email = "x@e.com",
+                NormalizedEmail = "X@E.COM",
+                PasswordHash = "h",
+                Status = "active"
+            }),
+            new InMemoryAliasRepository(),
+            new InMemoryDestinationService(),
+            new InMemoryKvWriter(),
+            new FixedTimeProvider(DateTimeOffset.UtcNow));
+
         Assert.False(await service.DeleteAccountAsync(Guid.NewGuid(), CancellationToken.None));
     }
 
@@ -260,120 +432,48 @@ public class AccountManagementTests
 
     private sealed class InMemoryDestinationService : IDestinationService
     {
-        public List<string> Added { get; } = [];
+        private readonly HashSet<string> _verified = new(StringComparer.OrdinalIgnoreCase);
+
+        public bool AutoVerify { get; set; } = true;
+
+        public List<string> Destinations { get; } = [];
+
         public List<string> Removed { get; } = [];
+
         public bool ShouldFail { get; set; }
 
         public Task AddAsync(string forwardingAddress, CancellationToken cancellationToken)
         {
-            if (ShouldFail) throw new Exception("fail");
-            Added.Add(forwardingAddress);
+            if (ShouldFail)
+            {
+                throw new InvalidOperationException("The destination service is configured to fail.");
+            }
+
+            if (!Destinations.Contains(forwardingAddress, StringComparer.OrdinalIgnoreCase))
+            {
+                Destinations.Add(forwardingAddress);
+            }
+
+            if (AutoVerify)
+            {
+                _verified.Add(forwardingAddress);
+            }
+
             return Task.CompletedTask;
         }
 
-        public Task<bool> IsVerifiedAsync(string emailAddress, CancellationToken cancellationToken) => Task.FromResult(true);
+        public Task<bool> IsVerifiedAsync(string emailAddress, CancellationToken cancellationToken) =>
+            Task.FromResult(_verified.Contains(emailAddress));
 
         public Task RemoveAsync(string forwardingAddress, CancellationToken cancellationToken)
         {
-            if (ShouldFail) throw new Exception("fail");
+            if (ShouldFail)
+            {
+                throw new InvalidOperationException("The destination service is configured to fail.");
+            }
+
             Removed.Add(forwardingAddress);
             return Task.CompletedTask;
-        }
-    }
-
-    private sealed class InMemoryAccountRepository : IAccountRepository
-    {
-        private readonly Dictionary<Guid, PosternUser> _users = new();
-        private readonly Dictionary<string, InviteCode> _invites = new(StringComparer.Ordinal);
-        private readonly List<ExpectedSender> _expectedSenders = [];
-        private readonly List<Domain.Activity.Message> _messages = [];
-        private readonly List<BlockedMessage> _blockedMessages = [];
-
-        public InMemoryAccountRepository(PosternUser user)
-        {
-            _users[user.Id] = user;
-        }
-
-        public PosternUser? FindUserById(Guid id) => _users.TryGetValue(id, out var u) ? u : null;
-        public Alias? FindAliasById(Guid id) => _users.Values.SelectMany(u => u.Aliases).FirstOrDefault(a => a.Id == id);
-
-        public Task<RegistrationResult> RegisterPendingUserAsync(PosternUser user, IReadOnlyCollection<string> legacyNormalizedEmails, string inviteCodeHash, int maximumUsers, DateTimeOffset now, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<PosternUser?> FindByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken) => Task.FromResult(_users.Values.FirstOrDefault(u => u.NormalizedEmail == normalizedEmail));
-        public Task<PosternUser?> FindByIdAsync(Guid userId, CancellationToken cancellationToken) => Task.FromResult(FindUserById(userId));
-        public Task<PosternUser?> FindByAdminMfaChallengeAsync(string challengeHash, string purpose, DateTimeOffset now, CancellationToken cancellationToken) => Task.FromResult<PosternUser?>(null);
-        public Task<bool> ActivatePendingUserAsync(Guid userId, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<bool> SetInitialRecoveryKeyHashAsync(Guid userId, string recoveryKeyHash, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<bool> SetAdminMfaChallengeAsync(Guid userId, string challengeHash, string purpose, DateTimeOffset expiresAt, CancellationToken cancellationToken) => Task.FromResult(false);
-        public Task<bool> SetAdminTotpSecretAsync(Guid userId, string protectedSecret, CancellationToken cancellationToken) => Task.FromResult(false);
-        public Task<bool> CompleteAdminTotpEnrollmentAsync(Guid userId, string challengeHash, string protectedSecret, long timeStep, DateTimeOffset now, CancellationToken cancellationToken) => Task.FromResult(false);
-        public Task<bool> CompleteAdminMfaLoginAsync(Guid userId, string challengeHash, long timeStep, DateTimeOffset now, CancellationToken cancellationToken) => Task.FromResult(false);
-        public Task<bool> RotateRecoveryCredentialsAsync(string currentRecoveryKeyHash, string passwordHash, string nextRecoveryKeyHash, CancellationToken cancellationToken) => throw new NotImplementedException();
-        public Task<bool> UpdateForwardingAddressAsync(Guid userId, string newForwardingAddress, CancellationToken cancellationToken)
-        {
-            if (!_users.TryGetValue(userId, out var u)) return Task.FromResult(false);
-            u.ForwardingAddress = newForwardingAddress;
-            return Task.FromResult(true);
-        }
-        public Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken) =>
-            throw new NotImplementedException();
-
-        public Task<InviteCode> CreateInviteAsync(
-            string email,
-            string emailNormalized,
-            CancellationToken cancellationToken)
-        {
-            var now = DateTimeOffset.UtcNow;
-            var invite = new InviteCode
-            {
-                Id = Guid.NewGuid(),
-                CodeHash = AuthenticationService.HashInviteCode(
-                    $"postern_invite_{AuthenticationService.GenerateUrlSafeToken()}"),
-                Email = email,
-                EmailNormalized = emailNormalized,
-                CreatedAt = now,
-                ExpiresAt = now.AddDays(7)
-            };
-            _invites[invite.CodeHash] = invite;
-            return Task.FromResult(invite);
-        }
-
-        public Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyCollection<Guid>>(
-                _users.Values.Where(u => u.Status == "suspended").Select(u => u.Id).ToList());
-
-        public Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken)
-        {
-            var user = _users.Values.SingleOrDefault(u => u.Id == userId);
-            if (user is null)
-            {
-                return Task.FromResult(false);
-            }
-
-            user.Status = status;
-            return Task.FromResult(true);
-        }
-
-        public Task<bool> DeleteAccountAsync(Guid userId, DateTimeOffset deletedAt, CancellationToken cancellationToken)
-        {
-            if (!_users.TryGetValue(userId, out var u)) return Task.FromResult(false);
-            foreach (var alias in u.Aliases.ToList())
-            {
-                if (alias.Status != AliasStatus.Deleted)
-                {
-                    alias.Status = AliasStatus.Deleted;
-                    alias.UserId = null;
-                    alias.Label = null;
-                    alias.RandomSuffix = null;
-                    alias.FullAddress = null;
-                    alias.PurposeMetadata = null;
-                    alias.Category = null;
-                    alias.ReplacedByAliasId = null;
-                    alias.KvDirty = false;
-                    alias.DeletedAt = deletedAt;
-                }
-            }
-            _users.Remove(userId);
-            return Task.FromResult(true);
         }
     }
 }

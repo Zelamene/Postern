@@ -265,6 +265,17 @@ public sealed class AuthenticationServiceTests
 
         public IReadOnlyList<Postern.Domain.Accounts.PosternUser> Users => _users;
 
+        public Task<int> CountUsersUsingForwardingAddressAsync(
+            string forwardingAddress,
+            Guid? excludingUserId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(_users.Count(user =>
+                user.Id != excludingUserId
+                && string.Equals(
+                    user.ForwardingAddress ?? user.Email,
+                    forwardingAddress,
+                    StringComparison.OrdinalIgnoreCase)));
+
         public Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyCollection<Guid>>(
                 _users.Where(u => u.Status == "suspended").Select(u => u.Id).ToList());

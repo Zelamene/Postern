@@ -4,10 +4,13 @@ compatibility_date = "2024-09-23"
 
 [[kv_namespaces]]
 binding = "POSTERN_KV"
-id = "local-dev-placeholder"
-preview_id = "local-dev-placeholder"
+id = "replace-with-production-kv-namespace-id"
+preview_id = "replace-with-preview-kv-namespace-id"
 
 [vars]
-INGEST_ENDPOINT = "http://localhost:8080/api/ingest"
-INGEST_SECRET = "dev-ingest-secret"
-POSTERN_DOMAIN = "postern.local"
+INGEST_ENDPOINT = "https://api.example.invalid/api/ingest"
+API_BASE_URL = "https://api.example.invalid"
+POSTERN_DOMAIN = "example.invalid"
+
+[triggers]
+crons = ["*/10 * * * *", "5 3 * * *"]

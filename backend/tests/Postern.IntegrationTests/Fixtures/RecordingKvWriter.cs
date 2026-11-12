@@ -35,5 +35,17 @@ public sealed class RecordingKvWriter : IKvWriter
         return Task.CompletedTask;
     }
 
+    public Task<string?> GetAsync(string key, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(_values.TryGetValue(key, out var value) ? value : null);
+    }
+
+    public Task<IReadOnlyCollection<string>> ListKeysAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IReadOnlyCollection<string>>(_values.Keys.ToArray());
+    }
+
     public string? Get(string key) => _values.GetValueOrDefault(key);
 }
