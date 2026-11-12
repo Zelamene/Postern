@@ -62,7 +62,7 @@ jobs:
 
       - name: Run Migrations (Production)
         env:
-          ConnectionStrings__Postgres: ${{ secrets.POSTERN_MIGRATOR_CONNECTION_STRING }}
+          POSTERN_MIGRATOR_CONNECTION_STRING: ${{ secrets.POSTERN_MIGRATOR_CONNECTION_STRING }}
         run: |
           dotnet ef database update \
             --project backend/src/Postern.Infrastructure \
