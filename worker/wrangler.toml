@@ -4,13 +4,13 @@ compatibility_date = "2024-09-23"
 
 [[kv_namespaces]]
 binding = "POSTERN_KV"
-id = "replace-with-production-kv-namespace-id"
-preview_id = "replace-with-preview-kv-namespace-id"
+id = "2aaa56ee672345cebfed9f65cf47e80d"
+
 
 [vars]
-INGEST_ENDPOINT = "https://api.example.invalid/api/ingest"
-API_BASE_URL = "https://api.example.invalid"
-POSTERN_DOMAIN = "example.invalid"
+INGEST_ENDPOINT = "https://api.3xyz.uk/api/ingest"
+API_BASE_URL = "https://api.3xyz.uk"
+POSTERN_DOMAIN = "3xyz.uk"
 
 [triggers]
 crons = ["*/10 * * * *", "5 3 * * *"]
