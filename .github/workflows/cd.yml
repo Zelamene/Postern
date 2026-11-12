@@ -46,7 +46,7 @@ jobs:
           DBNAME=$(echo "$PGCONN" | grep -oP '(?i)(?<=Database=)[^;]+')
           PGUSER=$(echo "$PGCONN" | grep -oP '(?i)(?<=Username=)[^;]+')
           PGPASS=$(echo "$PGCONN" | grep -oP '(?i)(?<=Password=)[^;]+')
-
+          
           echo "${HOST}:${PORT}:${DBNAME}:${PGUSER}:${PGPASS}" > ~/.pgpass 
           chmod 600 ~/.pgpass
           
@@ -81,13 +81,15 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Install Wrangler
+        run: npm install --global wrangler@3.90.0 --include=optional
+
       - name: Deploy Worker
-        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: worker
-          command: deploy
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler deploy
 
   deploy-backend:
     needs: migrate-db
