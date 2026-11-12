@@ -28,6 +28,9 @@ jobs:
       - name: Install EF tool
         run: dotnet tool install --global dotnet-ef
 
+      - name: Restore EF tool
+        run: dotnet tool restore
+
       - name: Restore dependencies
         run: dotnet restore backend/Postern.slnx
 
@@ -59,7 +62,7 @@ jobs:
 
       - name: Run Migrations (Production)
         env:
-          POSTERN_MIGRATOR_CONNECTION_STRING: ${{ secrets.POSTERN_MIGRATOR_CONNECTION_STRING }}
+          ConnectionStrings__Postgres: ${{ secrets.POSTERN_MIGRATOR_CONNECTION_STRING }}
         run: |
           dotnet ef database update \
             --project backend/src/Postern.Infrastructure \
