@@ -78,9 +78,9 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
             builder.UseSetting("Ingest:SharedSecret", "integration-test-ingest-secret");
             builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
             builder.UseSetting("Jobs:SharedSecret", DefaultJobSecret);
-            builder.UseSetting(
-                "DataProtection:KeysPath",
-                Path.Combine(Path.GetTempPath(), $"postern-api-test-keys-{Environment.ProcessId}"));
+            builder.UseSetting("Cloudflare:AccountId", "integration-test-account");
+            builder.UseSetting("Cloudflare:ApiToken", "integration-test-token"); // pragma: allowlist secret
+            builder.UseSetting("Cloudflare:KvNamespaceId", "integration-test-namespace");
         }
         if (_ingestSecret is not null)
         {

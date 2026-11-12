@@ -145,6 +145,7 @@ public sealed class NotificationEndpointsTests(PosternFixture fixture)
         using var factory = new PosternApiFactory(fixture);
         using var client = factory.CreateAuthenticatedClient(user.Id, user.Email);
         using var worker = factory.CreateClient();
+        factory.Destinations.MarkVerified("notify-inbox@example.test");
 
         var forwarding = await client.PostAsJsonAsync(
             "/api/users/change-forwarding-address",
