@@ -31,7 +31,7 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore backend/Postern.slnx
 
-      - name: Backup Database
+            - name: Backup Database
         env:
           PGCONN: ${{ secrets.POSTERN_MIGRATOR_CONNECTION_STRING }}
         run: |
@@ -47,7 +47,8 @@ jobs:
           echo "${HOST}:${PORT}:${DBNAME}:${PGUSER}:${PGPASS}" > ~/.pgpass 
           chmod 600 ~/.pgpass
           
-          pg_dump -h "$HOST" -p "$PORT" -U "$PGUSER" -d "$DBNAME" -Fc -f pre_migration_backup.pg_dump
+          
+          pg_dump -h "$HOST" -p "$PORT" -U "$PGUSER" -d "$DBNAME" -n postern -Fc -f pre_migration_backup.pg_dump
           rm -f ~/.pgpass
 
       - name: Upload DB Backup Artifact
