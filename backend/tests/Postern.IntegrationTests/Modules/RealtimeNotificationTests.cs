@@ -184,6 +184,7 @@ public sealed class RealtimeNotificationTests(PosternFixture fixture)
         var userNotifier = new RecordingUserRealtimeNotifier();
         using var factory = new PosternApiFactory(fixture, userRealtimeNotifier: userNotifier);
         using var client = factory.CreateAuthenticatedClient(user.Id, user.Email);
+        factory.Destinations.MarkVerified("realtime-inbox@example.test");
 
         var response = await client.PostAsJsonAsync(
             "/api/users/change-forwarding-address",

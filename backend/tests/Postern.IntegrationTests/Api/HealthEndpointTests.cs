@@ -66,7 +66,6 @@ public sealed class HealthEndpointTests
             builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
             builder.UseSetting("Resend:From", "Postern <invites@example.test>");
             builder.UseSetting("Invites:PublicBaseUrl", "https://postern.example.test");
-            builder.UseSetting("DataProtection:KeysPath", Path.Combine(Path.GetTempPath(), "postern-api-test-keys"));
             builder.UseSetting("Invites:WorkerEnabled", "false");
         });
 
@@ -86,7 +85,6 @@ public sealed class HealthEndpointTests
             builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
             builder.UseSetting("Resend:From", "Postern <invites@example.test>");
             builder.UseSetting("Invites:PublicBaseUrl", "https://postern.example.test");
-            builder.UseSetting("DataProtection:KeysPath", Path.Combine(Path.GetTempPath(), "postern-api-test-keys"));
             builder.UseSetting("Invites:WorkerEnabled", "false");
         });
 
@@ -123,7 +121,6 @@ public sealed class HealthEndpointTests
             builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
             builder.UseSetting("Resend:From", "Postern <invites@example.test>");
             builder.UseSetting("Invites:WorkerEnabled", "true");
-            builder.UseSetting("DataProtection:KeysPath", Path.Combine(Path.GetTempPath(), "postern-api-test-keys"));
         });
 
         Assert.ThrowsAny<Exception>(() => factory.CreateClient());
@@ -143,6 +140,12 @@ internal static class ApiTestConfiguration
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment(environment);
+            if (!string.Equals(environment, "Development", StringComparison.OrdinalIgnoreCase))
+            {
+                builder.UseSetting("Cloudflare:AccountId", "integration-test-account");
+                builder.UseSetting("Cloudflare:ApiToken", "integration-test-token"); // pragma: allowlist secret
+                builder.UseSetting("Cloudflare:KvNamespaceId", "integration-test-namespace");
+            }
             builder.UseSetting(
                 "Authentication:SigningKey",
                 "integration-test-key-material-at-least-thirty-two-bytes");
@@ -153,7 +156,6 @@ internal static class ApiTestConfiguration
             builder.UseSetting("Resend:WebhookSecret", "integration-test-webhook-secret");
             builder.UseSetting("Resend:From", "Postern <invites@example.test>");
             builder.UseSetting("Invites:PublicBaseUrl", "https://postern.example.test");
-            builder.UseSetting("DataProtection:KeysPath", Path.Combine(Path.GetTempPath(), "postern-api-test-keys"));
             builder.UseSetting("Invites:WorkerEnabled", "false");
         });
 }

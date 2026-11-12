@@ -126,10 +126,18 @@ builder.Services.AddScoped<IInviteRepository, EfInviteRepository>();
 builder.Services.AddScoped<InviteManagementService>();
 builder.Services.AddSingleton<IInviteCodeProtector, DataProtectionInviteCodeProtector>();
 builder.Services.AddSingleton<ResendWebhookSignatureVerifier>();
-builder.Services
+var dataProtection = builder.Services
     .AddDataProtection()
-    .SetApplicationName("Postern")
-    .PersistKeysToDbContext<PosternDbContext>();
+    .SetApplicationName("Postern");
+if (builder.Environment.IsDevelopment())
+{
+    dataProtection.PersistKeysToFileSystem(
+        new DirectoryInfo(Path.Combine(Path.GetTempPath(), "postern-dataprotection")));
+}
+else
+{
+    dataProtection.PersistKeysToDbContext<PosternDbContext>();
+}
 builder.Services.AddHttpClient("resend-email", client =>
 {
     client.BaseAddress = new Uri("https://api.resend.com/");

@@ -29,7 +29,10 @@ public sealed class DevelopmentDestinationService : IDestinationService
         return Task.CompletedTask;
     }
 
-    public bool MarkVerified(string emailAddress) =>
-        _destinations.ContainsKey(emailAddress)
-        && _verifiedDestinations.TryAdd(emailAddress, 0);
+    public bool MarkVerified(string emailAddress)
+    {
+        _destinations.TryAdd(emailAddress, 0);
+        _verifiedDestinations.TryAdd(emailAddress, 0);
+        return true;
+    }
 }
