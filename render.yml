@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: postern-api
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: init-setup
+    rootDir: .
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: off
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:8080
+      - key: Authentication__Issuer
+        value: Postern
+      - key: Authentication__Audience
+        value: Postern.Web
+      - key: Alias__SuffixLength
+        value: "4"
+      - key: Invites__WorkerEnabled
+        value: "true"
+      - key: Alias__Domain
+        sync: false
+      - key: Invites__PublicBaseUrl
+        sync: false
+      - key: Cors__AllowedOrigins__0
+        sync: false
+      - key: ConnectionStrings__Postgres
+        sync: false
+      - key: Authentication__SigningKey
+        sync: false
+      - key: Ingest__SharedSecret
+        sync: false
+      - key: Jobs__SharedSecret
+        sync: false
+      - key: Resend__ApiKey
+        sync: false
+      - key: Resend__WebhookSecret
+        sync: false
+      - key: Resend__From
+        sync: false
+      - key: Cloudflare__AccountId
+        sync: false
+      - key: Cloudflare__ApiToken
+        sync: false
+      - key: Cloudflare__KvNamespaceId
+        sync: false
