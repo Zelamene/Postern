@@ -1,0 +1,172 @@
+name: CD - Deploy Postern
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: cd-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate-db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Restore dependencies
+        run: dotnet restore backend/Postern.slnx
+
+      - name: Backup Database
+        env:
+          PGCONN: ${{ secrets.POSTERN_MIGRATOR_CONNECTION_STRING }}
+        run: |
+          trap 'rm -f ~/.pgpass' EXIT
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          
+          HOST=$(echo "$PGCONN" | grep -oP '(?i)(?<=Host=)[^;]+')
+          PORT=$(echo "$PGCONN" | grep -oP '(?i)(?<=Port=)[^;]+' || echo 5432)
+          DBNAME=$(echo "$PGCONN" | grep -oP '(?i)(?<=Database=)[^;]+')
+          PGUSER=$(echo "$PGCONN" | grep -oP '(?i)(?<=Username=)[^;]+')
+          PGPASS=$(echo "$PGCONN" | grep -oP '(?i)(?<=Password=)[^;]+')
+
+          echo "${HOST}:${PORT}:${DBNAME}:${PGUSER}:${PGPASS}" > ~/.pgpass 
+          chmod 600 ~/.pgpass
+          
+          pg_dump -h "$HOST" -p "$PORT" -U "$PGUSER" -d "$DBNAME" -Fc -f pre_migration_backup.pg_dump
+          rm -f ~/.pgpass
+
+      - name: Upload DB Backup Artifact
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: db-backup-prod-${{ github.sha }}-${{ github.run_attempt }}
+          path: pre_migration_backup.pg_dump
+          retention-days: 30
+
+      - name: Run Migrations (Production)
+        env:
+          POSTERN_MIGRATOR_CONNECTION_STRING: ${{ secrets.POSTERN_MIGRATOR_CONNECTION_STRING }}
+        run: |
+          dotnet ef database update \
+            --project backend/src/Postern.Infrastructure \
+            --startup-project backend/src/Postern.Api
+
+  deploy-worker:
+    needs: migrate-db
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Node
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b
+        with:
+          node-version: '22'
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@8064e72051e288b3b2c108d1c7b78b699fc3a58a
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          command: deploy
+
+  deploy-backend:
+    needs: migrate-db
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Node
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b
+        with:
+          node-version: '22'
+
+      - name: Install Render CLI
+        run: npm install -g @renderinc/cli
+
+      - name: Trigger Render Deploy and Wait
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          render deploys create --service "$RENDER_SERVICE_ID" --wait --commit "${{ github.sha }}"
+
+  deploy-frontend:
+    needs: [deploy-backend, deploy-worker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Node
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b
+        with:
+          node-version: '22'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  smoke-tests:
+    needs: deploy-frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Backend Health
+        run: |
+          for _ in {1..5}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.3xyz.uk/health)
+            if [ "$STATUS" -eq 200 ]; then
+              echo "Backend is healthy"
+              exit 0
+            fi
+            echo "Waiting for backend... (Status: $STATUS)"
+            sleep 10
+          done
+          echo "Backend health check failed"
+          exit 1
+
+      - name: Verify Frontend Availability
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://app.3xyz.uk)
+          if [ "$STATUS" -eq 200 ]; then
+            echo "Frontend is live"
+          else
+            echo "Frontend failed to load (Status: $STATUS)"
+            exit 1
+          fi
