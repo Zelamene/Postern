@@ -82,7 +82,7 @@ jobs:
           node-version: '22'
 
       - name: Deploy Worker
-        uses: cloudflare/wrangler-action@8064e72051e288b3b2c108d1c7b78b699fc3a58a
+        uses: cloudflare/wrangler-action@1029e90033977ccf46c2a9b3ddc55e42ad5da467
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -97,20 +97,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Setup Node
-        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b
-        with:
-          node-version: '22'
-
-      - name: Install Render CLI
-        run: npm install -g @renderinc/cli
-
-      - name: Trigger Render Deploy and Wait
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+      - name: Trigger Render Deploy
         run: |
-          render deploys create --service "$RENDER_SERVICE_ID" --wait --commit "${{ github.sha }}"
+          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
 
   deploy-frontend:
     needs: [deploy-backend, deploy-worker]
