@@ -1,6 +1,7 @@
 name: CD - Deploy Postern
 
 on:
+  workflow_call:
   workflow_dispatch:
 
 concurrency:

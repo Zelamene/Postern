@@ -85,7 +85,10 @@ describe('Alias triage flow', () => {
     expect(await screen.findByText('High severity · Failed authentication')).toBeDefined()
     await user.click(screen.getByRole('button', { name: 'Mark unknown.example as expected' }))
 
-    expect(markedSender).toEqual({ senderEtld1: 'unknown.example' })
+    expect(markedSender).toEqual({
+      senderEtld1: 'unknown.example',
+      senderAddress: 'billing@unknown.example',
+    })
     expect(
       await screen.findByText('Sender marked as expected. Its mail is no longer flagged.'),
     ).toBeDefined()
