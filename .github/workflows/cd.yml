@@ -12,11 +12,25 @@ permissions:
   contents: read
 
 jobs:
+  approve:
+    name: Approve production deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+    environment:
+      name: production
+      url: https://app.3xyz.uk
+    steps:
+      - name: Record approval
+        run: |
+          echo "Production deploy approved"
+          echo "commit=${GITHUB_SHA}"
+          echo "actor=${GITHUB_ACTOR}"
+          echo "ref=${GITHUB_REF}"
+
   migrate-db:
+    needs: approve
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: production
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
