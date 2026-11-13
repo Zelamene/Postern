@@ -12,7 +12,7 @@ function IsValidEmail(email: string): boolean {
   return EMAIL_PATTERN.test(email)
 }
 
-/** Accepts either a full address or a bare domain, as the API does. */
+
 function IsValidSender(value: string): boolean {
   const candidate = value.trim()
   if (!candidate || candidate.length > MAX_ADDRESS_LENGTH) {
@@ -26,7 +26,7 @@ function Normalize(email: string): string {
   return email.trim().toLowerCase()
 }
 
-/** Pulls the host out of a `From` header, envelope sender, or bare domain. */
+
 function SenderHost(value: string): string | null {
   const candidate = value.trim()
   if (!candidate) {
@@ -52,7 +52,7 @@ function SenderHost(value: string): string | null {
   return cleaned
 }
 
-/** Pulls the full mailbox address out of a `From` header or envelope sender. */
+
 function SenderAddress(value: string): string | null {
   const candidate = value.trim()
   if (!candidate) {
@@ -67,7 +67,9 @@ function SenderAddress(value: string): string | null {
         ? candidate.slice(openBracket + 1, closeBracket)
         : candidate.slice(openBracket + 1)
       : candidate
-  const normalized = Normalize(address).replace(/^["']+|["';,]+$/g, '')
+  const normalized = Normalize(address)
+    .replace(/^["']+/, '')
+    .replace(/["';,]+$/, '')
   return IsValidEmail(normalized) ? normalized : null
 }
 
