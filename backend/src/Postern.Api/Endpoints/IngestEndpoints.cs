@@ -36,16 +36,7 @@ public static class IngestEndpoints
             return Results.BadRequest(new { status = "dropped" });
         }
 
-        var outcome = await ingestService.IngestWithOutcomeAsync(
-            request.RecipientAddress ?? string.Empty,
-            request.EnvelopeSender ?? string.Empty,
-            request.FromHeader ?? string.Empty,
-            request.Subject,
-            request.AuthenticationResult ?? "unknown",
-            cancellationToken,
-            request.Blocked ?? false,
-            request.Reason,
-            request.MessageId);
+        var outcome = await ingestService.IngestWithOutcomeAsync(request, cancellationToken);
 
         if (outcome.Result == IngestResult.Accepted)
         {

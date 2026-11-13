@@ -67,9 +67,21 @@ function SenderAddress(value: string): string | null {
         ? candidate.slice(openBracket + 1, closeBracket)
         : candidate.slice(openBracket + 1)
       : candidate
-  const normalized = Normalize(address)
-    .replace(/^["']+/, '')
-    .replace(/["';,]+$/, '')
+
+  let normalized = Normalize(address)
+  while (normalized.startsWith('"') || normalized.startsWith("'")) {
+    normalized = normalized.slice(1)
+  }
+  while (
+    normalized.endsWith('"') ||
+    normalized.endsWith("'") ||
+    normalized.endsWith(';') ||
+    normalized.endsWith(',') ||
+    normalized.endsWith('.')
+  ) {
+    normalized = normalized.slice(0, -1)
+  }
+
   return IsValidEmail(normalized) ? normalized : null
 }
 
