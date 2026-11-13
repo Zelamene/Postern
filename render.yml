@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     region: oregon
-    branch: init-setup
+    branch: main
     rootDir: .
     dockerContext: backend
     dockerfilePath: backend/Dockerfile
