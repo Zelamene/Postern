@@ -3,9 +3,12 @@ import type { ThemeMode } from './types'
 import { ConnectionBanner } from './components/common/ConnectionBanner'
 import { AdminPage } from './pages/AdminPage'
 import { AppPage } from './pages/AppPage'
+import { CookiePolicyPage } from './pages/CookiePolicyPage'
 import { HomePage } from './pages/HomePage'
 import { InviteRegistrationPage } from './pages/InviteRegistrationPage'
 import { LoginPage } from './pages/LoginPage'
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage'
+import { TermsPage } from './pages/TermsPage'
 
 const STORAGE_KEY = 'postern-theme'
 
@@ -51,6 +54,12 @@ function App() {
     page = <AdminPage theme={theme} onThemeChange={setTheme} />
   } else if (/^\/login\/?$/.test(pathname)) {
     page = <LoginPage />
+  } else if (/^\/privacy\/?$/.test(pathname)) {
+    page = <PrivacyPolicyPage theme={theme} onThemeChange={setTheme} />
+  } else if (/^\/terms\/?$/.test(pathname)) {
+    page = <TermsPage theme={theme} onThemeChange={setTheme} />
+  } else if (/^\/cookies\/?$/.test(pathname)) {
+    page = <CookiePolicyPage theme={theme} onThemeChange={setTheme} />
   }
 
   return (

@@ -64,8 +64,8 @@ export function SolutionSection() {
           <Reveal delayMs={120}>
             <SolutionCard
               icon={<IconZap size={22} />}
-              title="Instant Edge Forwarding"
-              description="Incoming emails are forwarded to your personal Gmail, Outlook, or Proton address in under 15ms without delay."
+              title="Edge-First Forwarding"
+              description="Incoming mail is forwarded to your personal Gmail, Outlook, or Proton address through Cloudflare’s edge, with no central inbox in between. Delivery time depends on the sender and your mail provider."
             />
           </Reveal>
           <Reveal delayMs={180}>
@@ -79,7 +79,7 @@ export function SolutionSection() {
             <SolutionCard
               icon={<IconTrash2 size={22} />}
               title="One-Click Gate Closing"
-              description="Turn off an alias at any time with a single tap. Subsequent messages sent to that address are dropped silently with zero backscatter."
+              description="Turn off an alias at any time with a single tap. Subsequent messages sent to that address are discarded rather than bounced."
             />
           </Reveal>
           <Reveal delayMs={300}>
@@ -92,8 +92,8 @@ export function SolutionSection() {
           <Reveal delayMs={360}>
             <SolutionCard
               icon={<IconCheckCircle size={22} />}
-              title="Permanent Retirement Guarantee"
-              description="Deleted aliases are cryptographically tombstoned. They will never be recycled or assigned to anyone else in the future."
+              title="Permanent Retirement"
+              description="Deleted aliases are cryptographically tombstoned. They are not recycled or assigned to anyone else."
             />
           </Reveal>
         </div>

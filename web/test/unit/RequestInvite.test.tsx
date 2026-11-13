@@ -44,6 +44,10 @@ describe('RequestInvite', () => {
     const dialog = screen.getByRole('dialog')
     expect(dialog).toHaveAttribute('open')
     expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
+    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute(
+      'href',
+      '/privacy',
+    )
 
     await user.type(screen.getByLabelText('Email address'), 'person@example.com')
     await user.click(screen.getByRole('button', { name: 'Send request' }))

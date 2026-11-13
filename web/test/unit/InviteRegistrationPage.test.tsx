@@ -23,6 +23,14 @@ describe('InviteRegistrationPage', () => {
     render(<InviteRegistrationPage inviteCode="postern_invite_secret" />)
     expect(await screen.findByLabelText('Invited email address')).toHaveValue('person@example.test')
     expect(screen.getByLabelText('Invited email address')).toHaveAttribute('readonly')
+    expect(screen.getByRole('link', { name: 'Terms of Service' })).toHaveAttribute(
+      'href',
+      '/terms',
+    )
+    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute(
+      'href',
+      '/privacy',
+    )
     await user.type(screen.getByLabelText('Password'), 'a long secure password')
     await user.click(screen.getByRole('button', { name: 'Accept invitation' }))
 

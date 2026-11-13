@@ -1,0 +1,66 @@
+POSTERN — THIRD-PARTY NOTICES
+Last updated: 13 November 2026
+
+Postern includes the third-party software and fonts listed below. Full licence
+texts are published in /licenses/ and are also distributed with the
+corresponding packages.
+
+--------------------------------------------------------------------------------
+RUNTIME SOFTWARE (WEB)
+--------------------------------------------------------------------------------
+
+React and React DOM 19.3.1
+  Copyright (c) Meta Platforms, Inc. and affiliates.
+  Licence: MIT — /licenses/react-MIT.txt
+
+@microsoft/signalr 10.0.11
+  Copyright (c) .NET Foundation. All rights reserved.
+  Licence: MIT — /licenses/signalr-MIT.txt
+  Bundled third-party notices: /licenses/signalr-bundled-third-party-notices.txt
+
+qrcode 1.5.4
+  Copyright (c) 2012 Ryan Day
+  Licence: MIT — /licenses/qrcode-MIT.txt
+
+@fontsource-variable/manrope 5.3.0
+  Manrope font, Copyright 2019 The Manrope Project Authors
+  (https://github.com/sharanda/manrope)
+  Licence: SIL Open Font License 1.1 — /licenses/manrope-OFL-1.1.txt
+
+--------------------------------------------------------------------------------
+RUNTIME SOFTWARE (API)
+--------------------------------------------------------------------------------
+
+The Postern API is built on .NET 10 and uses the following packages. All are
+distributed under the MIT licence, except Npgsql, which uses the PostgreSQL
+licence. Copyright notices and full licence texts are distributed with each
+NuGet package and with the .NET runtime.
+
+  Microsoft.EntityFrameworkCore 10.0.14                     MIT
+  Microsoft.EntityFrameworkCore.Design 10.0.14              MIT
+  Microsoft.AspNetCore.Authentication.JwtBearer 10.0.14     MIT
+  Microsoft.AspNetCore.DataProtection.EntityFrameworkCore 10.0.14  MIT
+  Npgsql.EntityFrameworkCore.PostgreSQL 10.0.0              PostgreSQL
+  Swashbuckle.AspNetCore 10.3.1                             MIT
+  .NET runtime 10                                          MIT
+
+--------------------------------------------------------------------------------
+SERVICE PROVIDERS
+--------------------------------------------------------------------------------
+
+Postern uses the following providers to operate the service. They are not
+distributed with the software and are listed here for transparency. See the
+Privacy Policy for the data each provider processes.
+
+  Cloudflare   Edge network, email routing, alias key-value store
+  Neon         Managed PostgreSQL database
+  Render       API hosting
+  Vercel       Website hosting
+  Resend       Transactional invitation email delivery
+
+--------------------------------------------------------------------------------
+BRAND ASSETS
+--------------------------------------------------------------------------------
+
+The Postern name, logo, and brand assets are original works owned by the
+operator of Postern. They are not covered by the open-source licences above.

@@ -86,13 +86,18 @@ jobs:
         working-directory: web
         run: npm run build
 
-      - name: Run unit tests with coverage
+      - name: Run tests with coverage
         working-directory: web
         run: npm run test:coverage
 
       - name: Run integration tests
         working-directory: web
         run: npm run test:integration -- --no-file-parallelism
+
+      - name: Summarise coverage
+        if: always()
+        working-directory: web
+        run: npm run coverage:summary
 
       - name: Upload coverage report
         if: always()

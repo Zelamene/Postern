@@ -42,10 +42,173 @@ vi.mock('../../src/realtime/userRealtime', () => ({
 describe('useUserRealtime', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers()
     mocks.handlers.clear()
     mocks.lifecycle.onclose = undefined
     mocks.lifecycle.onreconnected = undefined
     mocks.lifecycle.onreconnecting = undefined
+  })
+
+  it('does not connect while disabled', () => {
+    renderHook(() =>
+      useUserRealtime(false, {
+        onAliasesChanged: vi.fn(),
+        onMessageReceived: vi.fn(),
+        onBlockedMessageReceived: vi.fn(),
+        onAccountChanged: vi.fn(),
+      }),
+    )
+
+    expect(mocks.start).not.toHaveBeenCalled()
+  })
+
+  it('warns when the connection starts reconnecting with an error', () => {
+    mocks.start.mockResolvedValue(undefined)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    renderHook(() =>
+      useUserRealtime(true, {
+        onAliasesChanged: vi.fn(),
+        onMessageReceived: vi.fn(),
+        onBlockedMessageReceived: vi.fn(),
+        onAccountChanged: vi.fn(),
+      }),
+    )
+
+    act(() => mocks.lifecycle.onreconnecting?.(new Error('lost')))
+    expect(warnSpy).toHaveBeenCalledWith(
+      'User real-time connection is reconnecting',
+      expect.any(Error),
+    )
+
+    act(() => mocks.lifecycle.onreconnecting?.())
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    warnSpy.mockRestore()
+  })
+
+  it('retries after the connection closes and logs the error', async () => {
+    vi.useFakeTimers()
+    mocks.start.mockResolvedValue(undefined)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    renderHook(() =>
+      useUserRealtime(true, {
+        onAliasesChanged: vi.fn(),
+        onMessageReceived: vi.fn(),
+        onBlockedMessageReceived: vi.fn(),
+        onAccountChanged: vi.fn(),
+      }),
+    )
+
+    await act(async () => undefined)
+    expect(mocks.start).toHaveBeenCalledTimes(1)
+
+    act(() => mocks.lifecycle.onclose?.(new Error('dropped')))
+    expect(errorSpy).toHaveBeenCalledWith('User real-time connection closed', expect.any(Error))
+
+    await act(async () => {
+      vi.advanceTimersByTime(5_000)
+    })
+    expect(mocks.start).toHaveBeenCalledTimes(2)
+    errorSpy.mockRestore()
+  })
+
+  it('retries after a silent close without logging an error', async () => {
+    vi.useFakeTimers()
+    mocks.start.mockResolvedValue(undefined)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    renderHook(() =>
+      useUserRealtime(true, {
+        onAliasesChanged: vi.fn(),
+        onMessageReceived: vi.fn(),
+        onBlockedMessageReceived: vi.fn(),
+        onAccountChanged: vi.fn(),
+      }),
+    )
+
+    await act(async () => undefined)
+    act(() => mocks.lifecycle.onclose?.())
+    expect(errorSpy).not.toHaveBeenCalled()
+
+    await act(async () => {
+      vi.advanceTimersByTime(5_000)
+    })
+    expect(mocks.start).toHaveBeenCalledTimes(2)
+    errorSpy.mockRestore()
+  })
+
+  it('retries when starting the connection fails', async () => {
+    vi.useFakeTimers()
+    mocks.start.mockRejectedValueOnce(new Error('refused')).mockResolvedValue(undefined)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    renderHook(() =>
+      useUserRealtime(true, {
+        onAliasesChanged: vi.fn(),
+        onMessageReceived: vi.fn(),
+        onBlockedMessageReceived: vi.fn(),
+        onAccountChanged: vi.fn(),
+      }),
+    )
+
+    await act(async () => undefined)
+    expect(errorSpy).toHaveBeenCalledWith('User real-time connection failed', expect.any(Error))
+
+    await act(async () => {
+      vi.advanceTimersByTime(5_000)
+    })
+    expect(mocks.start).toHaveBeenCalledTimes(2)
+    errorSpy.mockRestore()
+  })
+
+  it('cancels a pending retry on unmount and ignores a late close', async () => {
+    vi.useFakeTimers()
+    mocks.start.mockResolvedValue(undefined)
+    const { unmount } = renderHook(() =>
+      useUserRealtime(true, {
+        onAliasesChanged: vi.fn(),
+        onMessageReceived: vi.fn(),
+        onBlockedMessageReceived: vi.fn(),
+        onAccountChanged: vi.fn(),
+      }),
+    )
+
+    await act(async () => undefined)
+    act(() => mocks.lifecycle.onclose?.(new Error('dropped')))
+    unmount()
+
+    act(() => mocks.lifecycle.onclose?.(new Error('late')))
+    await act(async () => {
+      vi.advanceTimersByTime(10_000)
+    })
+
+    expect(mocks.start).toHaveBeenCalledTimes(1)
+  })
+
+  it('logs when the connection cannot be stopped cleanly', async () => {
+    mocks.start.mockResolvedValue(undefined)
+    mocks.stop.mockRejectedValue(new Error('stop failed'))
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    const { unmount } = renderHook(() =>
+      useUserRealtime(true, {
+        onAliasesChanged: vi.fn(),
+        onMessageReceived: vi.fn(),
+        onBlockedMessageReceived: vi.fn(),
+        onAccountChanged: vi.fn(),
+      }),
+    )
+
+    await waitFor(() => expect(mocks.start).toHaveBeenCalledOnce())
+    unmount()
+    await act(async () => undefined)
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      'User real-time connection could not be stopped cleanly',
+      expect.any(Error),
+    )
+    errorSpy.mockRestore()
   })
 
   it('routes user events to the matching handlers', async () => {

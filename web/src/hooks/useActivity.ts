@@ -31,8 +31,6 @@ function useActivityFeed<T>(loader: PageLoader<T> | null): ActivityFeed<T> {
   const [error, setError] = useState<string | null>(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  // A different alias (or a disabled feed) resets the stored page during render
-  // so the effect below only ever performs the request.
   if (activeLoader !== loader) {
     setActiveLoader(() => loader)
     setItems([])

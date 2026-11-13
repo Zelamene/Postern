@@ -47,4 +47,16 @@ describe('Postern app shell', () => {
 
     expect(await screen.findByRole('heading', { name: 'Admin sign in' })).toBeVisible()
   })
+
+  it.each([
+    ['/privacy', 'Privacy Policy'],
+    ['/terms', 'Terms of Service'],
+    ['/cookies', 'Cookie Policy'],
+  ])('routes %s to the %s page', (path, heading) => {
+    window.history.pushState({}, '', path)
+
+    render(<App />)
+
+    expect(screen.getByRole('heading', { level: 1, name: heading })).toBeVisible()
+  })
 })

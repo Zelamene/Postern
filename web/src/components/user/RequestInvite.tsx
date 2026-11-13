@@ -44,7 +44,7 @@ export function RequestInvite() {
             message = errorData.error
           }
         } catch {
-          // Keep the generic message when the server does not return JSON.
+
         }
         setState({ ...state, error: message, submitting: false })
         return
@@ -140,7 +140,12 @@ export function RequestInvite() {
                   aria-describedby="invite-email-help"
                 />
                 <p id="invite-email-help" className="mt-1 text-xs text-text-muted">
-                  We’ll email you if your request is approved.
+                  We’ll email you if your request is approved. We use your address only to review
+                  and respond to this request — see our{' '}
+                  <a href="/privacy" className="font-semibold">
+                    Privacy Policy
+                  </a>
+                  .
                 </p>
               </div>
               <button

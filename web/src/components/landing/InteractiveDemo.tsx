@@ -16,7 +16,6 @@ interface InboundSimulation {
   subject: string
   timestamp: string
   status: string
-  deliveryTimeMs: number
 }
 
 type LeakActionState = 'flagged' | 'expected' | 'replaced' | 'blocked'
@@ -63,7 +62,6 @@ export function InteractiveDemo() {
         subject: `Your receipt for ${cleanLabel} subscription`,
         timestamp: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
         status: 'Forwarded via KV (SPF/DKIM pass)',
-        deliveryTimeMs: 14,
       })
       setIsSimulating(false)
     }, 450)
@@ -74,7 +72,7 @@ export function InteractiveDemo() {
       <div className="shell">
         <Reveal>
           <div className="mb-14 max-w-[42rem]">
-            <span className="chip chip--primary chip--sm mb-3">Live Interactive Console</span>
+            <span className="chip chip--primary chip--sm mb-3">Interactive Demo</span>
             <h2 id="demo-heading" className="text-h2 font-bold tracking-tight text-text">
               Try creating an alias right now
             </h2>
@@ -196,8 +194,8 @@ export function InteractiveDemo() {
                 </div>
                 <p className="empty__title text-h4 font-bold">No mail received yet</p>
                 <p className="empty__body mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-secondary">
-                  Click <strong>Simulate incoming email</strong> to see how Postern delivers mail directly to your primary
-                  inbox in milliseconds with zero body retention.
+                  Click <strong>Simulate incoming email</strong> to see how Postern routes a message
+                  to your primary inbox while discarding the body.
                 </p>
               </div>
             ) : (
@@ -205,9 +203,9 @@ export function InteractiveDemo() {
                 <div className="alert alert--success">
                   <IconCheck size={20} className="alert__icon" />
                   <div>
-                    <p className="alert__title">Email routed successfully in {inboundTest.deliveryTimeMs}ms</p>
+                    <p className="alert__title">Simulated: email routed successfully</p>
                     <p>
-                      Postern edge worker resolved policy and forwarded to your primary destination instantly.
+                      Postern edge worker resolved policy and forwarded to your primary destination.
                     </p>
                   </div>
                 </div>
@@ -319,8 +317,8 @@ export function InteractiveDemo() {
               <div className="alert alert--warning">
                 <p className="alert__title">New clean alias created for {cleanLabel}</p>
                 <p>
-                  The previous address has been permanently retired. Any further spam hitting the old address will be dropped
-                  at the edge with zero backscatter.
+                  The previous address has been permanently retired. Any further spam hitting the old address will be discarded
+                  at the edge rather than bounced.
                 </p>
               </div>
             )}
