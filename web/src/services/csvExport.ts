@@ -15,13 +15,15 @@ export function serializeCsv(headers: string[], rows: string[][]): string {
 }
 
 export function sanitizeFilenamePart(value: string): string {
-  const sanitized = value
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, '-')
-    .replaceAll(/^-+|-+$/g, '')
-    .slice(0, 48)
+  let sanitized = value.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-')
+  while (sanitized.startsWith('-')) {
+    sanitized = sanitized.slice(1)
+  }
+  while (sanitized.endsWith('-')) {
+    sanitized = sanitized.slice(0, -1)
+  }
 
-  return sanitized || 'alias'
+  return sanitized.slice(0, 48) || 'alias'
 }
 
 function toFileDate(value: string): string | null {
@@ -39,7 +41,7 @@ export function formatExportDateRange(receivedAtValues: string[]): string {
     return 'no-messages'
   }
 
-  dates.sort()
+  dates.sort((a, b) => a.localeCompare(b))
   const start = dates[0]
   const end = dates[dates.length - 1]
   return start === end ? start : `${start}-to-${end}`

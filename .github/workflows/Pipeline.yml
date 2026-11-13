@@ -1,0 +1,36 @@
+name: Pipeline
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    uses: ./.github/workflows/backend-ci.yml
+    permissions:
+      contents: read
+
+  web:
+    name: Web
+    uses: ./.github/workflows/web-ci.yml
+    permissions:
+      contents: read
+
+  deploy:
+    name: Deploy
+    needs: [backend, web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/cd.yml
+    permissions:
+      contents: read
+    secrets: inherit

@@ -1,12 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Postern.Application.Accounts;
 
 namespace Postern.Api.Security;
 
-public sealed class JwtTokenIssuer(IConfiguration configuration, TimeProvider timeProvider)
+public sealed class JwtTokenIssuer(JwtOptions options, TimeProvider timeProvider)
 {
     public const string CookieName = "Postern.Auth";
     public static readonly TimeSpan Lifetime = TimeSpan.FromHours(1);
@@ -17,10 +16,6 @@ public sealed class JwtTokenIssuer(IConfiguration configuration, TimeProvider ti
 
     public string Issue(AuthenticatedAccount account)
     {
-        var signingKey = configuration["Authentication:SigningKey"]
-            ?? throw new InvalidOperationException("The JWT signing key is not configured.");
-        var issuer = configuration["Authentication:Issuer"] ?? "Postern";
-        var audience = configuration["Authentication:Audience"] ?? "Postern.Web";
         var now = timeProvider.GetUtcNow();
         var claims = new List<Claim>
         {
@@ -38,14 +33,12 @@ public sealed class JwtTokenIssuer(IConfiguration configuration, TimeProvider ti
 
         var lifetime = LifetimeFor(account);
         var token = new JwtSecurityToken(
-            issuer,
-            audience,
+            options.Issuer,
+            options.Audience,
             claims,
             now.UtcDateTime,
             now.Add(lifetime).UtcDateTime,
-            new SigningCredentials(
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
-                SecurityAlgorithms.HmacSha256));
+            new SigningCredentials(options.CreateSigningKey(), SecurityAlgorithms.HmacSha256));
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

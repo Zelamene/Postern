@@ -178,6 +178,48 @@ public sealed class AliasService(
             cancellationToken);
     }
 
+    public async Task<ExpectedSender?> AddExpectedAddressAsync(
+        Guid userId,
+        Guid aliasId,
+        string senderAddress,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(senderAddress))
+        {
+            return null;
+        }
+
+        var normalized = Etld1Normalizer.NormalizeSenderAddress(senderAddress);
+        if (normalized is null)
+        {
+            return null;
+        }
+
+        var etld1 = Etld1Normalizer.Normalize(normalized);
+        if (string.IsNullOrWhiteSpace(etld1))
+        {
+            return null;
+        }
+
+        return await aliases.AddExpectedAddressSenderAsync(
+            aliasId,
+            userId,
+            normalized,
+            etld1,
+            timeProvider.GetUtcNow(),
+            cancellationToken);
+    }
+
+    public async Task<bool> MarkExpectedAddressAsync(
+        Guid userId,
+        Guid aliasId,
+        string senderAddress,
+        CancellationToken cancellationToken)
+    {
+        var sender = await AddExpectedAddressAsync(userId, aliasId, senderAddress, cancellationToken);
+        return sender is not null;
+    }
+
     public async Task<bool> MarkExpectedSenderAsync(
         Guid userId,
         Guid aliasId,

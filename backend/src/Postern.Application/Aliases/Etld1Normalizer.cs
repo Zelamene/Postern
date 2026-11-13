@@ -7,6 +7,45 @@ public static class Etld1Normalizer
         "co.uk", "org.uk", "ac.uk", "gov.uk", "net.uk", "com.au", "net.au", "org.au"
     };
 
+    public static string? NormalizeSenderAddress(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var candidate = value.Trim();
+        var openBracket = candidate.LastIndexOf('<');
+        if (openBracket >= 0)
+        {
+            candidate = candidate[(openBracket + 1)..];
+        }
+
+        var closeBracket = candidate.IndexOf('>');
+        if (closeBracket >= 0)
+        {
+            candidate = candidate[..closeBracket];
+        }
+
+        candidate = candidate.Trim().Trim('"').Trim().TrimEnd(';', ',');
+
+        if (candidate.Length is 0 or > 320
+            || candidate.Contains(' ')
+            || candidate.Contains('<')
+            || candidate.Contains('>'))
+        {
+            return null;
+        }
+
+        var atIndex = candidate.LastIndexOf('@');
+        if (atIndex <= 0 || atIndex == candidate.Length - 1)
+        {
+            return null;
+        }
+
+        return candidate.ToLowerInvariant();
+    }
+
     public static string? Normalize(string? domain)
     {
         if (string.IsNullOrWhiteSpace(domain))

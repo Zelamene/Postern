@@ -28,7 +28,9 @@ public class IngestServiceCoverageTests
         repo.AddAlias(alias);
         var service = new IngestService(repo, new FixedTimeProvider(Now));
 
-        var result = await service.IngestAsync(alias.FullAddress!, "s", "f", "sub", "pass", CancellationToken.None, blocked: true, reason: "  " + new string('r', 50));
+        var result = await service.IngestAsync(
+            new IngestRequest(alias.FullAddress!, "s", "f", "sub", "pass", Blocked: true, Reason: "  " + new string('r', 50)),
+            CancellationToken.None);
 
         Assert.Equal(IngestResult.Blocked, result);
         Assert.Equal(32, repo.BlockedMessages.Single().Reason.Length);
@@ -42,7 +44,9 @@ public class IngestServiceCoverageTests
         repo.AddAlias(alias);
         var service = new IngestService(repo, new FixedTimeProvider(Now));
 
-        await service.IngestAsync(alias.FullAddress!, "s", "f", "sub", "pass", CancellationToken.None, blocked: true, reason: null);
+        await service.IngestAsync(
+            new IngestRequest(alias.FullAddress!, "s", "f", "sub", "pass", Blocked: true, Reason: null),
+            CancellationToken.None);
 
         Assert.Equal("blocked", repo.BlockedMessages.Single().Reason);
     }
@@ -115,21 +119,23 @@ public class IngestServiceCoverageTests
         const string messageId = "<same-message@example.com>";
 
         var first = await service.IngestAsync(
-            alias.FullAddress!,
-            "orders@example.com",
-            "Shop <orders@example.com>",
-            "first delivery",
-            "pass",
-            CancellationToken.None,
-            messageId: messageId);
+            new IngestRequest(
+                alias.FullAddress!,
+                "orders@example.com",
+                "Shop <orders@example.com>",
+                "first delivery",
+                "pass",
+                MessageId: messageId),
+            CancellationToken.None);
         var duplicate = await service.IngestAsync(
-            alias.FullAddress!,
-            "orders@example.com",
-            "Shop <orders@example.com>",
-            "second delivery",
-            "pass",
-            CancellationToken.None,
-            messageId: messageId);
+            new IngestRequest(
+                alias.FullAddress!,
+                "orders@example.com",
+                "Shop <orders@example.com>",
+                "second delivery",
+                "pass",
+                MessageId: messageId),
+            CancellationToken.None);
 
         Assert.Equal(IngestResult.Accepted, first);
         Assert.Equal(IngestResult.Duplicate, duplicate);
@@ -147,13 +153,14 @@ public class IngestServiceCoverageTests
         var service = new IngestService(repo, new FixedTimeProvider(Now));
 
         var result = await service.IngestAsync(
-            alias.FullAddress!,
-            "orders@example.com",
-            "Shop <orders@example.com>",
-            "hello",
-            "pass",
-            CancellationToken.None,
-            messageId: "   ");
+            new IngestRequest(
+                alias.FullAddress!,
+                "orders@example.com",
+                "Shop <orders@example.com>",
+                "hello",
+                "pass",
+                MessageId: "   "),
+            CancellationToken.None);
 
         Assert.Equal(IngestResult.Accepted, result);
         Assert.Null(Assert.Single(repo.Messages).MessageId);
@@ -173,13 +180,14 @@ public class IngestServiceCoverageTests
         foreach (var alias in new[] { firstAlias, secondAlias })
         {
             var result = await service.IngestAsync(
-                alias.FullAddress!,
-                "orders@example.com",
-                "Shop <orders@example.com>",
-                "hello",
-                "pass",
-                CancellationToken.None,
-                messageId: messageId);
+                new IngestRequest(
+                    alias.FullAddress!,
+                    "orders@example.com",
+                    "Shop <orders@example.com>",
+                    "hello",
+                    "pass",
+                    MessageId: messageId),
+                CancellationToken.None);
             Assert.Equal(IngestResult.Accepted, result);
         }
 

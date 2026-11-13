@@ -1,5 +1,7 @@
 import { createHmac, randomBytes, randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
@@ -71,6 +73,44 @@ export async function createVerifiedAccount(
   return { email, password }
 }
 
+const DOCKER_CANDIDATES: Record<string, string[]> = {
+  win32: [
+    join(
+      process.env['ProgramFiles'] ?? 'C:\\Program Files',
+      'Docker',
+      'Docker',
+      'resources',
+      'bin',
+      'docker.exe',
+    ),
+    join(
+      process.env['LOCALAPPDATA'] ?? '',
+      'Programs',
+      'DockerDesktop',
+      'resources',
+      'bin',
+      'docker.exe',
+    ),
+  ],
+  darwin: [
+    '/usr/local/bin/docker',
+    '/opt/homebrew/bin/docker',
+    '/Applications/Docker.app/Contents/Resources/bin/docker',
+  ],
+  linux: ['/usr/bin/docker', '/usr/local/bin/docker', '/snap/bin/docker'],
+}
+
+function dockerBinary(): string {
+  const candidates = DOCKER_CANDIDATES[process.platform] ?? DOCKER_CANDIDATES.linux
+  const found = candidates.find((candidate) => candidate.length > 0 && existsSync(candidate))
+  if (!found) {
+    throw new Error(
+      'The Docker CLI was not found in a standard install location; install Docker or run the E2E suite where it is available.',
+    )
+  }
+  return found
+}
+
 export function promoteAccountToAdmin(email: string) {
   if (!/^e2e-[a-f0-9-]+@example\.test$/.test(email)) {
     throw new Error('Refusing to promote an account outside the isolated E2E database.')
@@ -91,7 +131,7 @@ export function promoteAccountToAdmin(email: string) {
   ].join(' ')
 
   execFileSync(
-    'docker',
+    dockerBinary(),
     [
       'compose',
       '--project-name',

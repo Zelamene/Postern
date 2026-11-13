@@ -235,6 +235,64 @@ public sealed class DatabaseConstraintTests(PosternFixture fixture)
         AssertConstraint(error, "ux_expected_senders_alias_id_sender_etld1");
     }
 
+    [Fact]
+    public async Task ExpectedSenderAddress_IsUniquePerAlias()
+    {
+        var user = await fixture.AUserAsync();
+        var alias = await fixture.AnAliasAsync(user.Id);
+
+        await using var db = fixture.CreateContext();
+        db.ExpectedSenders.Add(new ExpectedSender
+        {
+            Id = Guid.NewGuid(),
+            AliasId = alias.Id,
+            SenderEtld1 = "shop.example",
+            SenderAddress = "orders@shop.example",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        db.ExpectedSenders.Add(new ExpectedSender
+        {
+            Id = Guid.NewGuid(),
+            AliasId = alias.Id,
+            SenderEtld1 = "shop.example",
+            SenderAddress = "orders@shop.example",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        var error = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        AssertConstraint(error, "ux_expected_senders_alias_id_sender_address");
+    }
+
+    [Fact]
+    public async Task ExpectedSenderAddress_CoexistsWithDomainRow()
+    {
+        var user = await fixture.AUserAsync();
+        var alias = await fixture.AnAliasAsync(user.Id);
+
+        await using var db = fixture.CreateContext();
+        db.ExpectedSenders.Add(new ExpectedSender
+        {
+            Id = Guid.NewGuid(),
+            AliasId = alias.Id,
+            SenderEtld1 = "shop.example",
+            TrustWholeDomain = true,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        db.ExpectedSenders.Add(new ExpectedSender
+        {
+            Id = Guid.NewGuid(),
+            AliasId = alias.Id,
+            SenderEtld1 = "shop.example",
+            SenderAddress = "orders@shop.example",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        Assert.Equal(2, await db.ExpectedSenders.CountAsync(sender => sender.AliasId == alias.Id));
+    }
+
     private static void AssertConstraint(DbUpdateException error, string expected)
     {
         var text = error.InnerException?.Message ?? error.Message;

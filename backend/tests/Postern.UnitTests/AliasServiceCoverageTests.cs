@@ -97,6 +97,7 @@ public class AliasServiceCoverageTests
         public Task MarkKvDirtyAsync(Guid aliasId, CancellationToken cancellationToken) => Task.CompletedTask;
         public Task<IReadOnlyCollection<ExpectedSender>> ListExpectedSendersAsync(Guid aliasId, Guid userId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyCollection<ExpectedSender>>(_senders.ToList());
         public Task<ExpectedSender?> AddExpectedSenderAsync(Guid aliasId, Guid userId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) { var s = new ExpectedSender { Id = Guid.NewGuid(), AliasId = aliasId, SenderEtld1 = senderEtld1, CreatedAt = createdAt }; _senders.Add(s); return Task.FromResult<ExpectedSender?>(s); }
+        public Task<ExpectedSender?> AddExpectedAddressSenderAsync(Guid aliasId, Guid userId, string senderAddress, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) { var s = new ExpectedSender { Id = Guid.NewGuid(), AliasId = aliasId, SenderEtld1 = senderEtld1, SenderAddress = senderAddress, CreatedAt = createdAt }; _senders.Add(s); return Task.FromResult<ExpectedSender?>(s); }
         public Task<bool> BlockSenderAsync(Guid aliasId, Guid userId, string senderEtld1, CancellationToken cancellationToken) => Task.FromResult(true);
         public Task<IReadOnlyCollection<ExpectedSender>> CopyExpectedSendersAsync(Guid sourceAliasId, Guid targetAliasId, Guid userId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyCollection<ExpectedSender>>([]);
     }

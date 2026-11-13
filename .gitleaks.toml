@@ -1,0 +1,17 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Test fixtures, docs, and local development placeholders"
+paths = [
+  '''backend/tests/.*''',
+  '''web/test/.*''',
+  '''docs/.*''',
+  '''env/.*''',
+  '''worker/wrangler\.toml''',
+]
+regexes = [
+  '''placeholder''',
+  '''example\.com''',
+  '''3xyz\.uk''',
+]

@@ -28,7 +28,7 @@ RUN dotnet publish src/Postern.Api/Postern.Api.csproj \
     --no-self-contained \
     -p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS production
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.14 AS production
 
 WORKDIR /app
 COPY --from=build --chown=10001:10001 /published/ ./

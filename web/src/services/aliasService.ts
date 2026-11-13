@@ -45,10 +45,11 @@ function postSenderAction(
   action: string,
   aliasId: string,
   senderEtld1: string,
+  senderAddress?: string | null,
 ): Promise<void> {
   return requestEmpty(aliasPath(aliasId, `/${action}`), {
     method: 'POST',
-    body: { senderEtld1 },
+    body: senderAddress ? { senderEtld1, senderAddress } : { senderEtld1 },
   })
 }
 
@@ -83,8 +84,12 @@ export function addExpectedSender(aliasId: string, senderEtld1: string): Promise
   return postSenderAction('expected-senders', aliasId, senderEtld1)
 }
 
-export function markExpectedSender(aliasId: string, senderEtld1: string): Promise<void> {
-  return postSenderAction('mark-expected', aliasId, senderEtld1)
+export function markExpectedSender(
+  aliasId: string,
+  senderEtld1: string,
+  senderAddress?: string | null,
+): Promise<void> {
+  return postSenderAction('mark-expected', aliasId, senderEtld1, senderAddress)
 }
 
 export function blockSender(aliasId: string, senderEtld1: string): Promise<void> {

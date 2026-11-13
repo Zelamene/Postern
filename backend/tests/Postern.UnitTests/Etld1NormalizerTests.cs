@@ -21,14 +21,15 @@ public class Etld1NormalizerTests
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData("localhost")]
-    [InlineData("invalid..com")]
-    public void Normalize_Invalid_ReturnsNullOrNormalized(string input)
+    [InlineData("", null)]
+    [InlineData("   ", null)]
+    [InlineData("localhost", "localhost")]
+    [InlineData("invalid..com", "invalid.com")]
+    public void Normalize_Invalid_ReturnsNullOrNormalized(string input, string? expected)
     {
         var result = Etld1Normalizer.Normalize(input);
-        // Just ensure it doesn't throw
+
+        Assert.Equal(expected, result);
     }
 
     [Fact]

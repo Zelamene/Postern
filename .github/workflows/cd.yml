@@ -1,6 +1,7 @@
 name: CD - Deploy Postern
 
 on:
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
@@ -26,7 +27,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Install EF tool
-        run: dotnet tool install --global dotnet-ef
+        run: dotnet tool install --global dotnet-ef --version 10.0.14
 
       - name: Restore EF tool
         run: dotnet tool restore
@@ -81,15 +82,16 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install Wrangler
-        run: npm install --global wrangler@3.90.0 --include=optional
+      - name: Install Worker Dependencies
+        working-directory: worker
+        run: npm ci --ignore-scripts
 
       - name: Deploy Worker
         working-directory: worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes wrangler deploy
+        run: npx --no-install wrangler deploy
 
   deploy-backend:
     needs: migrate-db
@@ -99,9 +101,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Trigger Render Deploy
+      - name: Trigger Render Deploy and Wait
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          deploy_id=$(curl -fsS -X POST \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H 'Content-Type: application/json' \
+            -d "{\"commitId\":\"$COMMIT_SHA\",\"clearCache\":\"do_not_clear\"}" \
+            "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" | jq -r '.id')
+          if [ -z "$deploy_id" ] || [ "$deploy_id" = "null" ]; then
+            echo "Render did not return a deploy id"
+            exit 1
+          fi
+          echo "Render deploy $deploy_id started"
+          for _ in $(seq 1 60); do
+            status=$(curl -fsS -H "Authorization: Bearer $RENDER_API_KEY" \
+              "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys/$deploy_id" | jq -r '.status')
+            echo "Render deploy status: $status"
+            case "$status" in
+              live) echo "Backend deployed"; exit 0 ;;
+              build_failed|update_failed|pre_deploy_failed|canceled|deactivated)
+                echo "Render deploy finished with status $status"; exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "Timed out waiting for the Render deploy"
+          exit 1
 
   deploy-frontend:
     needs: [deploy-backend, deploy-worker]
@@ -117,7 +145,7 @@ jobs:
           node-version: '22'
 
       - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+        run: npm install --global --ignore-scripts vercel@65.15.0
 
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}

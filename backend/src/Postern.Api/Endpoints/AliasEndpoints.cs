@@ -294,7 +294,12 @@ public static class AliasEndpoints
         }
 
         var senders = await service.ListExpectedSendersAsync(currentUserId.Value, aliasId, cancellationToken);
-        return Results.Ok(senders.Select(sender => new ExpectedSenderResponse(sender.Id, sender.SenderEtld1, sender.CreatedAt)));
+        return Results.Ok(senders.Select(sender => new ExpectedSenderResponse(
+            sender.Id,
+            sender.SenderEtld1,
+            sender.CreatedAt,
+            sender.SenderAddress,
+            sender.TrustWholeDomain)));
     }
 
     private static async Task<IResult> AddExpectedSenderAsync(
@@ -310,14 +315,21 @@ public static class AliasEndpoints
             return Results.Unauthorized();
         }
 
-        var sender = await service.AddExpectedSenderAsync(currentUserId.Value, aliasId, request.SenderEtld1, cancellationToken);
+        var sender = HasSenderAddress(request.SenderAddress)
+            ? await service.AddExpectedAddressAsync(currentUserId.Value, aliasId, request.SenderAddress!, cancellationToken)
+            : await service.AddExpectedSenderAsync(currentUserId.Value, aliasId, request.SenderEtld1 ?? string.Empty, cancellationToken);
         return sender is null
             ? Results.ValidationProblem(new Dictionary<string, string[]>
             {
-                [nameof(AddExpectedSenderRequest.SenderEtld1)] = ["Sender domain is required and must be <= 253 characters."]
+                [nameof(AddExpectedSenderRequest.SenderEtld1)] = ["A sender address or domain is required."]
             })
             : Results.Created($"/api/aliases/{aliasId}/expected-senders/{sender.Id}",
-                new ExpectedSenderResponse(sender.Id, sender.SenderEtld1, sender.CreatedAt));
+                new ExpectedSenderResponse(
+                    sender.Id,
+                    sender.SenderEtld1,
+                    sender.CreatedAt,
+                    sender.SenderAddress,
+                    sender.TrustWholeDomain));
     }
 
     private static async Task<IResult> MarkExpectedSenderAsync(
@@ -333,10 +345,12 @@ public static class AliasEndpoints
             return Results.Unauthorized();
         }
 
-        var success = await service.MarkExpectedSenderAsync(currentUserId.Value, aliasId, request.SenderEtld1, cancellationToken);
+        var success = HasSenderAddress(request.SenderAddress)
+            ? await service.MarkExpectedAddressAsync(currentUserId.Value, aliasId, request.SenderAddress!, cancellationToken)
+            : await service.MarkExpectedSenderAsync(currentUserId.Value, aliasId, request.SenderEtld1 ?? string.Empty, cancellationToken);
         return success ? Results.NoContent() : Results.ValidationProblem(new Dictionary<string, string[]>
         {
-            [nameof(MarkExpectedSenderRequest.SenderEtld1)] = ["Sender domain is required and must be <= 253 characters."]
+            [nameof(MarkExpectedSenderRequest.SenderEtld1)] = ["A sender address or domain is required."]
         });
     }
 
@@ -381,6 +395,9 @@ public static class AliasEndpoints
             cancellationToken);
     }
 
+    private static bool HasSenderAddress(string? senderAddress) =>
+        !string.IsNullOrWhiteSpace(senderAddress) && senderAddress.Contains('@');
+
     private static Guid? GetCurrentUserId(ClaimsPrincipal user)
     {
         var value = user.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -405,8 +422,8 @@ public static class AliasEndpoints
     public sealed record CreateAliasRequest(string? Label, string? PurposeMetadata, string? Category);
     public sealed record UpdateAliasRequest(string Action);
     public sealed record ReplaceAliasRequest(string? Label, string? PurposeMetadata, string? Category);
-    public sealed record AddExpectedSenderRequest(string SenderEtld1);
-    public sealed record MarkExpectedSenderRequest(string SenderEtld1);
+    public sealed record AddExpectedSenderRequest(string? SenderEtld1, string? SenderAddress);
+    public sealed record MarkExpectedSenderRequest(string? SenderEtld1, string? SenderAddress);
     public sealed record BlockSenderRequest(string SenderEtld1);
 
     public sealed record AliasResponse(
@@ -426,5 +443,7 @@ public static class AliasEndpoints
     public sealed record ExpectedSenderResponse(
         Guid Id,
         string SenderEtld1,
-        DateTimeOffset CreatedAt);
+        DateTimeOffset CreatedAt,
+        string? SenderAddress,
+        bool TrustWholeDomain);
 }

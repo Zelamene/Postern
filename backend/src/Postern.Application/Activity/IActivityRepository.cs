@@ -15,7 +15,12 @@ public interface IActivityRepository
 
     Task<BlockedMessage> RecordBlockedMessageAsync(BlockedMessage blockedMessage, CancellationToken cancellationToken);
 
-    Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken);
+    Task AddExpectedAddressSenderAsync(
+        Guid aliasId,
+        string senderAddress,
+        string senderEtld1,
+        DateTimeOffset createdAt,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Forwarded message count per owning user since <paramref name="receivedAfter"/>.

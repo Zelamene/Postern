@@ -182,6 +182,15 @@ public class AliasServiceKvFailureTests
             CancellationToken cancellationToken) =>
             Task.FromResult<ExpectedSender?>(null);
 
+        public Task<ExpectedSender?> AddExpectedAddressSenderAsync(
+            Guid aliasId,
+            Guid userId,
+            string senderAddress,
+            string senderEtld1,
+            DateTimeOffset createdAt,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<ExpectedSender?>(null);
+
         public Task<bool> BlockSenderAsync(
             Guid aliasId,
             Guid userId,

@@ -9,7 +9,7 @@ public sealed class InMemoryActivityRepository : IActivityRepository
     private readonly List<Alias> _aliases = [];
     public List<Message> Messages { get; } = [];
     public List<BlockedMessage> BlockedMessages { get; } = [];
-    public List<(Guid AliasId, string SenderEtld1, DateTimeOffset CreatedAt)> AddedExpectedSenders { get; } = [];
+    public List<(Guid AliasId, string SenderAddress, string SenderEtld1, DateTimeOffset CreatedAt)> AddedExpectedSenders { get; } = [];
 
     public void AddAlias(Alias alias) => _aliases.Add(alias);
 
@@ -34,9 +34,14 @@ public sealed class InMemoryActivityRepository : IActivityRepository
         return Task.FromResult(blockedMessage);
     }
 
-    public Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken)
+    public Task AddExpectedAddressSenderAsync(
+        Guid aliasId,
+        string senderAddress,
+        string senderEtld1,
+        DateTimeOffset createdAt,
+        CancellationToken cancellationToken)
     {
-        AddedExpectedSenders.Add((aliasId, senderEtld1, createdAt));
+        AddedExpectedSenders.Add((aliasId, senderAddress, senderEtld1, createdAt));
         return Task.CompletedTask;
     }
 

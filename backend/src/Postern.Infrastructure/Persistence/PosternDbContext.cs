@@ -252,12 +252,24 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
             entity.Property(sender => sender.Id).HasColumnName("id");
             entity.Property(sender => sender.AliasId).HasColumnName("alias_id");
             entity.Property(sender => sender.SenderEtld1).HasColumnName("sender_etld1").HasMaxLength(253).IsRequired();
+            entity.Property(sender => sender.SenderAddress).HasColumnName("sender_address").HasMaxLength(320);
+            entity.Property(sender => sender.TrustWholeDomain)
+                .HasColumnName("trust_whole_domain")
+                .HasDefaultValue(true)
+                .IsRequired();
             entity.Property(sender => sender.IsBlocked)
                 .HasColumnName("is_blocked")
                 .HasDefaultValue(false)
                 .IsRequired();
             entity.Property(sender => sender.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.HasIndex(sender => new { sender.AliasId, sender.SenderEtld1 }).IsUnique().HasDatabaseName("ux_expected_senders_alias_id_sender_etld1");
+            entity.HasIndex(sender => new { sender.AliasId, sender.SenderEtld1 })
+                .IsUnique()
+                .HasFilter("sender_address IS NULL")
+                .HasDatabaseName("ux_expected_senders_alias_id_sender_etld1");
+            entity.HasIndex(sender => new { sender.AliasId, sender.SenderAddress })
+                .IsUnique()
+                .HasFilter("sender_address IS NOT NULL")
+                .HasDatabaseName("ux_expected_senders_alias_id_sender_address");
             entity.HasOne(sender => sender.Alias)
                 .WithMany(alias => alias.ExpectedSenders)
                 .HasForeignKey(sender => sender.AliasId)

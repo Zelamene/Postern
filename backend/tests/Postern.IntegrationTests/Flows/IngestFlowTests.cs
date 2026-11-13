@@ -516,6 +516,7 @@ public sealed class IngestFlowTests(PosternFixture fixture) : IAsyncLifetime
             Id = Guid.NewGuid(),
             AliasId = aliasId,
             SenderEtld1 = senderEtld1,
+            TrustWholeDomain = true,
             CreatedAt = DateTimeOffset.UtcNow
         });
         await db.SaveChangesAsync();

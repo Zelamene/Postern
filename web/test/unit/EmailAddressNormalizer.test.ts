@@ -17,4 +17,17 @@ describe('EmailAddressNormalizer', () => {
     expect(EmailAddressNormalizer.SenderHost('[Example.com.]')).toBe('example.com')
     expect(EmailAddressNormalizer.SenderHost('')).toBeNull()
   })
+
+  it('extracts the full sender address when the header carries one', () => {
+    expect(EmailAddressNormalizer.SenderAddress('Shop <Info@Example.com>')).toBe('info@example.com')
+    expect(EmailAddressNormalizer.SenderAddress('"Doe, Jane" <Jane@Sub.Example.com>')).toBe(
+      'jane@sub.example.com',
+    )
+    expect(EmailAddressNormalizer.SenderAddress('  Orders@Shop.Example.com ')).toBe(
+      'orders@shop.example.com',
+    )
+    expect(EmailAddressNormalizer.SenderAddress('example.com')).toBeNull()
+    expect(EmailAddressNormalizer.SenderAddress('Shop')).toBeNull()
+    expect(EmailAddressNormalizer.SenderAddress('')).toBeNull()
+  })
 })

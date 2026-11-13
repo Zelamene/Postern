@@ -9,37 +9,37 @@ namespace Postern.Application.Activity;
 public sealed class IngestService(IActivityRepository activityRepository, TimeProvider timeProvider)
 {
     public async Task<IngestResult> IngestAsync(
+        IngestRequest request,
+        CancellationToken cancellationToken = default) =>
+        (await IngestWithOutcomeAsync(request, cancellationToken)).Result;
+
+    public Task<IngestResult> IngestAsync(
         string recipientAddress,
         string envelopeSender,
         string fromHeader,
         string? subject,
         string authenticationResult,
-        CancellationToken cancellationToken,
-        bool blocked = false,
-        string? reason = null,
-        string? messageId = null) =>
-        (await IngestWithOutcomeAsync(
-            recipientAddress,
-            envelopeSender,
-            fromHeader,
-            subject,
-            authenticationResult,
-            cancellationToken,
-            blocked,
-            reason,
-            messageId)).Result;
+        CancellationToken cancellationToken = default) =>
+        IngestAsync(
+            new IngestRequest(recipientAddress, envelopeSender, fromHeader, subject, authenticationResult),
+            cancellationToken);
+
+    public Task<IngestOutcome> IngestWithOutcomeAsync(
+        string recipientAddress,
+        string envelopeSender,
+        string fromHeader,
+        string? subject,
+        string authenticationResult,
+        CancellationToken cancellationToken = default) =>
+        IngestWithOutcomeAsync(
+            new IngestRequest(recipientAddress, envelopeSender, fromHeader, subject, authenticationResult),
+            cancellationToken);
 
     public async Task<IngestOutcome> IngestWithOutcomeAsync(
-        string recipientAddress,
-        string envelopeSender,
-        string fromHeader,
-        string? subject,
-        string authenticationResult,
-        CancellationToken cancellationToken,
-        bool blocked = false,
-        string? reason = null,
-        string? messageId = null)
+        IngestRequest request,
+        CancellationToken cancellationToken = default)
     {
+        var recipientAddress = request.RecipientAddress ?? string.Empty;
         if (string.IsNullOrWhiteSpace(recipientAddress))
         {
             return new IngestOutcome(IngestResult.Dropped);
@@ -53,163 +53,136 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
             return new IngestOutcome(IngestResult.UnknownAlias);
         }
 
-        var decodedSubject = Rfc2047Decoder.Decode(subject);
+        var decodedSubject = Rfc2047Decoder.Decode(request.Subject);
         var truncatedSubject = TruncateSubject(decodedSubject);
 
-        if (blocked)
+        if (request.Blocked is true)
         {
-            var blockedMessage = new BlockedMessage
-            {
-                Id = Guid.NewGuid(),
-                AliasId = alias.Id,
-                FromHeader = TruncateHeader(fromHeader),
-                Subject = truncatedSubject,
-                ReceivedAt = timeProvider.GetUtcNow(),
-                Reason = NormalizeReason(reason)
-            };
-
-            await activityRepository.RecordBlockedMessageAsync(blockedMessage, cancellationToken);
-            return new IngestOutcome(IngestResult.Blocked, alias.Id, alias.UserId);
+            return await RecordBlockedAsync(
+                alias,
+                request.FromHeader,
+                truncatedSubject,
+                NormalizeReason(request.Reason),
+                cancellationToken);
         }
 
-        if (alias.Status == AliasStatus.Deleted || alias.Status == AliasStatus.Replaced || alias.Status == AliasStatus.Disabled)
+        if (alias.Status is AliasStatus.Deleted or AliasStatus.Replaced or AliasStatus.Disabled)
         {
-            var statusBlocked = new BlockedMessage
-            {
-                Id = Guid.NewGuid(),
-                AliasId = alias.Id,
-                FromHeader = TruncateHeader(fromHeader),
-                Subject = truncatedSubject,
-                ReceivedAt = timeProvider.GetUtcNow(),
-                Reason = alias.Status.ToString().ToLowerInvariant()
-            };
-
-            await activityRepository.RecordBlockedMessageAsync(statusBlocked, cancellationToken);
-            return new IngestOutcome(IngestResult.Blocked, alias.Id, alias.UserId);
+            return await RecordBlockedAsync(
+                alias,
+                request.FromHeader,
+                truncatedSubject,
+                alias.Status.ToString().ToLowerInvariant(),
+                cancellationToken);
         }
 
         if (alias.Status == AliasStatus.Active)
         {
-            var authResult = NormalizeAuthenticationResult(authenticationResult);
-            var senderEtld1 = Etld1Normalizer.Normalize(fromHeader);
-            var normalizedMessageId = NormalizeMessageId(messageId);
-
-            if (normalizedMessageId is not null
-                && await activityRepository.MessageIdExistsAsync(alias.Id, normalizedMessageId, cancellationToken))
-            {
-                return new IngestOutcome(IngestResult.Duplicate, alias.Id, alias.UserId);
-            }
-
-            if (alias.ExpectedSenders is not null && alias.ExpectedSenders.Count > 0)
-            {
-                var hasExpected = senderEtld1 is not null && alias.ExpectedSenders.Any(expected => string.Equals(expected.SenderEtld1, senderEtld1, StringComparison.OrdinalIgnoreCase));
-                if (hasExpected)
-                {
-                    var expectedMessage = new Message
-                    {
-                        Id = Guid.NewGuid(),
-                        AliasId = alias.Id,
-                        FromHeader = TruncateHeader(fromHeader),
-                        EnvelopeSender = envelopeSender.Trim(),
-                        MessageId = normalizedMessageId,
-                        Subject = truncatedSubject,
-                        ReceivedAt = timeProvider.GetUtcNow(),
-                        AuthenticationResult = authResult,
-                        IsFlagged = false,
-                        FlagReason = null
-                    };
-
-                    await activityRepository.RecordMessageAsync(expectedMessage, cancellationToken);
-                    return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
-                }
-
-                if (authResult == "pass")
-                {
-                    var flaggedMessagePass = new Message
-                    {
-                        Id = Guid.NewGuid(),
-                        AliasId = alias.Id,
-                        FromHeader = TruncateHeader(fromHeader),
-                        EnvelopeSender = envelopeSender.Trim(),
-                        MessageId = normalizedMessageId,
-                        Subject = truncatedSubject,
-                        ReceivedAt = timeProvider.GetUtcNow(),
-                        AuthenticationResult = authResult,
-                        IsFlagged = true,
-                        FlagReason = "unexpected_pass"
-                    };
-
-                    await activityRepository.RecordMessageAsync(flaggedMessagePass, cancellationToken);
-                    return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
-                }
-
-                if (authResult == "none")
-                {
-                    var flaggedMessageNone = new Message
-                    {
-                        Id = Guid.NewGuid(),
-                        AliasId = alias.Id,
-                        FromHeader = TruncateHeader(fromHeader),
-                        EnvelopeSender = envelopeSender.Trim(),
-                        MessageId = normalizedMessageId,
-                        Subject = truncatedSubject,
-                        ReceivedAt = timeProvider.GetUtcNow(),
-                        AuthenticationResult = authResult,
-                        IsFlagged = true,
-                        FlagReason = "unexpected_none"
-                    };
-
-                    await activityRepository.RecordMessageAsync(flaggedMessageNone, cancellationToken);
-                    return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
-                }
-
-                if (authResult == "fail")
-                {
-                    var flaggedMessageFail = new Message
-                    {
-                        Id = Guid.NewGuid(),
-                        AliasId = alias.Id,
-                        FromHeader = TruncateHeader(fromHeader),
-                        EnvelopeSender = envelopeSender.Trim(),
-                        MessageId = normalizedMessageId,
-                        Subject = truncatedSubject,
-                        ReceivedAt = timeProvider.GetUtcNow(),
-                        AuthenticationResult = authResult,
-                        IsFlagged = true,
-                        FlagReason = "fail"
-                    };
-
-                    await activityRepository.RecordMessageAsync(flaggedMessageFail, cancellationToken);
-                    return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
-                }
-            }
-            else
-            {
-                if (authResult == "pass" && senderEtld1 is not null)
-                {
-                    await activityRepository.AddExpectedSenderAsync(alias.Id, senderEtld1, timeProvider.GetUtcNow(), cancellationToken);
-                }
-            }
-
-            var finalMessage = new Message
-            {
-                Id = Guid.NewGuid(),
-                AliasId = alias.Id,
-                FromHeader = TruncateHeader(fromHeader),
-                EnvelopeSender = envelopeSender.Trim(),
-                MessageId = normalizedMessageId,
-                Subject = truncatedSubject,
-                ReceivedAt = timeProvider.GetUtcNow(),
-                AuthenticationResult = authResult,
-                IsFlagged = authResult != "pass",
-                FlagReason = authResult != "pass" ? authResult : null
-            };
-
-            await activityRepository.RecordMessageAsync(finalMessage, cancellationToken);
-            return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
+            return await IngestActiveAliasAsync(alias, request, truncatedSubject, cancellationToken);
         }
 
         return new IngestOutcome(IngestResult.Dropped, alias.Id, alias.UserId);
+    }
+
+    private async Task<IngestOutcome> RecordBlockedAsync(
+        Alias alias,
+        string? fromHeader,
+        string? subject,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        var blockedMessage = new BlockedMessage
+        {
+            Id = Guid.NewGuid(),
+            AliasId = alias.Id,
+            FromHeader = TruncateHeader(fromHeader ?? string.Empty),
+            Subject = subject,
+            ReceivedAt = timeProvider.GetUtcNow(),
+            Reason = reason
+        };
+
+        await activityRepository.RecordBlockedMessageAsync(blockedMessage, cancellationToken);
+        return new IngestOutcome(IngestResult.Blocked, alias.Id, alias.UserId);
+    }
+
+    private async Task<IngestOutcome> IngestActiveAliasAsync(
+        Alias alias,
+        IngestRequest request,
+        string? truncatedSubject,
+        CancellationToken cancellationToken)
+    {
+        var authResult = NormalizeAuthenticationResult(request.AuthenticationResult);
+        var fromHeader = request.FromHeader ?? string.Empty;
+        var senderEtld1 = Etld1Normalizer.Normalize(fromHeader);
+        var senderAddress = Etld1Normalizer.NormalizeSenderAddress(fromHeader);
+        var normalizedMessageId = NormalizeMessageId(request.MessageId);
+
+        if (normalizedMessageId is not null
+            && await activityRepository.MessageIdExistsAsync(alias.Id, normalizedMessageId, cancellationToken))
+        {
+            return new IngestOutcome(IngestResult.Duplicate, alias.Id, alias.UserId);
+        }
+
+        var (isFlagged, flagReason) = await EvaluateSenderPolicyAsync(
+            alias,
+            senderAddress,
+            senderEtld1,
+            authResult,
+            cancellationToken);
+
+        var message = new Message
+        {
+            Id = Guid.NewGuid(),
+            AliasId = alias.Id,
+            FromHeader = TruncateHeader(fromHeader),
+            EnvelopeSender = (request.EnvelopeSender ?? string.Empty).Trim(),
+            MessageId = normalizedMessageId,
+            Subject = truncatedSubject,
+            ReceivedAt = timeProvider.GetUtcNow(),
+            AuthenticationResult = authResult,
+            IsFlagged = isFlagged,
+            FlagReason = flagReason
+        };
+
+        await activityRepository.RecordMessageAsync(message, cancellationToken);
+        return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
+    }
+
+    private async Task<(bool IsFlagged, string? FlagReason)> EvaluateSenderPolicyAsync(
+        Alias alias,
+        string? senderAddress,
+        string? senderEtld1,
+        string authResult,
+        CancellationToken cancellationToken)
+    {
+        if (alias.ExpectedSenders is { Count: > 0 })
+        {
+            if (IsExpectedSender(alias.ExpectedSenders, senderAddress, senderEtld1))
+            {
+                return (false, null);
+            }
+
+            return authResult switch
+            {
+                "pass" => (true, "unexpected_pass"),
+                "none" => (true, "unexpected_none"),
+                "fail" => (true, "fail"),
+                _ => (true, authResult)
+            };
+        }
+
+        if (authResult == "pass" && senderAddress is not null && senderEtld1 is not null)
+        {
+            await activityRepository.AddExpectedAddressSenderAsync(
+                alias.Id,
+                senderAddress,
+                senderEtld1,
+                timeProvider.GetUtcNow(),
+                cancellationToken);
+        }
+
+        var isFlagged = authResult != "pass";
+        return (isFlagged, isFlagged ? authResult : null);
     }
 
     private static string HashAddress(string value) =>
@@ -263,6 +236,18 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         var trimmed = reason.Trim();
         return trimmed.Length > 32 ? trimmed[..32] : trimmed;
     }
+
+    private static bool IsExpectedSender(
+        IEnumerable<ExpectedSender> senders,
+        string? senderAddress,
+        string? senderEtld1) =>
+        senders.Any(sender =>
+            (senderAddress is not null
+                && sender.SenderAddress is not null
+                && string.Equals(sender.SenderAddress, senderAddress, StringComparison.OrdinalIgnoreCase))
+            || (sender.TrustWholeDomain
+                && senderEtld1 is not null
+                && string.Equals(sender.SenderEtld1, senderEtld1, StringComparison.OrdinalIgnoreCase)));
 
     private static string NormalizeAuthenticationResult(string? authenticationResult)
     {

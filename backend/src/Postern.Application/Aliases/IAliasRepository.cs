@@ -46,6 +46,14 @@ public interface IAliasRepository
         DateTimeOffset createdAt,
         CancellationToken cancellationToken);
 
+    Task<ExpectedSender?> AddExpectedAddressSenderAsync(
+        Guid aliasId,
+        Guid userId,
+        string senderAddress,
+        string senderEtld1,
+        DateTimeOffset createdAt,
+        CancellationToken cancellationToken);
+
     Task<bool> BlockSenderAsync(
         Guid aliasId,
         Guid userId,

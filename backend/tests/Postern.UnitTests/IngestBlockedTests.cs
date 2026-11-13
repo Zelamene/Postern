@@ -16,14 +16,15 @@ public class IngestBlockedTests
         var service = new IngestService(repository, TimeProvider.System);
 
         var result = await service.IngestAsync(
-            "shop.abcd@postern.local",
-            "promo@spamco.ru",
-            "Promo <promo@spamco.ru>",
-            "buy now",
-            "pass",
-            CancellationToken.None,
-            blocked: true,
-            reason: "global_blocklist");
+            new IngestRequest(
+                "shop.abcd@postern.local",
+                "promo@spamco.ru",
+                "Promo <promo@spamco.ru>",
+                "buy now",
+                "pass",
+                Blocked: true,
+                Reason: "global_blocklist"),
+            CancellationToken.None);
 
         Assert.Equal(IngestResult.Blocked, result);
         Assert.Empty(repository.Messages);
@@ -40,14 +41,15 @@ public class IngestBlockedTests
         var service = new IngestService(repository, TimeProvider.System);
 
         await service.IngestAsync(
-            "shop.abcd@postern.local",
-            "promo@spamco.ru",
-            "Promo <promo@spamco.ru>",
-            "buy now",
-            "pass",
-            CancellationToken.None,
-            blocked: true,
-            reason: new string('x', 50));
+            new IngestRequest(
+                "shop.abcd@postern.local",
+                "promo@spamco.ru",
+                "Promo <promo@spamco.ru>",
+                "buy now",
+                "pass",
+                Blocked: true,
+                Reason: new string('x', 50)),
+            CancellationToken.None);
 
         Assert.Equal(32, Assert.Single(repository.BlockedMessages).Reason.Length);
     }
@@ -59,13 +61,14 @@ public class IngestBlockedTests
         var service = new IngestService(repository, TimeProvider.System);
 
         await service.IngestAsync(
-            "shop.abcd@postern.local",
-            "promo@spamco.ru",
-            "Promo <promo@spamco.ru>",
-            "buy now",
-            "pass",
-            CancellationToken.None,
-            blocked: true);
+            new IngestRequest(
+                "shop.abcd@postern.local",
+                "promo@spamco.ru",
+                "Promo <promo@spamco.ru>",
+                "buy now",
+                "pass",
+                Blocked: true),
+            CancellationToken.None);
 
         Assert.Equal("blocked", Assert.Single(repository.BlockedMessages).Reason);
     }
@@ -77,14 +80,15 @@ public class IngestBlockedTests
         var service = new IngestService(repository, TimeProvider.System);
 
         var result = await service.IngestAsync(
-            "missing.abcd@postern.local",
-            "promo@spamco.ru",
-            "Promo <promo@spamco.ru>",
-            "buy now",
-            "pass",
-            CancellationToken.None,
-            blocked: true,
-            reason: "global_blocklist");
+            new IngestRequest(
+                "missing.abcd@postern.local",
+                "promo@spamco.ru",
+                "Promo <promo@spamco.ru>",
+                "buy now",
+                "pass",
+                Blocked: true,
+                Reason: "global_blocklist"),
+            CancellationToken.None);
 
         Assert.Equal(IngestResult.UnknownAlias, result);
         Assert.Empty(repository.BlockedMessages);
@@ -167,8 +171,9 @@ public class IngestBlockedTests
             return Task.FromResult(blockedMessage);
         }
 
-        public Task AddExpectedSenderAsync(
+        public Task AddExpectedAddressSenderAsync(
             Guid aliasId,
+            string senderAddress,
             string senderEtld1,
             DateTimeOffset createdAt,
             CancellationToken cancellationToken) =>
