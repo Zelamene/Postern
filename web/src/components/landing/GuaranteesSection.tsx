@@ -26,13 +26,13 @@ export function GuaranteesSection() {
       <div className="shell">
         <Reveal>
           <div className="mx-auto mb-8 max-w-[38rem] sm:mb-10 text-center">
-            <span className="chip chip--primary chip--sm mb-3">Our Guarantees</span>
+            <span className="chip chip--primary chip--sm mb-3">Privacy by design</span>
             <h2 id="guarantees-heading" className="text-h2 font-bold tracking-tight text-text">
-              Guarantees enforced by architecture, not promises
+              Protections built into how Postern works
             </h2>
             <p className="mt-4 text-body text-text-secondary">
-              Postern is engineered with strict cryptographic and operational boundaries so your
-              privacy is preserved by default.
+              Postern is built so that services see your alias, not your primary address. These are
+              properties of the design, not marketing promises.
             </p>
           </div>
         </Reveal>
@@ -40,26 +40,26 @@ export function GuaranteesSection() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
           <Reveal delayMs={80}>
             <GuaranteeCard
-              title="Zero Email Storage"
-              description="Email bodies and attachments are never stored on any server or database. Once forwarded, message content is immediately discarded."
+              title="No Message Bodies Stored"
+              description="Email bodies and attachments are relayed, never written to our database. Once a message is forwarded, its content is discarded. We do keep headers — sender, subject, and delivery results — for up to 90 days so you can see activity."
             />
           </Reveal>
           <Reveal delayMs={160}>
             <GuaranteeCard
-              title="Lightning Fast Delivery"
-              description="Our edge workers resolve routing in under 15ms, ensuring your verification codes and urgent receipts arrive without lag."
+              title="Edge-First Routing"
+              description="Incoming mail is resolved at Cloudflare’s edge and forwarded straight to your destination, with no central inbox in between. Actual delivery time depends on the sender and your mail provider."
             />
           </Reveal>
           <Reveal delayMs={240}>
             <GuaranteeCard
               title="No Bounce Backscatter"
-              description="Disabled and deleted aliases silently drop incoming spam. Spammers get zero feedback and your domain reputation stays pristine."
+              description="Mail sent to a disabled, blocked, or deleted alias is discarded rather than bounced, so Postern does not generate backscatter. Filtering and sender reputation depend on many factors outside our control."
             />
           </Reveal>
           <Reveal delayMs={320}>
             <GuaranteeCard
               title="Permanent Non-Recycling"
-              description="Once an alias is deleted, it is permanently retired. We will never re-issue your previous alias to any other user."
+              description="When you delete an alias it is retired for good. Postern does not reissue a retired address to another account."
             />
           </Reveal>
         </div>

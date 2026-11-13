@@ -227,8 +227,15 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
             )}
 
             <p className="mt-5 text-xs leading-relaxed text-text-muted">
-              By creating an account, you agree to use Postern responsibly. This invitation is
-              single-use and expires after seven days.
+              By creating an account, you agree to our{' '}
+              <a href="/terms" className="font-semibold">
+                Terms of Service
+              </a>{' '}
+              and acknowledge our{' '}
+              <a href="/privacy" className="font-semibold">
+                Privacy Policy
+              </a>
+              . This invitation is single-use and expires after seven days.
             </p>
           </>
         )}

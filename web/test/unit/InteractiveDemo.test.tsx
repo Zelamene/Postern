@@ -139,7 +139,7 @@ describe('InteractiveDemo', () => {
       vi.advanceTimersByTime(450)
     })
 
-    expect(screen.getByText(/email routed successfully in 14ms/i)).toBeInTheDocument()
+    expect(screen.getByText(/simulated: email routed successfully/i)).toBeInTheDocument()
     expect(screen.getAllByText('netflix.k7q2@3xyz.uk').length).toBeGreaterThan(0)
     expect(screen.getByText('netflix.com')).toBeInTheDocument()
     expect(screen.getByText(/your receipt for netflix subscription/i)).toBeInTheDocument()

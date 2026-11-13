@@ -140,7 +140,12 @@ export function RequestInvite() {
                   aria-describedby="invite-email-help"
                 />
                 <p id="invite-email-help" className="mt-1 text-xs text-text-muted">
-                  We’ll email you if your request is approved.
+                  We’ll email you if your request is approved. We use your address only to review
+                  and respond to this request — see our{' '}
+                  <a href="/privacy" className="font-semibold">
+                    Privacy Policy
+                  </a>
+                  .
                 </p>
               </div>
               <button

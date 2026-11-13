@@ -69,5 +69,6 @@ TestResult.xml
 nunit-*.xml
 
 DEPLOYMENT.md
+THIRD-PARTY-AUDIT.md
 
 .wrangler/
