@@ -167,8 +167,9 @@ public class IngestBlockedTests
             return Task.FromResult(blockedMessage);
         }
 
-        public Task AddExpectedSenderAsync(
+        public Task AddExpectedAddressSenderAsync(
             Guid aliasId,
+            string senderAddress,
             string senderEtld1,
             DateTimeOffset createdAt,
             CancellationToken cancellationToken) =>

@@ -151,7 +151,7 @@ public class IngestAndTombstoneTests
             return Task.FromResult(blockedMessage);
         }
 
-        public Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task AddExpectedAddressSenderAsync(Guid aliasId, string senderAddress, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task<IReadOnlyDictionary<Guid, int>> CountForwardedMessagesPerUserAsync(DateTimeOffset receivedAfter, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyDictionary<Guid, int>>(new Dictionary<Guid, int>());
@@ -269,6 +269,9 @@ public class IngestAndTombstoneTests
             Task.FromResult<IReadOnlyCollection<ExpectedSender>>([]);
 
         public Task<ExpectedSender?> AddExpectedSenderAsync(Guid aliasId, Guid userId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) =>
+            Task.FromResult<ExpectedSender?>(null);
+
+        public Task<ExpectedSender?> AddExpectedAddressSenderAsync(Guid aliasId, Guid userId, string senderAddress, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) =>
             Task.FromResult<ExpectedSender?>(null);
 
         public Task<bool> BlockSenderAsync(Guid aliasId, Guid userId, string senderEtld1, CancellationToken cancellationToken) =>

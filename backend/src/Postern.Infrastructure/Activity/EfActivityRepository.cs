@@ -36,9 +36,16 @@ public sealed class EfActivityRepository(PosternDbContext dbContext) : IActivity
         return blockedMessage;
     }
 
-    public async Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken)
+    public async Task AddExpectedAddressSenderAsync(
+        Guid aliasId,
+        string senderAddress,
+        string senderEtld1,
+        DateTimeOffset createdAt,
+        CancellationToken cancellationToken)
     {
-        var exists = await dbContext.ExpectedSenders.AnyAsync(sender => sender.AliasId == aliasId && sender.SenderEtld1 == senderEtld1, cancellationToken);
+        var exists = await dbContext.ExpectedSenders.AnyAsync(
+            sender => sender.AliasId == aliasId && sender.SenderAddress == senderAddress,
+            cancellationToken);
         if (exists)
         {
             return;
@@ -49,6 +56,8 @@ public sealed class EfActivityRepository(PosternDbContext dbContext) : IActivity
             Id = Guid.NewGuid(),
             AliasId = aliasId,
             SenderEtld1 = senderEtld1,
+            SenderAddress = senderAddress,
+            TrustWholeDomain = false,
             CreatedAt = createdAt
         };
 

@@ -52,9 +52,29 @@ function SenderHost(value: string): string | null {
   return cleaned
 }
 
+/** Pulls the full mailbox address out of a `From` header or envelope sender. */
+function SenderAddress(value: string): string | null {
+  const candidate = value.trim()
+  if (!candidate) {
+    return null
+  }
+
+  const openBracket = candidate.lastIndexOf('<')
+  const closeBracket = candidate.indexOf('>', openBracket + 1)
+  const address =
+    openBracket >= 0
+      ? closeBracket > openBracket
+        ? candidate.slice(openBracket + 1, closeBracket)
+        : candidate.slice(openBracket + 1)
+      : candidate
+  const normalized = Normalize(address).replace(/^["']+|["';,]+$/g, '')
+  return IsValidEmail(normalized) ? normalized : null
+}
+
 export const EmailAddressNormalizer = {
   IsValidEmail,
   IsValidSender,
   Normalize,
+  SenderAddress,
   SenderHost,
 }

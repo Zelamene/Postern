@@ -109,7 +109,9 @@ describe('Alias triage flow', () => {
 
     expect(blockedSender).toEqual({ senderEtld1: 'unknown.example' })
     expect(
-      await screen.findByText('Sender blocked. New mail from it is dropped for this alias.'),
+      await screen.findByText(
+        'Sender blocked. New mail from unknown.example is dropped for this alias.',
+      ),
     ).toBeDefined()
   })
 

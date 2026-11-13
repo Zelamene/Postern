@@ -704,17 +704,34 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_blocked");
 
+                    b.Property<string>("SenderAddress")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("sender_address");
+
                     b.Property<string>("SenderEtld1")
                         .IsRequired()
                         .HasMaxLength(253)
                         .HasColumnType("character varying(253)")
                         .HasColumnName("sender_etld1");
 
+                    b.Property<bool>("TrustWholeDomain")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("trust_whole_domain");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("AliasId", "SenderAddress")
+                        .IsUnique()
+                        .HasDatabaseName("ux_expected_senders_alias_id_sender_address")
+                        .HasFilter("sender_address IS NOT NULL");
 
                     b.HasIndex("AliasId", "SenderEtld1")
                         .IsUnique()
-                        .HasDatabaseName("ux_expected_senders_alias_id_sender_etld1");
+                        .HasDatabaseName("ux_expected_senders_alias_id_sender_etld1")
+                        .HasFilter("sender_address IS NULL");
 
                     b.ToTable("expected_senders", "postern");
                 });

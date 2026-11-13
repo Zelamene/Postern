@@ -149,6 +149,43 @@ public sealed class InMemoryAliasRepository : IAliasRepository
         return Task.FromResult<ExpectedSender?>(sender);
     }
 
+    public Task<ExpectedSender?> AddExpectedAddressSenderAsync(
+        Guid aliasId,
+        Guid userId,
+        string senderAddress,
+        string senderEtld1,
+        DateTimeOffset createdAt,
+        CancellationToken cancellationToken)
+    {
+        var alias = _aliases.SingleOrDefault(item => item.Id == aliasId && item.UserId == userId);
+        if (alias is null)
+        {
+            return Task.FromResult<ExpectedSender?>(null);
+        }
+
+        var existing = _expectedSenders.FirstOrDefault(sender =>
+            sender.AliasId == aliasId && sender.SenderAddress == senderAddress);
+        if (existing is not null)
+        {
+            existing.IsBlocked = false;
+            existing.TrustWholeDomain = false;
+            return Task.FromResult<ExpectedSender?>(existing);
+        }
+
+        var sender = new ExpectedSender
+        {
+            Id = Guid.NewGuid(),
+            AliasId = aliasId,
+            SenderEtld1 = senderEtld1,
+            SenderAddress = senderAddress,
+            TrustWholeDomain = false,
+            CreatedAt = createdAt
+        };
+
+        _expectedSenders.Add(sender);
+        return Task.FromResult<ExpectedSender?>(sender);
+    }
+
     public Task<bool> BlockSenderAsync(
         Guid aliasId,
         Guid userId,

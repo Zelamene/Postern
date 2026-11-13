@@ -104,6 +104,35 @@ describe('AliasActivity sender actions', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Sender blocked')
   })
 
+  it('warns before blocking every address at a public email provider', async () => {
+    const user = userEvent.setup()
+    const blocked: string[] = []
+    server.use(
+      http.post('*/api/aliases/:aliasId/block-sender', ({ request }) => {
+        blocked.push(new URL(request.url).pathname)
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    renderActivity({
+      ...FLAGGED,
+      fromHeader: 'Spammer <spammer@gmail.com>',
+      envelopeSender: 'spammer@gmail.com',
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Block gmail.com' }))
+
+    expect(blocked).toEqual([])
+    expect(screen.getByText(/public email provider/i)).toBeVisible()
+    expect(screen.getByText(/every other address at @gmail.com/i)).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Block @gmail.com' }))
+
+    await waitFor(() =>
+      expect(blocked).toEqual([`/api/aliases/${ALIAS.id}/block-sender`]),
+    )
+  })
+
   it('reports a sender the API rejects', async () => {
     const user = userEvent.setup()
     server.use(

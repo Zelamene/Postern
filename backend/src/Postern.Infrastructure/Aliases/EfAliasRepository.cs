@@ -126,13 +126,16 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
         }
 
         var existing = await dbContext.ExpectedSenders.SingleOrDefaultAsync(
-            sender => sender.AliasId == aliasId && sender.SenderEtld1 == senderEtld1,
+            sender => sender.AliasId == aliasId
+                && sender.SenderAddress == null
+                && sender.SenderEtld1 == senderEtld1,
             cancellationToken);
         if (existing is not null)
         {
-            if (existing.IsBlocked)
+            if (existing.IsBlocked || !existing.TrustWholeDomain)
             {
                 existing.IsBlocked = false;
+                existing.TrustWholeDomain = true;
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
 
@@ -144,6 +147,51 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
             Id = Guid.NewGuid(),
             AliasId = aliasId,
             SenderEtld1 = senderEtld1,
+            TrustWholeDomain = true,
+            CreatedAt = createdAt
+        };
+
+        dbContext.ExpectedSenders.Add(entry);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return entry;
+    }
+
+    public async Task<ExpectedSender?> AddExpectedAddressSenderAsync(
+        Guid aliasId,
+        Guid userId,
+        string senderAddress,
+        string senderEtld1,
+        DateTimeOffset createdAt,
+        CancellationToken cancellationToken)
+    {
+        var alias = await GetOwnedAliasAsync(aliasId, userId, cancellationToken);
+        if (alias is null)
+        {
+            return null;
+        }
+
+        var existing = await dbContext.ExpectedSenders.SingleOrDefaultAsync(
+            sender => sender.AliasId == aliasId && sender.SenderAddress == senderAddress,
+            cancellationToken);
+        if (existing is not null)
+        {
+            if (existing.IsBlocked || existing.TrustWholeDomain)
+            {
+                existing.IsBlocked = false;
+                existing.TrustWholeDomain = false;
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            return existing;
+        }
+
+        var entry = new ExpectedSender
+        {
+            Id = Guid.NewGuid(),
+            AliasId = aliasId,
+            SenderEtld1 = senderEtld1,
+            SenderAddress = senderAddress,
+            TrustWholeDomain = false,
             CreatedAt = createdAt
         };
 
@@ -165,7 +213,9 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
         }
 
         var sender = await dbContext.ExpectedSenders.SingleOrDefaultAsync(
-            item => item.AliasId == aliasId && item.SenderEtld1 == senderEtld1,
+            item => item.AliasId == aliasId
+                && item.SenderAddress == null
+                && item.SenderEtld1 == senderEtld1,
             cancellationToken);
 
         if (sender is null)
@@ -175,6 +225,7 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
                 Id = Guid.NewGuid(),
                 AliasId = aliasId,
                 SenderEtld1 = senderEtld1,
+                TrustWholeDomain = true,
                 IsBlocked = true,
                 CreatedAt = DateTimeOffset.UtcNow
             });
@@ -209,7 +260,11 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
         var copied = new List<ExpectedSender>();
         foreach (var sender in existing)
         {
-            var alreadyExists = await dbContext.ExpectedSenders.AnyAsync(item => item.AliasId == targetAliasId && item.SenderEtld1 == sender.SenderEtld1, cancellationToken);
+            var alreadyExists = await dbContext.ExpectedSenders.AnyAsync(
+                item => item.AliasId == targetAliasId
+                    && item.SenderEtld1 == sender.SenderEtld1
+                    && item.SenderAddress == sender.SenderAddress,
+                cancellationToken);
             if (alreadyExists)
             {
                 continue;
@@ -220,6 +275,8 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
                 Id = Guid.NewGuid(),
                 AliasId = targetAliasId,
                 SenderEtld1 = sender.SenderEtld1,
+                SenderAddress = sender.SenderAddress,
+                TrustWholeDomain = sender.TrustWholeDomain,
                 IsBlocked = sender.IsBlocked,
                 CreatedAt = DateTimeOffset.UtcNow
             };

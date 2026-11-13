@@ -128,6 +128,7 @@ public class AliasServiceMoreTests
         public Task MarkKvDirtyAsync(Guid aliasId, CancellationToken cancellationToken) { var a = _aliases.SingleOrDefault(x => x.Id == aliasId); if (a != null) a.KvDirty = true; return Task.CompletedTask; }
         public Task<IReadOnlyCollection<ExpectedSender>> ListExpectedSendersAsync(Guid aliasId, Guid userId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyCollection<ExpectedSender>>([]);
         public Task<ExpectedSender?> AddExpectedSenderAsync(Guid aliasId, Guid userId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) => Task.FromResult<ExpectedSender?>(null);
+        public Task<ExpectedSender?> AddExpectedAddressSenderAsync(Guid aliasId, Guid userId, string senderAddress, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken) => Task.FromResult<ExpectedSender?>(null);
         public Task<bool> BlockSenderAsync(Guid aliasId, Guid userId, string senderEtld1, CancellationToken cancellationToken) => Task.FromResult(true);
         public Task<IReadOnlyCollection<ExpectedSender>> CopyExpectedSendersAsync(Guid sourceAliasId, Guid targetAliasId, Guid userId, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyCollection<ExpectedSender>>(Array.Empty<ExpectedSender>());
     }

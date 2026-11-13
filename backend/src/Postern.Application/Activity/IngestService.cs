@@ -92,6 +92,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         {
             var authResult = NormalizeAuthenticationResult(authenticationResult);
             var senderEtld1 = Etld1Normalizer.Normalize(fromHeader);
+            var senderAddress = Etld1Normalizer.NormalizeSenderAddress(fromHeader);
             var normalizedMessageId = NormalizeMessageId(messageId);
 
             if (normalizedMessageId is not null
@@ -102,7 +103,7 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
 
             if (alias.ExpectedSenders is not null && alias.ExpectedSenders.Count > 0)
             {
-                var hasExpected = senderEtld1 is not null && alias.ExpectedSenders.Any(expected => string.Equals(expected.SenderEtld1, senderEtld1, StringComparison.OrdinalIgnoreCase));
+                var hasExpected = IsExpectedSender(alias.ExpectedSenders, senderAddress, senderEtld1);
                 if (hasExpected)
                 {
                     var expectedMessage = new Message
@@ -185,9 +186,14 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
             }
             else
             {
-                if (authResult == "pass" && senderEtld1 is not null)
+                if (authResult == "pass" && senderAddress is not null && senderEtld1 is not null)
                 {
-                    await activityRepository.AddExpectedSenderAsync(alias.Id, senderEtld1, timeProvider.GetUtcNow(), cancellationToken);
+                    await activityRepository.AddExpectedAddressSenderAsync(
+                        alias.Id,
+                        senderAddress,
+                        senderEtld1,
+                        timeProvider.GetUtcNow(),
+                        cancellationToken);
                 }
             }
 
@@ -263,6 +269,18 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
         var trimmed = reason.Trim();
         return trimmed.Length > 32 ? trimmed[..32] : trimmed;
     }
+
+    private static bool IsExpectedSender(
+        IEnumerable<ExpectedSender> senders,
+        string? senderAddress,
+        string? senderEtld1) =>
+        senders.Any(sender =>
+            (senderAddress is not null
+                && sender.SenderAddress is not null
+                && string.Equals(sender.SenderAddress, senderAddress, StringComparison.OrdinalIgnoreCase))
+            || (sender.TrustWholeDomain
+                && senderEtld1 is not null
+                && string.Equals(sender.SenderEtld1, senderEtld1, StringComparison.OrdinalIgnoreCase)));
 
     private static string NormalizeAuthenticationResult(string? authenticationResult)
     {

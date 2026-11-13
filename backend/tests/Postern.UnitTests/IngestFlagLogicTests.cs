@@ -139,8 +139,11 @@ public sealed class IngestFlagLogicTests
         var message = Assert.Single(repository.Messages);
         Assert.False(message.IsFlagged);
         Assert.Null(message.FlagReason);
-        Assert.Equal("newsletter.test", Assert.Single(repository.AddedExpectedSenders).SenderEtld1);
-        Assert.Equal(alias.Id, repository.AddedExpectedSenders[0].AliasId);
+        var addedSender = Assert.Single(repository.AddedExpectedSenders);
+        Assert.Equal("newsletter.test", addedSender.SenderEtld1);
+        Assert.Equal("news@newsletter.test", addedSender.SenderAddress);
+        Assert.False(addedSender.TrustWholeDomain);
+        Assert.Equal(alias.Id, addedSender.AliasId);
     }
 
     [Fact]
@@ -218,13 +221,20 @@ public sealed class IngestFlagLogicTests
             return Task.FromResult(blockedMessage);
         }
 
-        public Task AddExpectedSenderAsync(Guid aliasId, string senderEtld1, DateTimeOffset createdAt, CancellationToken cancellationToken)
+        public Task AddExpectedAddressSenderAsync(
+            Guid aliasId,
+            string senderAddress,
+            string senderEtld1,
+            DateTimeOffset createdAt,
+            CancellationToken cancellationToken)
         {
             var sender = new ExpectedSender
             {
                 Id = Guid.NewGuid(),
                 AliasId = aliasId,
                 SenderEtld1 = senderEtld1,
+                SenderAddress = senderAddress,
+                TrustWholeDomain = false,
                 CreatedAt = createdAt
             };
             _expectedSenders.Add(sender);
@@ -275,6 +285,7 @@ public sealed class IngestFlagLogicTests
                     Id = Guid.NewGuid(),
                     AliasId = alias.Id,
                     SenderEtld1 = domain,
+                    TrustWholeDomain = true,
                     CreatedAt = Now
                 });
             }

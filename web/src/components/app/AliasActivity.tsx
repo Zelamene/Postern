@@ -6,9 +6,11 @@ import { EmailAddressNormalizer } from '../../services/EmailAddressNormalizer'
 import { ApiError } from '../../services/apiClient'
 import { describeAliasError } from '../../services/aliasErrors'
 import { REPLY_WARNING } from '../../services/productCopy'
+import { isPublicEmailProvider } from '../../services/publicEmailProviders'
 import { formatDateTime } from '../../services/formatters'
 import { AppLink } from './AppLink'
 import { ALIAS_STATUS_CLASSES } from './aliasStatus'
+import { ConfirmationDialog } from '../common/ConfirmationDialog'
 import { ReplaceAliasDialog } from './ReplaceAliasDialog'
 import { useToast } from '../common/toast'
 import { exportAliasActivityCsv } from '../../services/activityExport'
@@ -79,6 +81,13 @@ function senderOf(message: MailMessage): string | null {
   )
 }
 
+function senderAddressOf(message: MailMessage): string | null {
+  return (
+    EmailAddressNormalizer.SenderAddress(message.fromHeader ?? '') ??
+    EmailAddressNormalizer.SenderAddress(message.envelopeSender ?? '')
+  )
+}
+
 function describeSenderError(error: unknown): string {
   if (error instanceof ApiError && error.status === 400) {
     return 'That sender address cannot be used. Check the address and try again.'
@@ -96,6 +105,11 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
   const [notice, setNotice] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null)
+  const [pendingBlock, setPendingBlock] = useState<{
+    messageId: string
+    domain: string
+    address: string | null
+  } | null>(null)
   const [isExporting, setIsExporting] = useState(false)
 
   const title = alias?.label ?? 'Alias activity'
@@ -106,6 +120,7 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
     messageId: string,
     sender: string,
     action: SenderAction,
+    senderAddress?: string | null,
   ) {
     if (!alias) {
       return
@@ -117,17 +132,35 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
 
     try {
       if (action === 'expected') {
-        await markExpectedSender(alias.id, sender)
+        await markExpectedSender(alias.id, sender, senderAddress)
         setNotice('Sender marked as expected. Its mail is no longer flagged.')
       } else {
         await blockSender(alias.id, sender)
-        setNotice('Sender blocked. New mail from it is dropped for this alias.')
+        setNotice(`Sender blocked. New mail from ${sender} is dropped for this alias.`)
       }
     } catch (error) {
       setActionError(describeSenderError(error))
     } finally {
       setPendingMessageId(null)
     }
+  }
+
+  function handleBlockRequest(messageId: string, sender: string, senderAddress: string | null) {
+    if (isPublicEmailProvider(sender)) {
+      setPendingBlock({ messageId, domain: sender, address: senderAddress })
+      return
+    }
+
+    void handleSenderAction(messageId, sender, 'block')
+  }
+
+  async function handleConfirmedBlock() {
+    if (pendingBlock === null) {
+      return
+    }
+
+    await handleSenderAction(pendingBlock.messageId, pendingBlock.domain, 'block')
+    setPendingBlock(null)
   }
 
   function handleReplaced(replacement: Alias) {
@@ -267,6 +300,7 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
             <ul className="divide-y divide-hairline">
               {feed.items.map((message) => {
                 const sender = senderOf(message)
+                const senderAddress = senderAddressOf(message)
                 const severity = leakSeverity(message)
                 const severityDetail = severity ? SEVERITY_DETAILS[severity] : null
                 const showLeakActions = message.isFlagged && alias?.status === 'Active'
@@ -306,7 +340,9 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
                               className="btn btn--ghost btn--sm"
                               disabled={pendingMessageId === message.id}
                               aria-label={`Mark ${sender} as expected`}
-                              onClick={() => void handleSenderAction(message.id, sender, 'expected')}
+                              onClick={() =>
+                                void handleSenderAction(message.id, sender, 'expected', senderAddress)
+                              }
                             >
                               Mark as expected
                             </button>
@@ -326,7 +362,7 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
                               className="btn btn--ghost btn--sm"
                               disabled={pendingMessageId === message.id}
                               aria-label={`Block ${sender}`}
-                              onClick={() => void handleSenderAction(message.id, sender, 'block')}
+                              onClick={() => handleBlockRequest(message.id, sender, senderAddress)}
                             >
                               Block sender
                             </button>
@@ -355,6 +391,23 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
         )}
       </section>
 
+      <ConfirmationDialog
+        open={pendingBlock !== null}
+        title={pendingBlock === null ? '' : `Block all mail from @${pendingBlock.domain}?`}
+        description={
+          pendingBlock === null
+            ? ''
+            : `This sender uses a public email provider. Blocking ${
+                pendingBlock.address ?? pendingBlock.domain
+              } also blocks every other address at @${pendingBlock.domain} for this alias, including legitimate mail.`
+        }
+        confirmLabel={pendingBlock === null ? 'Block' : `Block @${pendingBlock.domain}`}
+        cancelLabel="Cancel"
+        busyLabel="Blocking…"
+        busy={pendingBlock !== null && pendingMessageId === pendingBlock.messageId}
+        onCancel={() => setPendingBlock(null)}
+        onConfirm={() => void handleConfirmedBlock()}
+      />
       <ReplaceAliasDialog
         open={isReplaceOpen}
         alias={alias}
