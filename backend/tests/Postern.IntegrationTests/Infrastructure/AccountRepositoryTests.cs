@@ -24,7 +24,7 @@ public sealed class AccountRepositoryTests(PosternFixture fixture)
         Assert.Equal("inbox@example.test", reloaded.ForwardingAddress);
         Assert.Equal("inbox@example.test", reloaded.EffectiveForwardingAddress);
 
-        // The login identity is immutable; only the forwarding destination moves.
+
         Assert.Equal(user.Email, reloaded.Email);
         Assert.Equal(user.NormalizedEmail, reloaded.NormalizedEmail);
         Assert.NotNull(await repo.FindByNormalizedEmailAsync(user.NormalizedEmail, CancellationToken.None));

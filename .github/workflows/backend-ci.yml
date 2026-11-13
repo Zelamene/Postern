@@ -104,6 +104,29 @@ jobs:
             --logger "trx;LogFileName=integration.trx" \
             --results-directory artifacts/integration
 
+      - name: Merge coverage reports
+        if: always()
+        run: |
+          set -euo pipefail
+          report_count=$(find artifacts -name 'coverage.cobertura.xml' | wc -l)
+          if [ "$report_count" -eq 0 ]; then
+            echo "No coverage reports were produced; skipping the merge."
+            exit 0
+          fi
+
+          dotnet tool restore
+          dotnet tool run reportgenerator \
+            "-reports:artifacts/**/coverage.cobertura.xml" \
+            "-targetdir:artifacts/coverage" \
+            "-reporttypes:Html;Cobertura;TextSummary;MarkdownSummaryGithub" \
+            "-filefilters:-**/Migrations/**;-**/PosternDesignTimeDbContextFactory.cs" \
+            "-assemblyfilters:-*.Tests" \
+            "-verbosity:Warning"
+
+          echo "Merged coverage:"
+          cat artifacts/coverage/Summary.txt
+          cat artifacts/coverage/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload test and coverage reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

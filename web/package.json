@@ -16,7 +16,8 @@
     "test:e2e:install": "playwright install chromium",
     "check:contrast": "node scripts/contrast-audit.mjs --check",
     "test:coverage": "vitest run --config vitest.coverage.config.ts --coverage --no-file-parallelism --testTimeout=15000 --hookTimeout=15000",
-    "test:coverage:unit": "vitest run --config vitest.config.ts --coverage --no-file-parallelism --testTimeout=15000 --hookTimeout=15000"
+    "test:coverage:unit": "vitest run --config vitest.config.ts --coverage --no-file-parallelism --testTimeout=15000 --hookTimeout=15000",
+    "coverage:summary": "node scripts/coverage-summary.mjs"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",

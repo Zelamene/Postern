@@ -44,7 +44,7 @@ export function RequestInvite() {
             message = errorData.error
           }
         } catch {
-          // Keep the generic message when the server does not return JSON.
+
         }
         setState({ ...state, error: message, submitting: false })
         return
