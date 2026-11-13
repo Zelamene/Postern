@@ -5,7 +5,10 @@ namespace Postern.Application.Activity;
 
 public static class Rfc2047Decoder
 {
-    private static readonly Regex EncodedWordRegex = new(@"=\?([^?]+)\?([BbQq])\?([^?]*)\?=", RegexOptions.Compiled);
+    private static readonly Regex EncodedWordRegex = new(
+        @"=\?([^?]+)\?([BbQq])\?([^?]*)\?=",
+        RegexOptions.Compiled,
+        TimeSpan.FromSeconds(1));
 
     public static string Decode(string? value)
     {

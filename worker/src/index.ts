@@ -206,12 +206,17 @@ function extractEtld1(header: string): string | null {
     return null;
   }
 
-  const emailMatch = header.match(/[\w.+-]+@([\w.-]+)/);
+  const emailMatch = /(?:[^\s<>@,;:"]+)@([^\s<>@,;:"]+)/.exec(header);
   if (!emailMatch) {
     return null;
   }
 
-  const parts = emailMatch[1].toLowerCase().replace(/\.+$/, "").split(".");
+  let domain = emailMatch[1].toLowerCase();
+  while (domain.endsWith(".")) {
+    domain = domain.slice(0, -1);
+  }
+
+  const parts = domain.split(".");
   if (parts.length <= 2) {
     return parts.join(".");
   }

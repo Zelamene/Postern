@@ -24,7 +24,8 @@ public sealed class EfAccountRepository(
     {
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         await dbContext.Database.ExecuteSqlRawAsync(
-            $"SELECT pg_advisory_xact_lock({RegistrationLockId})",
+            "SELECT pg_advisory_xact_lock({0})",
+            [RegistrationLockId],
             cancellationToken);
 
         // --- cap check at issue time: outstanding unexpired invites ≤ 199 − (pending + active) ---

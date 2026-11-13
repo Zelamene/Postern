@@ -2,7 +2,7 @@
 
 import { pathToFileURL } from 'node:url';
 
-const hex = (h) => h.replace('#', '').match(/../g).map((x) => parseInt(x, 16));
+const hex = (h) => h.replace('#', '').match(/../g).map((x) => Number.parseInt(x, 16));
 const lin = (c) => {
   c /= 255;
   return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);

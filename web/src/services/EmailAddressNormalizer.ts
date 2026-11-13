@@ -1,7 +1,6 @@
 const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const DOMAIN_PATTERN = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i
 const EDGE_BRACKETS = /^\[|\]$/g
-const TRAILING_DOTS = /\.+$/
 const MAX_ADDRESS_LENGTH = 254
 const MAX_DOMAIN_LENGTH = 253
 
@@ -41,7 +40,11 @@ function SenderHost(value: string): string | null {
   const host =
     separator >= 0 ? withoutBrackets.slice(separator + 1) : withoutBrackets
 
-  const cleaned = host.trim().toLowerCase().replace(EDGE_BRACKETS, '').replace(TRAILING_DOTS, '')
+  let cleaned = host.trim().toLowerCase().replace(EDGE_BRACKETS, '')
+  while (cleaned.endsWith('.')) {
+    cleaned = cleaned.slice(0, -1)
+  }
+
   if (!cleaned || cleaned.length > MAX_DOMAIN_LENGTH) {
     return null
   }

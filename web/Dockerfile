@@ -7,7 +7,7 @@ RUN chown node:node /app
 USER node
 
 COPY --chown=node:node package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 EXPOSE 5173
 

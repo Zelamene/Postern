@@ -37,9 +37,10 @@ if (string.IsNullOrWhiteSpace(signingKey)
         "Authentication:SigningKey must be configured with at least 32 bytes of random material.");
 }
 
-var issuer = builder.Configuration["Authentication:Issuer"] ?? "Postern";
-var audience = builder.Configuration["Authentication:Audience"] ?? "Postern.Web";
-var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
+var jwtOptions = new JwtOptions(
+    builder.Configuration["Authentication:Issuer"] ?? "Postern",
+    builder.Configuration["Authentication:Audience"] ?? "Postern.Web",
+    signingKey);
 
 var connectionString = builder.Configuration.GetConnectionString("Postgres");
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -257,11 +258,11 @@ builder.Services
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = issuer,
+            ValidIssuer = jwtOptions.Issuer,
             ValidateAudience = true,
-            ValidAudience = audience,
+            ValidAudience = jwtOptions.Audience,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = key,
+            IssuerSigningKey = jwtOptions.CreateSigningKey(),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30),
             ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
@@ -291,6 +292,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("recovery", context => CreateRateLimit(context, 5, TimeSpan.FromMinutes(15)));
     options.AddPolicy("invite-request", context => CreateRateLimit(context, 5, TimeSpan.FromHours(1)));
 });
+builder.Services.AddSingleton(jwtOptions);
 builder.Services.AddSingleton<JwtTokenIssuer>();
 
 if (builder.Environment.IsDevelopment())
@@ -327,7 +329,7 @@ app.MapIngestEndpoints();
 app.MapAdministrationEndpoints();
 app.MapJobEndpoints();
 
-app.Run();
+await app.RunAsync();
 
 static RateLimitPartition<string> CreateRateLimit(
     HttpContext context,

@@ -69,3 +69,5 @@ TestResult.xml
 nunit-*.xml
 
 DEPLOYMENT.md
+
+.wrangler/
