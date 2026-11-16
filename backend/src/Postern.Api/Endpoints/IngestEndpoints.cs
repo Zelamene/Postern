@@ -19,7 +19,6 @@ public static class IngestEndpoints
         HttpContext context,
         IngestRequest? request,
         IngestService ingestService,
-        RateLimitService rateLimits,
         IConfiguration configuration,
         IUserRealtimeNotifier userRealtime,
         IAdminRealtimeNotifier adminRealtime,
@@ -38,11 +37,8 @@ public static class IngestEndpoints
 
         var outcome = await ingestService.IngestWithOutcomeAsync(request, cancellationToken);
 
-        if (outcome.Result == IngestResult.Accepted)
-        {
-            await rateLimits.RebuildRateLimitedUsersAsync(cancellationToken);
-        }
-
+        // Rate-limit projection refreshes run in RateLimitProjectionWorker, not on this path:
+        // the ingest endpoint must stay bounded and must not spend KV writes per message.
         await NotifyAsync(outcome, userRealtime, adminRealtime, notifications, cancellationToken);
 
         return outcome.Result switch

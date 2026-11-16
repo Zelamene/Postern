@@ -115,6 +115,18 @@ public sealed class InMemoryAliasRepository : IAliasRepository
         return Task.CompletedTask;
     }
 
+    public Task ClearKvDirtyAsync(Guid aliasId, CancellationToken cancellationToken)
+    {
+        _dirtyAliasIds.Remove(aliasId);
+        var alias = _aliases.SingleOrDefault(item => item.Id == aliasId);
+        if (alias is not null)
+        {
+            alias.KvDirty = false;
+        }
+
+        return Task.CompletedTask;
+    }
+
     public Task<IReadOnlyCollection<ExpectedSender>> ListExpectedSendersAsync(
         Guid aliasId,
         Guid userId,

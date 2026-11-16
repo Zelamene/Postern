@@ -10,7 +10,6 @@ id = "2aaa56ee672345cebfed9f65cf47e80d"
 [vars]
 INGEST_ENDPOINT = "https://api.3xyz.uk/api/ingest"
 API_BASE_URL = "https://api.3xyz.uk"
-POSTERN_DOMAIN = "3xyz.uk"
 
 [triggers]
 crons = ["*/10 * * * *", "5 3 * * *"]

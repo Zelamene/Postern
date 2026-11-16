@@ -111,10 +111,15 @@ public sealed class InMemoryAdministrationRepository(InMemoryAliasRepository? al
     }
 
     public Task<IReadOnlyCollection<AdminKvSyncAlias>> ListAliasesForKvAsync(
+        bool onlyDirty,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult<IReadOnlyCollection<AdminKvSyncAlias>>(Aliases.ToList());
+        var dirtyAliasIds = aliases?.KvDirtyAliasIds;
+        var rows = onlyDirty && dirtyAliasIds is not null
+            ? Aliases.Where(alias => dirtyAliasIds.Contains(alias.AliasId)).ToList()
+            : Aliases.ToList();
+        return Task.FromResult<IReadOnlyCollection<AdminKvSyncAlias>>(rows);
     }
 
     public Task<int> CountDirtyAliasesAsync(CancellationToken cancellationToken)

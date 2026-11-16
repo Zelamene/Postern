@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Postern.Application.Activity;
 using Postern.Domain.Activity;
 using Postern.Domain.Aliases;
 using Postern.IntegrationTests.Collections;
@@ -258,7 +260,7 @@ public sealed class IngestFlowTests(PosternFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Ingest_WhenUserExceedsDailyCap_PublishesRateLimitedMap()
+    public async Task Ingest_WhenUserExceedsDailyCap_LeavesTheProjectionToTheRefresher()
     {
         var user = await fixture.AUserAsync();
         var alias = await fixture.AnAliasAsync(user.Id);
@@ -291,6 +293,13 @@ public sealed class IngestFlowTests(PosternFixture fixture) : IAsyncLifetime
             authenticationResult = "pass"
         });
         Assert.Equal(HttpStatusCode.Accepted, ingest.StatusCode);
+
+
+        Assert.Null(kv.Get("rate_limited_users"));
+
+        using var scope = factory.Services.CreateScope();
+        var rateLimits = scope.ServiceProvider.GetRequiredService<RateLimitService>();
+        await rateLimits.RebuildRateLimitedUsersAsync(CancellationToken.None);
 
         var json = kv.Get("rate_limited_users");
         Assert.NotNull(json);

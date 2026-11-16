@@ -4,7 +4,6 @@ interface Env {
   INGEST_SECRET: string;
   API_BASE_URL: string;
   JOB_SECRET: string;
-  POSTERN_DOMAIN: string;
 }
 
 interface AliasKvRecord {
@@ -201,7 +200,11 @@ async function ingestBlocked(
   }
 }
 
-function extractEtld1(header: string): string | null {
+/**
+ * Parses the registrable domain (eTLD+1) of a sender header. Exported so the shared parity
+ * fixture in shared/etld1-cases.json can pin it against the .NET implementation.
+ */
+export function extractEtld1(header: string): string | null {
   if (!header) {
     return null;
   }

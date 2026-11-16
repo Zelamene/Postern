@@ -45,7 +45,8 @@ public sealed class NightlyMaintenanceService(
         var deletedPendingUsers = await DeleteStalePendingUsersAsync(
             startedAt - PendingUserRetention,
             cancellationToken);
-        var kvSyncResult = await kvSync.SyncAsync(null, cancellationToken);
+
+        var kvSyncResult = await kvSync.SyncAsync(null, cancellationToken, fullSync: false);
         var completedAt = timeProvider.GetUtcNow();
 
         await administration.RecordAuditEntryAsync(

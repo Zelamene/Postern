@@ -18,13 +18,16 @@ public class NightlyMaintenanceServiceTests
         context.Administration.DeletedBlockedMessages = 2;
         context.Administration.DeletedWebhookEvents = 4;
         context.Administration.DeletedInviteRequests = 1;
-        context.Administration.Aliases.Add(new AdminKvSyncAlias(
+        var syncAlias = new AdminKvSyncAlias(
             Guid.NewGuid(),
             "nightly@example.test",
             Guid.NewGuid(),
             "destination@example.test",
             "active",
-            []));
+            []);
+        context.Administration.Aliases.Add(syncAlias);
+
+        await context.Aliases.MarkKvDirtyAsync(syncAlias.AliasId, CancellationToken.None);
 
         var result = await context.Service.RunAsync(CancellationToken.None);
 

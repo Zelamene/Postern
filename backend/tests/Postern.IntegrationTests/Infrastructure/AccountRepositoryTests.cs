@@ -31,6 +31,24 @@ public sealed class AccountRepositoryTests(PosternFixture fixture)
     }
 
     [Fact]
+    public async Task UpdateForwardingAddress_MarksEveryAliasDirtyInTheSameSave()
+    {
+        var user = await fixture.AUserAsync();
+        var first = await fixture.AnAliasAsync(user.Id, label: "first");
+        var second = await fixture.AnAliasAsync(user.Id, label: "second");
+
+        await using var db = fixture.CreateContext();
+        var repo = new EfAccountRepository(db, allowUnboundDevelopmentInvites: false);
+
+        Assert.True(await repo.UpdateForwardingAddressAsync(
+            user.Id, "inbox@example.test", CancellationToken.None));
+
+        db.ChangeTracker.Clear();
+        Assert.True((await db.Aliases.FindAsync(first.Id))!.KvDirty);
+        Assert.True((await db.Aliases.FindAsync(second.Id))!.KvDirty);
+    }
+
+    [Fact]
     public async Task EffectiveForwardingAddress_FallsBackToLoginEmail()
     {
         var user = await fixture.AUserAsync();

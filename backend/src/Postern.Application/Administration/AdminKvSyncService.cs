@@ -13,7 +13,8 @@ public sealed record AdminKvSyncResult(
     int AliasesDeleted,
     int RemainingDirtyAliases,
     bool GlobalBlocklistRebuilt,
-    bool SuspendedUsersRebuilt);
+    bool SuspendedUsersRebuilt,
+    bool FullSync);
 
 public sealed class AdminKvSyncService(
     IAdministrationRepository administration,
@@ -23,15 +24,21 @@ public sealed class AdminKvSyncService(
     IKvWriter kvWriter,
     TimeProvider timeProvider)
 {
+
     public async Task<AdminKvSyncResult> SyncAsync(
         Guid? adminUserId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool fullSync = true)
     {
-        var desired = await administration.ListAliasesForKvAsync(cancellationToken);
+        var desired = await administration.ListAliasesForKvAsync(
+            onlyDirty: !fullSync,
+            cancellationToken);
         var desiredByKey = desired.ToDictionary(
             alias => alias.FullAddress.ToLowerInvariant(),
             StringComparer.Ordinal);
-        var existingKeys = await kvWriter.ListKeysAsync(cancellationToken);
+        var existingKeys = fullSync
+            ? await kvWriter.ListKeysAsync(cancellationToken)
+            : Array.Empty<string>();
 
         var confirmedAliasIds = new List<Guid>(desired.Count);
         var synced = 0;
@@ -69,28 +76,31 @@ public sealed class AdminKvSyncService(
             }
         }
 
-        var reserved = new HashSet<string>(StringComparer.Ordinal)
+        if (fullSync)
         {
-            GlobalBlocklistService.KvKey,
-            SuspendedUserService.KvKey,
-            RateLimitService.KvKey
-        };
+            var reserved = new HashSet<string>(StringComparer.Ordinal)
+            {
+                GlobalBlocklistService.KvKey,
+                SuspendedUserService.KvKey,
+                RateLimitService.KvKey
+            };
 
-        foreach (var key in existingKeys)
-        {
-            if (desiredByKey.ContainsKey(key) || reserved.Contains(key))
+            foreach (var key in existingKeys)
             {
-                continue;
-            }
+                if (desiredByKey.ContainsKey(key) || reserved.Contains(key))
+                {
+                    continue;
+                }
 
-            try
-            {
-                await kvWriter.DeleteAsync(key, cancellationToken);
-                deleted += 1;
-            }
-            catch
-            {
-                failed += 1;
+                try
+                {
+                    await kvWriter.DeleteAsync(key, cancellationToken);
+                    deleted += 1;
+                }
+                catch
+                {
+                    failed += 1;
+                }
             }
         }
 
@@ -118,7 +128,8 @@ public sealed class AdminKvSyncService(
                     aliasesFailed = failed,
                     remainingDirtyAliases = remaining,
                     globalBlocklistRebuilt,
-                    suspendedUsersRebuilt
+                    suspendedUsersRebuilt,
+                    fullSync
                 }),
                 CreatedAt = timeProvider.GetUtcNow()
             },
@@ -130,7 +141,8 @@ public sealed class AdminKvSyncService(
             deleted,
             remaining,
             globalBlocklistRebuilt,
-            suspendedUsersRebuilt);
+            suspendedUsersRebuilt,
+            fullSync);
     }
 
     private static async Task<bool> TryRebuildAsync(
