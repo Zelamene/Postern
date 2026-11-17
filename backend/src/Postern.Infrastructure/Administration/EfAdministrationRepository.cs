@@ -150,11 +150,13 @@ public sealed class EfAdministrationRepository(PosternDbContext dbContext) : IAd
     }
 
     public async Task<IReadOnlyCollection<AdminKvSyncAlias>> ListAliasesForKvAsync(
+        bool onlyDirty,
         CancellationToken cancellationToken)
     {
         var rows = await dbContext.Aliases
             .AsNoTracking()
             .Where(alias => alias.UserId != null && alias.FullAddress != null)
+            .Where(alias => !onlyDirty || alias.KvDirty)
             .OrderBy(alias => alias.CreatedAt)
             .Select(alias => new
             {

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import worker from '../src/index'
+import etld1Cases from '../../shared/etld1-cases.json'
+import worker, { extractEtld1 } from '../src/index'
 
 type WorkerMessage = Parameters<typeof worker.email>[0]
 type WorkerEnv = Parameters<typeof worker.email>[1]
@@ -81,7 +82,6 @@ function createEnv(kv: KVNamespace) {
     INGEST_SECRET: 'worker-test-secret',
     API_BASE_URL: 'https://api.postern.test',
     JOB_SECRET: 'worker-test-job-secret',
-    POSTERN_DOMAIN: 'postern.local',
   } as unknown as WorkerEnv
 }
 
@@ -379,6 +379,12 @@ describe('Postern scheduled handler', () => {
 })
 
 describe('Postern worker eTLD+1 handling', () => {
+  // Same fixture as backend/tests/Postern.UnitTests/Etld1ParityTests.cs: the Worker and the
+  // management app parse sender domains independently, so the contract is pinned here.
+  it.each(etld1Cases.cases)('parses $header as $expected', ({ header, expected }) => {
+    expect(extractEtld1(header)).toBe(expected)
+  })
+
   it('matches a blocked sender on a second-level domain', async () => {
     const { namespace } = createKv(aliasRecords({ blockedSenders: ['shop.co.uk'] }))
     const fetchMock = stubFetch(async () => new Response(null, { status: 200 }))

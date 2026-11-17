@@ -47,7 +47,9 @@ public interface IAdministrationRepository
         int recentAuditLimit,
         CancellationToken cancellationToken);
 
+
     Task<IReadOnlyCollection<AdminKvSyncAlias>> ListAliasesForKvAsync(
+        bool onlyDirty,
         CancellationToken cancellationToken);
 
     Task<int> CountDirtyAliasesAsync(CancellationToken cancellationToken);

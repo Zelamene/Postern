@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="../../../shared/etld1-cases.json" Link="etld1-cases.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Postern.Domain\Postern.Domain.csproj" />
     <ProjectReference Include="..\..\src\Postern.Application\Postern.Application.csproj" />
   </ItemGroup>

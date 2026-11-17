@@ -256,12 +256,25 @@ public sealed class EfAccountRepository(
     public async Task<bool> UpdateForwardingAddressAsync(
         Guid userId,
         string newForwardingAddress,
-        CancellationToken cancellationToken) =>
-        await dbContext.Users
-            .Where(user => user.Id == userId)
-            .ExecuteUpdateAsync(
-                setters => setters.SetProperty(user => user.ForwardingAddress, newForwardingAddress),
-                cancellationToken) == 1;
+        CancellationToken cancellationToken)
+    {
+        var user = await dbContext.Users
+            .Include(item => item.Aliases)
+            .SingleOrDefaultAsync(item => item.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return false;
+        }
+
+        user.ForwardingAddress = newForwardingAddress;
+        foreach (var alias in user.Aliases)
+        {
+            alias.KvDirty = true;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 
     public async Task<bool> DeleteAccountAsync(
         Guid userId,

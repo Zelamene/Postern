@@ -34,6 +34,9 @@ public interface IAliasRepository
 
     Task MarkKvDirtyAsync(Guid aliasId, CancellationToken cancellationToken);
 
+
+    Task ClearKvDirtyAsync(Guid aliasId, CancellationToken cancellationToken) => Task.CompletedTask;
+
     Task<IReadOnlyCollection<ExpectedSender>> ListExpectedSendersAsync(
         Guid aliasId,
         Guid userId,

@@ -64,11 +64,15 @@ public sealed class AliasService(
                 Category = NormalizeCategory(category),
                 Status = AliasStatus.Active,
                 CreatedAt = now,
-                KvDirty = false
+                KvDirty = true
             };
 
             var created = await aliases.CreateAsync(alias, cancellationToken);
-            await PublishAsync(created, user.EffectiveForwardingAddress, "active", cancellationToken);
+            if (await PublishAsync(created, user.EffectiveForwardingAddress, "active", cancellationToken))
+            {
+                await aliases.ClearKvDirtyAsync(created.Id, cancellationToken);
+            }
+
             return created;
         }
 
@@ -91,7 +95,11 @@ public sealed class AliasService(
             return false;
         }
 
-        await PublishCurrentStateAsync(userId, aliasId, "disabled", cancellationToken);
+        if (await PublishCurrentStateAsync(userId, aliasId, "disabled", cancellationToken))
+        {
+            await aliases.ClearKvDirtyAsync(aliasId, cancellationToken);
+        }
+
         return true;
     }
 
@@ -130,7 +138,11 @@ public sealed class AliasService(
             return false;
         }
 
-        await PublishCurrentStateAsync(userId, aliasId, "replaced", cancellationToken);
+        if (await PublishCurrentStateAsync(userId, aliasId, "replaced", cancellationToken))
+        {
+            await aliases.ClearKvDirtyAsync(aliasId, cancellationToken);
+        }
+
         return true;
     }
 
@@ -254,13 +266,14 @@ public sealed class AliasService(
         }
 
         var alias = await aliases.GetOwnedAliasAsync(aliasId, userId, cancellationToken);
-        if (alias is not null)
-        {
-            await PublishCurrentStateAsync(
+        if (alias is not null
+            && await PublishCurrentStateAsync(
                 userId,
                 aliasId,
                 alias.Status.ToString().ToLowerInvariant(),
-                cancellationToken);
+                cancellationToken))
+        {
+            await aliases.ClearKvDirtyAsync(aliasId, cancellationToken);
         }
 
         return true;
@@ -287,7 +300,7 @@ public sealed class AliasService(
         return trimmed.Length > CategoryMaxLength ? trimmed[..CategoryMaxLength] : trimmed;
     }
 
-    private async Task PublishCurrentStateAsync(
+    private async Task<bool> PublishCurrentStateAsync(
         Guid userId,
         Guid aliasId,
         string status,
@@ -296,19 +309,19 @@ public sealed class AliasService(
         var alias = await aliases.GetOwnedAliasAsync(aliasId, userId, cancellationToken);
         if (alias?.FullAddress is null)
         {
-            return;
+            return false;
         }
 
         var user = await accounts.FindByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return;
+            return false;
         }
 
-        await PublishAsync(alias, user.EffectiveForwardingAddress, status, cancellationToken);
+        return await PublishAsync(alias, user.EffectiveForwardingAddress, status, cancellationToken);
     }
 
-    private async Task PublishAsync(
+    private async Task<bool> PublishAsync(
         Alias alias,
         string destination,
         string status,
@@ -316,7 +329,7 @@ public sealed class AliasService(
     {
         if (alias.FullAddress is null || alias.UserId is null)
         {
-            return;
+            return false;
         }
 
         var blockedSenders = (await aliases.ListExpectedSendersAsync(
@@ -333,10 +346,13 @@ public sealed class AliasService(
                 alias.FullAddress.ToLowerInvariant(),
                 AliasKvRecord.Serialize(destination, status, alias.UserId.Value, blockedSenders),
                 cancellationToken);
+            return true;
         }
         catch
         {
+            // Idempotent backstop for repositories that do not mark the flag transactionally.
             await aliases.MarkKvDirtyAsync(alias.Id, cancellationToken);
+            return false;
         }
     }
 

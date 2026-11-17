@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Postern.Application.Aliases;
 using Postern.Domain.Aliases;
 using Postern.Infrastructure.Aliases;
 using Postern.IntegrationTests.Collections;
@@ -9,6 +10,85 @@ namespace Postern.IntegrationTests.Infrastructure;
 [Collection(IntegrationCollection.Name)]
 public sealed class AliasRepositoryTests(PosternFixture fixture)
 {
+    [Fact]
+    public async Task Create_PersistsTheAliasAsKvDirtyUntilTheProjectionIsWritten()
+    {
+        var user = await fixture.AUserAsync();
+        var address = $"fresh-{Guid.NewGuid():N}@postern.test";
+
+        await using var db = fixture.CreateContext();
+        var repo = new EfAliasRepository(db);
+
+        var created = await repo.CreateAsync(
+            new Alias
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Label = "fresh",
+                RandomSuffix = Guid.NewGuid().ToString("N")[..8],
+                FullAddress = address,
+                FullAddressHash = AliasService.HashAddress(address),
+                Category = "personal",
+                Status = AliasStatus.Active,
+                CreatedAt = DateTimeOffset.UtcNow
+            },
+            CancellationToken.None);
+
+
+        db.ChangeTracker.Clear();
+        Assert.True((await db.Aliases.FindAsync(created.Id))!.KvDirty);
+    }
+
+    [Fact]
+    public async Task Disable_MarksTheAliasKvDirtyInTheSameSave()
+    {
+        var user = await fixture.AUserAsync();
+        var alias = await fixture.AnAliasAsync(user.Id);
+
+        await using var db = fixture.CreateContext();
+        var repo = new EfAliasRepository(db);
+
+        Assert.True(await repo.UpdateStatusAsync(
+            alias.Id, user.Id, AliasStatus.Disabled, DateTimeOffset.UtcNow, CancellationToken.None));
+
+        db.ChangeTracker.Clear();
+        Assert.True((await db.Aliases.FindAsync(alias.Id))!.KvDirty);
+    }
+
+    [Fact]
+    public async Task MarkReplaced_MarksTheAliasKvDirtyInTheSameSave()
+    {
+        var user = await fixture.AUserAsync();
+        var original = await fixture.AnAliasAsync(user.Id, label: "orig");
+        var replacement = await fixture.AnAliasAsync(user.Id, label: "repl");
+
+        await using var db = fixture.CreateContext();
+        var repo = new EfAliasRepository(db);
+
+        Assert.True(await repo.MarkReplacedAsync(
+            original.Id, user.Id, replacement.Id, DateTimeOffset.UtcNow, CancellationToken.None));
+
+        db.ChangeTracker.Clear();
+        Assert.True((await db.Aliases.FindAsync(original.Id))!.KvDirty);
+    }
+
+    [Fact]
+    public async Task ClearKvDirty_ClearsOnlyTheRequestedAlias()
+    {
+        var user = await fixture.AUserAsync();
+        var synced = await fixture.AnAliasAsync(user.Id, kvDirty: true, label: "synced");
+        var stillDirty = await fixture.AnAliasAsync(user.Id, kvDirty: true, label: "dirty");
+
+        await using var db = fixture.CreateContext();
+        var repo = new EfAliasRepository(db);
+
+        await repo.ClearKvDirtyAsync(synced.Id, CancellationToken.None);
+
+        db.ChangeTracker.Clear();
+        Assert.False((await db.Aliases.FindAsync(synced.Id))!.KvDirty);
+        Assert.True((await db.Aliases.FindAsync(stillDirty.Id))!.KvDirty);
+    }
+
     [Fact]
     public async Task Disable_MovesActiveAliasToDisabled()
     {

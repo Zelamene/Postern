@@ -1,0 +1,14 @@
+{
+  "description": "Cross-runtime eTLD+1 contract. Consumed by backend/tests/Postern.UnitTests/Etld1ParityTests.cs and worker/test/index.test.ts so the two implementations cannot drift apart.",
+  "cases": [
+    { "header": "Sender <sender@example.com>", "expected": "example.com" },
+    { "header": "Shop <orders@mail.shop.co.uk>", "expected": "shop.co.uk" },
+    { "header": "Billing <billing@news.example.co.uk>", "expected": "example.co.uk" },
+    { "header": "Store <store@email.example.com.au>", "expected": "example.com.au" },
+    { "header": "Upper <PROMO@Mail.SpamCo.Example>", "expected": "spamco.example" },
+    { "header": "Trailing <hi@example.org.>", "expected": "example.org" },
+    { "header": "Bare <postmaster@localhost>", "expected": "localhost" },
+    { "header": "Deep <news@a.b.c.d.example>", "expected": "d.example" },
+    { "header": "Jane Doe, Esq. <jane@mail.example.com>", "expected": "example.com" }
+  ]
+}

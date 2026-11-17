@@ -10,6 +10,15 @@ const LEGAL_LINKS = [
   { href: '/cookies', label: 'Cookie Policy' },
 ] as const
 
+
+function stripTrailingSlashes(pathname: string): string {
+  let end = pathname.length
+  while (end > 0 && pathname[end - 1] === '/') {
+    end -= 1
+  }
+  return pathname.slice(0, end)
+}
+
 interface LegalLayoutProps {
   title: string
   summary: string
@@ -25,7 +34,7 @@ export function LegalLayout({
   onThemeChange,
   children,
 }: Readonly<LegalLayoutProps>) {
-  const currentPath = window.location.pathname.replace(/\/+$/, '')
+  const currentPath = stripTrailingSlashes(window.location.pathname)
 
   return (
     <div className="min-h-screen bg-bg text-text antialiased">

@@ -9,6 +9,8 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
 {
     public async Task<Alias> CreateAsync(Alias alias, CancellationToken cancellationToken)
     {
+
+        alias.KvDirty = true;
         dbContext.Aliases.Add(alias);
         await dbContext.SaveChangesAsync(cancellationToken);
         return alias;
@@ -40,6 +42,9 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
         }
         alias.Status = nextStatus;
         alias.DeletedAt = nextStatus == AliasStatus.Deleted ? updatedAt : null;
+        // Marked dirty in the same SaveChanges as the state change: the projection is stale
+        // from this moment, even if the process dies before the KV write runs.
+        alias.KvDirty = true;
         await dbContext.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -60,6 +65,7 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
         alias.Status = AliasStatus.Replaced;
         alias.ReplacedByAliasId = replacementAliasId;
         alias.DeletedAt = null;
+        alias.KvDirty = true;
         await dbContext.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -100,6 +106,21 @@ public sealed class EfAliasRepository(PosternDbContext dbContext) : IAliasReposi
         await dbContext.Aliases
             .Where(alias => alias.Id == aliasId)
             .ExecuteUpdateAsync(setters => setters.SetProperty(alias => alias.KvDirty, true), cancellationToken);
+    }
+
+    public async Task ClearKvDirtyAsync(Guid aliasId, CancellationToken cancellationToken)
+    {
+        // Loaded and saved through the change tracker (rather than ExecuteUpdate) so the tracked
+        // instance cannot later write a stale `true` value back over the cleared flag.
+        var alias = await dbContext.Aliases
+            .SingleOrDefaultAsync(item => item.Id == aliasId, cancellationToken);
+        if (alias is null || !alias.KvDirty)
+        {
+            return;
+        }
+
+        alias.KvDirty = false;
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<ExpectedSender>> ListExpectedSendersAsync(

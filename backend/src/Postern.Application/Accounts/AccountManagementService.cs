@@ -146,6 +146,7 @@ public sealed class AccountManagementService(
                         userId,
                         blockedSenders),
                     cancellationToken);
+                await aliases.ClearKvDirtyAsync(alias.Id, cancellationToken);
             }
             catch
             {
