@@ -26,9 +26,16 @@ jobs:
     permissions:
       contents: read
 
+  nfr:
+    name: NFR
+    needs: [backend, web]
+    uses: ./.github/workflows/nfr-ci.yml
+    permissions:
+      contents: read
+
   deploy:
     name: Deploy
-    needs: [backend, web]
+    needs: [backend, web, nfr]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/cd.yml
     permissions:

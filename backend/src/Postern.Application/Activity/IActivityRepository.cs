@@ -13,6 +13,17 @@ public interface IActivityRepository
 
     Task<Message> RecordMessageAsync(Message message, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Records a message, returning false when another delivery with the same
+    /// Message-ID already exists for the alias. The check performed before this
+    /// call cannot see a concurrent delivery, so the write itself must tolerate it.
+    /// </summary>
+    async Task<bool> TryRecordMessageAsync(Message message, CancellationToken cancellationToken)
+    {
+        await RecordMessageAsync(message, cancellationToken);
+        return true;
+    }
+
     Task<BlockedMessage> RecordBlockedMessageAsync(BlockedMessage blockedMessage, CancellationToken cancellationToken);
 
     Task AddExpectedAddressSenderAsync(
