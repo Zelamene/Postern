@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import blockedReasons from '../../shared/blocked-reasons.json'
 import etld1Cases from '../../shared/etld1-cases.json'
-import worker, { extractEtld1 } from '../src/index'
+import worker, { BLOCKED_REASONS, extractEtld1 } from '../src/index'
 
 type WorkerMessage = Parameters<typeof worker.email>[0]
 type WorkerEnv = Parameters<typeof worker.email>[1]
@@ -169,7 +170,7 @@ describe('Postern email worker', () => {
     })
   })
 
-  it('drops mail for suspended users without forwarding or recording activity', async () => {
+  it('records suspended-user drops as blocked activity instead of dropping silently', async () => {
     const { namespace } = createKv({
       ...aliasRecords(),
       suspended_users: { users: { [UserId]: true } },
@@ -182,7 +183,10 @@ describe('Postern email worker', () => {
     await settle()
 
     expect(forward).not.toHaveBeenCalled()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(await ingestPayload(fetchMock)).toMatchObject({
+      blocked: true,
+      reason: BLOCKED_REASONS.suspendedUser,
+    })
   })
 
   it('blocks mail while a user is rate limited', async () => {
@@ -375,6 +379,55 @@ describe('Postern scheduled handler', () => {
     await settle()
 
     expect(fetchMock).toHaveBeenCalledWith('https://api.postern.test/health')
+  })
+})
+
+describe('Postern blocked reason inventory', () => {
+  // shared/blocked-reasons.json is the contract between the Worker (which writes the
+  // code) and the API (which persists it). Adding a reason here without a drop path
+  // fails the table below; adding a drop path without a reason fails this list.
+  it('emits exactly the shared cross-runtime list of reason codes', () => {
+    expect([...Object.values(BLOCKED_REASONS)].sort()).toEqual([...blockedReasons.reasons].sort())
+  })
+
+  const suspendedUsers = { users: { [UserId]: true } }
+  const rateLimitedUsers = { users: { [UserId]: Math.floor(Date.now() / 1000) + 600 } }
+
+  const reasonCases = [
+    {
+      reason: BLOCKED_REASONS.disabledOrReplaced,
+      records: aliasRecords({ status: 'disabled' }),
+    },
+    {
+      reason: BLOCKED_REASONS.rateLimited,
+      records: { ...aliasRecords(), rate_limited_users: rateLimitedUsers },
+    },
+    {
+      reason: BLOCKED_REASONS.globalBlocklist,
+      records: { ...aliasRecords(), __global_blocklist: { domains: ['example.com'] } },
+    },
+    {
+      reason: BLOCKED_REASONS.blockedSender,
+      records: aliasRecords({ blockedSenders: ['example.com'] }),
+    },
+    {
+      reason: BLOCKED_REASONS.suspendedUser,
+      records: { ...aliasRecords(), suspended_users: suspendedUsers },
+    },
+  ]
+
+  it.each(reasonCases)('records $reason for a known alias', async ({ reason, records }) => {
+    const { namespace } = createKv(records)
+    const fetchMock = stubFetch(async () => new Response(null, { status: 200 }))
+    const { message, forward } = createMessage()
+    const { context, settle } = createContext()
+
+    await worker.email(message, createEnv(namespace), context)
+    await settle()
+
+    expect(forward).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(await ingestPayload(fetchMock)).toMatchObject({ blocked: true, reason })
   })
 })
 

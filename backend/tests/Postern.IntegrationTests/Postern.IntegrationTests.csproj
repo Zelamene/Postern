@@ -23,6 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="../../../shared/critical-paths.json" Link="critical-paths.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Postern.Api\Postern.Api.csproj" />
   </ItemGroup>
 

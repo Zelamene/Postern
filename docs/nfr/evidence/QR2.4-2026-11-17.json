@@ -1,0 +1,52 @@
+﻿{
+  "requirement": "QR2.4",
+  "requirement_text": "Worker CPU per message: P99 <= 10 ms, measured by Cloudflare",
+  "source": "workersInvocationsAdaptive (Cloudflare GraphQL Analytics API)",
+  "fields": "quantiles.cpuTimeP99",
+  "script": "postern-mail-worker",
+  "compatibility_date": "2024-09-23",
+  "environment": "production burst",
+  "provenance": "30 messages sent via Resend from invites@3xyz.uk at ~1.2 s spacing to a temporary production alias (label test-nfr, category other, no expected sender, deleted after the run).",
+  "window": {
+    "from": "2026-11-17T04:51:00Z",
+    "to": "2026-11-17T04:53:00Z"
+  },
+  "buckets": 30,
+  "sampling": "one-second buckets, ~1 invocation per bucket; P99 in a bucket of n=1 is that single sample, so the reported figure approximates the maximum, not a sampled P99",
+  "requests": 30,
+  "errors": 0,
+  "subrequests": 30,
+  "subrequests_note": "One subrequest per invocation is consistent with the single ingest POST on the mail path; message.forward() is not counted as a subrequest.",
+  "statuses": {
+    "success": 30
+  },
+  "cpu_us": {
+    "p50_worst": 2725,
+    "p99_worst": 2725
+  },
+  "cpu_ms": {
+    "p50_worst": 2.725,
+    "p99_worst": 2.725
+  },
+  "budget_ms": 10,
+  "headroom_x": 3.67,
+  "verdict": "pass",
+  "unit_provenance": "Cloudflare GraphQL reports cpuTime in microseconds. The API tutorial reference response shows cpuTimeP50 206-291 for a trivial passthrough Worker, i.e. 0.2-0.3 ms; the millisecond reading (206 ms) would have exceeded the per-invocation CPU limit and returned exceededResources instead of success.",
+  "kv_reads_per_message": 4,
+  "kv_writes_per_message": 0,
+  "kv_evidence": "worker/test/kv-budget.test.ts",
+  "caveats": [
+    "cpuTime excludes I/O wait, so the four sequential KV reads on the mail path are not represented.",
+    "Each bucket holds one invocation, so P99 here is a maximum and the figure is conservative against a hard per-invocation ceiling.",
+    "Isolate warm-up on the first invocation in the window is included.",
+    "Valid for this compatibility_date and workerd release only; re-measure on either change."
+  ],
+  "reproduce": {
+    "tool": "docs/nfr/collect-qr2.4.ps1",
+    "command": "./docs/nfr/collect-qr2.4.ps1 -From '2026-11-17T04:51:00Z' -To '2026-11-17T04:53:00Z'",
+    "permission": "Account Analytics: Read",
+    "dataset": "workersInvocationsAdaptive"
+  },
+  "collected_at": "2026-11-17T05:11:19Z",
+  "collected_by": "shazi"
+}

@@ -29,6 +29,20 @@ const SECOND_LEVEL_TLDS = new Set([
   "co.uk", "org.uk", "ac.uk", "gov.uk", "net.uk", "com.au", "net.au", "org.au"
 ]);
 
+/**
+ * Reason codes recorded against a blocked_messages row for a known alias.
+ * shared/blocked-reasons.json is the cross-runtime contract for this list: the
+ * Worker suite asserts this object matches it, and the API suite asserts every
+ * code round-trips into a row. Adding a drop path means adding a code here.
+ */
+export const BLOCKED_REASONS = {
+  disabledOrReplaced: "disabled_or_replaced",
+  rateLimited: "rate_limited",
+  globalBlocklist: "global_blocklist",
+  blockedSender: "blocked_sender",
+  suspendedUser: "suspended_user"
+} as const;
+
 export default {
   async email(message: ForwardableEmailMessage, env: Env, ctx: ExecutionContext): Promise<void> {
     const to = message.to;
@@ -40,11 +54,16 @@ export default {
     const aliasRecord = await env.POSTERN_KV.get(aliasKey, { type: "json", cacheTtl: 60 }) as AliasKvRecord | null;
 
     if (!aliasRecord) {
+      // Unknown recipients are dropped before any alias is known, so there is
+      // nothing to attach a blocked row to. This is deliberate: the domain
+      // accepts mail for any address, and recording each unknown recipient
+      // would hand an attacker an unbounded write surface. Such mail is counted
+      // as a silent drop, not a postern user's message.
       return;
     }
 
     if (aliasRecord.status === "disabled" || aliasRecord.status === "replaced") {
-      await recordBlocked(message, aliasRecord, env, ctx, "disabled_or_replaced");
+      await recordBlocked(message, aliasRecord, env, ctx, BLOCKED_REASONS.disabledOrReplaced);
       return;
     }
 
@@ -55,13 +74,14 @@ export default {
     ]);
 
     if (suspendedUsers?.users && suspendedUsers.users[aliasRecord.userId]) {
+      await recordBlocked(message, aliasRecord, env, ctx, BLOCKED_REASONS.suspendedUser);
       return;
     }
 
     if (rateLimitedUsers?.users && rateLimitedUsers.users[aliasRecord.userId]) {
       const until = rateLimitedUsers.users[aliasRecord.userId];
       if (until && until > Date.now() / 1000) {
-        await recordBlocked(message, aliasRecord, env, ctx, "rate_limited");
+        await recordBlocked(message, aliasRecord, env, ctx, BLOCKED_REASONS.rateLimited);
         return;
       }
     }
@@ -70,12 +90,12 @@ export default {
     const senderDomain = extractEtld1(fromHeader);
 
     if (globalBlocklist?.domains && senderDomain && globalBlocklist.domains.includes(senderDomain)) {
-      await recordBlocked(message, aliasRecord, env, ctx, "global_blocklist");
+      await recordBlocked(message, aliasRecord, env, ctx, BLOCKED_REASONS.globalBlocklist);
       return;
     }
 
     if (aliasRecord.blockedSenders && senderDomain && aliasRecord.blockedSenders.includes(senderDomain)) {
-      await recordBlocked(message, aliasRecord, env, ctx, "blocked_sender");
+      await recordBlocked(message, aliasRecord, env, ctx, BLOCKED_REASONS.blockedSender);
       return;
     }
 

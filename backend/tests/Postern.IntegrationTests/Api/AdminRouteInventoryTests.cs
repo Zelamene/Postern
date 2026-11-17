@@ -1,22 +1,35 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.Routing;
 using Postern.IntegrationTests.Collections;
 using Postern.IntegrationTests.Fixtures;
 
 namespace Postern.IntegrationTests.Api;
 
-
+/// <summary>
+/// QR1.1: every administrative route must reject callers without an admin session.
+/// </summary>
 [Collection(IntegrationCollection.Name)]
 public sealed class AdminRouteInventoryTests(PosternFixture fixture) : IAsyncLifetime
 {
+
+    private static readonly HashSet<string> ExemptFromOpenApi = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "/api/admin/events",
+        "/api/admin/events/negotiate",
+    };
+
     private PosternApiFactory _factory = null!;
     private List<AdminRoute> _routes = [];
 
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
         _factory = new PosternApiFactory(fixture);
-        _routes = await ReadAdminRoutesAsync();
+        _routes = ReadAdminRoutes();
+        return Task.CompletedTask;
     }
 
     public Task DisposeAsync()
@@ -36,13 +49,31 @@ public sealed class AdminRouteInventoryTests(PosternFixture fixture) : IAsyncLif
     }
 
     [Fact]
+    public async Task EveryAdministrativeEndpoint_AppearsInOpenApiOrIsExempt()
+    {
+        var described = await ReadOpenApiRoutesAsync();
+
+        var undescribed = _routes
+            .Where(route => !described.Contains($"{route.Method} {route.Url}"))
+            .Where(route => !ExemptFromOpenApi.Contains(route.Url))
+            .Select(route => $"{route.Method} {route.Url}")
+            .ToList();
+
+        Assert.True(
+            undescribed.Count == 0,
+            "These administrative endpoints are mapped but neither described in OpenAPI nor "
+            + "listed as an OpenAPI exemption, so no reviewer or client can discover them: "
+            + string.Join(", ", undescribed));
+    }
+
+    [Fact]
     public async Task AnonymousRequests_AreRejectedByEveryAdministrativeRoute()
     {
         using var client = _factory.CreateClient();
 
         foreach (var route in _routes)
         {
-            using var request = new HttpRequestMessage(new HttpMethod(route.Method), route.Url);
+            using var request = new HttpRequestMessage(new HttpMethod(route.Method), route.RequestUrl);
             using var response = await client.SendAsync(request);
 
             Assert.True(
@@ -59,7 +90,7 @@ public sealed class AdminRouteInventoryTests(PosternFixture fixture) : IAsyncLif
 
         foreach (var route in _routes)
         {
-            using var request = new HttpRequestMessage(new HttpMethod(route.Method), route.Url);
+            using var request = new HttpRequestMessage(new HttpMethod(route.Method), route.RequestUrl);
             using var response = await client.SendAsync(request);
 
             Assert.True(
@@ -80,50 +111,72 @@ public sealed class AdminRouteInventoryTests(PosternFixture fixture) : IAsyncLif
             $"The admin hub answered {(int)response.StatusCode} for an anonymous request.");
     }
 
-    private async Task<List<AdminRoute>> ReadAdminRoutesAsync()
-    {
-        using var client = _factory.CreateClient();
-        using var document = JsonDocument.Parse(
-            await client.GetStringAsync("/swagger/v1/swagger.json"));
-
-        if (!document.RootElement.TryGetProperty("paths", out var paths))
-        {
-            return [];
-        }
-
-        var routes = new List<AdminRoute>();
-        foreach (var path in paths.EnumerateObject())
-        {
-            if (!path.Name.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var url = ReplaceParameters(path.Name);
-            foreach (var operation in path.Value.EnumerateObject())
-            {
-                var method = operation.Name.ToUpperInvariant();
-                if (method is "GET" or "POST" or "PUT" or "PATCH" or "DELETE")
-                {
-                    routes.Add(new AdminRoute(method, url));
-                }
-            }
-        }
-
-        return routes
+    private List<AdminRoute> ReadAdminRoutes() =>
+        _factory.Endpoints
+            .OfType<RouteEndpoint>()
+            .SelectMany(endpoint => MethodsFor(endpoint)
+                .Select(method => new AdminRoute(
+                    method,
+                    CanonicalPath(endpoint.RoutePattern.RawText),
+                    RequestPath(endpoint.RoutePattern.RawText))))
+            .Where(route => route.Url.StartsWith("/api/admin", StringComparison.OrdinalIgnoreCase))
             .DistinctBy(route => $"{route.Method} {route.Url}", StringComparer.OrdinalIgnoreCase)
             .OrderBy(route => route.Url, StringComparer.Ordinal)
             .ThenBy(route => route.Method, StringComparer.Ordinal)
             .ToList();
+
+
+    private static string CanonicalPath(string? rawText)
+    {
+        var path = "/" + (rawText ?? string.Empty).TrimStart('/');
+        path = Regex.Replace(path, @"\{[^}]+\}", "*");
+        return path.Length > 1 ? path.TrimEnd('/') : path;
     }
 
-    private static string ReplaceParameters(string path) =>
+    /// <summary>
+    /// A requestable form of a route, used only by the rejection sweeps.
+    /// </summary>
+    private static string RequestPath(string? rawText) =>
         Regex.Replace(
-            path,
+            "/" + (rawText ?? string.Empty).TrimStart('/'),
             @"\{([^}]+)\}",
             match => match.Groups[1].Value.Contains("domain", StringComparison.OrdinalIgnoreCase)
                 ? "example.test"
                 : Guid.NewGuid().ToString());
 
-    private sealed record AdminRoute(string Method, string Url);
+    private static IEnumerable<string> MethodsFor(RouteEndpoint endpoint)
+    {
+        var metadata = endpoint.Metadata.GetMetadata<HttpMethodMetadata>();
+        return metadata is { HttpMethods.Count: > 0 } ? metadata.HttpMethods : ["GET"];
+    }
+
+    private async Task<HashSet<string>> ReadOpenApiRoutesAsync()
+    {
+        using var client = _factory.CreateClient();
+        using var document = JsonDocument.Parse(
+            await client.GetStringAsync("/swagger/v1/swagger.json"));
+
+        var routes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!document.RootElement.TryGetProperty("paths", out var paths))
+        {
+            return routes;
+        }
+
+        foreach (var path in paths.EnumerateObject())
+        {
+            var url = CanonicalPath(path.Name);
+            foreach (var operation in path.Value.EnumerateObject())
+            {
+                var method = operation.Name.ToUpperInvariant();
+                if (method is "GET" or "POST" or "PUT" or "PATCH" or "DELETE")
+                {
+                    routes.Add($"{method} {url}");
+                }
+            }
+        }
+
+        return routes;
+    }
+
+    private sealed record AdminRoute(string Method, string Url, string RequestUrl);
 }

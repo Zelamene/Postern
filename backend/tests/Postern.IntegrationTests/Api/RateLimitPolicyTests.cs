@@ -1,5 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Postern.IntegrationTests.Collections;
 using Postern.IntegrationTests.Fixtures;
 
@@ -87,6 +93,99 @@ public sealed class RateLimitPolicyTests(PosternFixture fixture) : IAsyncLifetim
         Assert.Equal(
             HttpStatusCode.TooManyRequests,
             await PostAsync(client, "/api/auth/register", "203.0.113.11"));
+    }
+
+    /// <summary>
+    /// The limiter must use the hop appended by our own proxy, not whatever the client
+    /// prepended. A client that sends a forged leading address and a real trailing one must
+    /// share the trailing address's bucket; otherwise every request could claim a fresh
+    /// identity and no policy above would ever fire.
+    /// </summary>
+    [Fact]
+    public async Task Registration_IgnoresAClientSuppliedLeadingForwardedForAddress()
+    {
+        using var client = _factory.CreateClient();
+
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            Assert.NotEqual(
+                HttpStatusCode.TooManyRequests,
+                await PostAsync(client, "/api/auth/register", "198.51.100.7, 203.0.113.30"));
+        }
+
+        Assert.Equal(
+            HttpStatusCode.TooManyRequests,
+            await PostAsync(client, "/api/auth/register", "203.0.113.30"));
+    }
+
+    /// <summary>
+    /// QR1.5: the throttle policy list is itself an inventory. Every endpoint that accepts
+    /// unauthenticated credentials must declare a policy; without this sweep a newly added
+    /// login-adjacent route ships unbounded and only the boundary tests above would have to
+    /// </summary>
+    [Fact]
+    public void EveryAnonymousCredentialEndpoint_DeclaresARateLimitingPolicy()
+    {
+        var endpoints = _factory.Endpoints
+            .OfType<Microsoft.AspNetCore.Routing.RouteEndpoint>()
+            .Where(endpoint => MethodsFor(endpoint).Contains("POST", StringComparer.OrdinalIgnoreCase))
+            .Where(endpoint => IsCredentialSurface(endpoint.RoutePattern.RawText))
+            .Where(endpoint => endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Authorization.IAuthorizeData>() is null)
+            .Select(endpoint => new
+            {
+                Path = "/" + (endpoint.RoutePattern.RawText ?? string.Empty).TrimStart('/'),
+                Policy = endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()?.PolicyName,
+            })
+            .ToList();
+
+        Assert.NotEmpty(endpoints);
+
+        var unthrottled = endpoints
+            .Where(endpoint => string.IsNullOrWhiteSpace(endpoint.Policy))
+            .Select(endpoint => endpoint.Path)
+            .ToList();
+
+        Assert.True(
+            unthrottled.Count == 0,
+            "These credential-accepting endpoints have no rate-limiting policy: "
+            + string.Join(", ", unthrottled));
+
+        var policies = endpoints
+            .Select(endpoint => endpoint.Policy!)
+            .ToHashSet(StringComparer.Ordinal);
+        var expected = new[] { "registration", "login", "admin-mfa", "recovery", "invite-request" };
+        Assert.Equal(expected.Order(), policies.Order());
+    }
+
+    private static bool IsCredentialSurface(string? rawText)
+    {
+        var path = "/" + (rawText ?? string.Empty).TrimStart('/');
+        return path.StartsWith("/api/auth", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/api/invite-requests", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IEnumerable<string> MethodsFor(
+        Microsoft.AspNetCore.Routing.RouteEndpoint endpoint)
+    {
+        var metadata = endpoint.Metadata.GetMetadata<HttpMethodMetadata>();
+        return metadata is { HttpMethods.Count: > 0 } ? metadata.HttpMethods : ["GET"];
+    }
+
+    /// <summary>
+    /// The limiter partitions on the connection's remote address, which is
+    /// only trustworthy when exactly one proxy hop is unpeeled
+    /// </summary>
+    [Fact]
+    public void ForwardedHeaders_TrustExactlyOneProxyHop()
+    {
+        var options = _factory.Services
+            .GetRequiredService<IOptions<ForwardedHeadersOptions>>()
+            .Value;
+
+        Assert.Equal(ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto, options.ForwardedHeaders);
+        Assert.Equal(1, options.ForwardLimit);
+        Assert.Empty(options.KnownProxies);
+        Assert.Empty(options.KnownIPNetworks);
     }
 
     private static async Task AssertAllowsThenThrottlesAsync(
