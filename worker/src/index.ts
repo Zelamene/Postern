@@ -148,7 +148,7 @@ async function ingestMessage(
     const envelopeSender = message.from || "";
     const messageId = message.headers.get("message-id");
 
-    await fetch(env.INGEST_ENDPOINT, {
+    const response = await fetch(env.INGEST_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -163,7 +163,21 @@ async function ingestMessage(
         messageId
       })
     });
-  } catch {
+
+    if (!response.ok) {
+      console.warn(
+        `Postern ingest rejected the activity record with HTTP ${response.status}; ` +
+        "the message was forwarded but not recorded"
+      );
+    }
+  } catch (error) {
+    // Forwarding already happened. Losing the activity record must not surface as an
+    // unhandled rejection, but it must not disappear silently either: this is the only
+    // signal that a forwarded message has no audit row.
+    console.warn(
+      "Postern ingest call failed; the message was forwarded but not recorded",
+      error
+    );
   }
 }
 

@@ -50,7 +50,7 @@ function createContext() {
     },
   } as unknown as WorkerContext
 
-  return { context, settle: () => Promise.all(pending) }
+  return { context, pending, settle: () => Promise.all(pending) }
 }
 
 function createEnv(kv: KVNamespace) {
@@ -76,6 +76,7 @@ describe('Mail forwarding when the management API is unavailable', () => {
         throw new TypeError('fetch failed')
       }),
     )
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const kv = createKv()
     const { message, forward } = createMessage()
     const { context, settle } = createContext()
@@ -83,14 +84,18 @@ describe('Mail forwarding when the management API is unavailable', () => {
     await expect(
       worker.email(message, createEnv(kv.namespace), context),
     ).resolves.toBeUndefined()
+    // The deferred ingest promise must settle too: a rejection here would become an
+    // unhandled rejection in workerd and could be charged to the next request.
     await settle()
 
     expect(forward).toHaveBeenCalledTimes(1)
     expect(forward).toHaveBeenCalledWith(Destination)
+    expect(warn).toHaveBeenCalledTimes(1)
   })
 
-  it('forwards when the ingest endpoint answers with a server error', async () => {
+  it('forwards and reports when the ingest endpoint answers with a server error', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 503 })))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const kv = createKv()
     const { message, forward } = createMessage()
     const { context, settle } = createContext()
@@ -100,21 +105,27 @@ describe('Mail forwarding when the management API is unavailable', () => {
 
     expect(forward).toHaveBeenCalledTimes(1)
     expect(forward).toHaveBeenCalledWith(Destination)
+    expect(warn).toHaveBeenCalledTimes(1)
   })
 
-  it('forwards when the ingest endpoint never answers within the request lifetime', async () => {
-  
+  it('forwards while the ingest request is still pending', async () => {
+    // No abort signal exists on the ingest call, so this models a slow API rather
+    // than a timeout: the response never arrives and the deferred promise never
+    // settles. What must hold is that forwarding happens before the handler returns.
     vi.stubGlobal(
       'fetch',
       vi.fn(() => new Promise<Response>(() => undefined)),
     )
     const kv = createKv()
     const { message, forward } = createMessage()
-    const { context } = createContext()
+    const { context, pending } = createContext()
 
     await worker.email(message, createEnv(kv.namespace), context)
 
     expect(forward).toHaveBeenCalledTimes(1)
     expect(forward).toHaveBeenCalledWith(Destination)
+    expect(pending).toHaveLength(1)
+    const marker = Symbol('ingest still pending')
+    await expect(Promise.race([pending[0], Promise.resolve(marker)])).resolves.toBe(marker)
   })
 })

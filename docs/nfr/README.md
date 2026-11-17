@@ -28,8 +28,10 @@ a token with **Account Analytics: Read**). The script refuses to write evidence 
 the request count, error count or invocation statuses do not line up, so a routing
 failure cannot be recorded as a CPU pass.
 
-`worker/perf/cpu-budget.test.ts` is a Node-side regression canary. It is not, and
-must not be presented as, QR2.4 evidence.
+`worker/perf/cpu-budget.test.ts` is a Node-side regression canary. It reports totals
+only: at 10,000 messages the per-batch CPU cost is often below the clock's resolution,
+so per-batch quantiles are meaningless. It is not, and must not be presented as, QR2.4
+evidence.
 
 ## Test-backed gates
 
@@ -43,6 +45,7 @@ named here fails the pipeline; it is the evidence.
 | QR1.1 | Every `/api/admin` route rejects anonymous and non-admin callers, and is either documented in OpenAPI or explicitly exempt | `Postern.IntegrationTests/Api/AdminRouteInventoryTests.cs` |
 | QR5.3 | Rate-limit projection refreshes at least every five minutes and survives a failed refresh | `Postern.IntegrationTests/Workers/RateLimitProjectionWorkerTests.cs` |
 | QR1.5 | Boundary + 1 for every throttle policy, an inventory of anonymous credential endpoints, and exactly one trusted proxy hop | `Postern.IntegrationTests/Api/RateLimitPolicyTests.cs` |
+| QR4.1 | Policy-permitted mail is forwarded even when the management API fails: network error, 5xx, and never-answering ingest all still forward; the failed ingest is logged | `worker/test/api-unavailable.test.ts` |
 | QR3.1 | The 500/day cap is inclusive at 500 and exclusive at 501 | `Postern.UnitTests/RateLimitMapRebuildTests.cs`, `IngestFlowTests.Ingest_WhenUserExceedsDailyCap_LeavesTheProjectionToTheRefresher` |
 | QR5.4 | Concurrent duplicate `Message-ID`s record exactly one row | `IngestFlowTests.Ingest_WithConcurrentDuplicateMessageIds_RecordsExactlyOneDelivery` |
 | QR5.5 | Every reason the Worker can write reaches a blocked row, from one shared list | `shared/blocked-reasons.json`, `worker/test/index.test.ts`, `Postern.UnitTests/IngestBlockedTests.cs` |

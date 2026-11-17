@@ -130,4 +130,50 @@ describe('Postern KV budget per message', () => {
     expect(kv.put).not.toHaveBeenCalled()
     expect(kv.deleteKey).not.toHaveBeenCalled()
   })
+
+  // The four drop paths run after the global-map reads, so they must keep the same
+  // budget as the forward path. A regression that writes KV while blocking a message
+  // would otherwise only show up on the paths nobody watches.
+  const blockCases: { name: string; records: Record<string, unknown> }[] = [
+    {
+      name: 'global blocklist',
+      records: { ...aliasRecords(), __global_blocklist: { domains: ['example.com'] } },
+    },
+    {
+      name: 'blocked sender',
+      records: { ...aliasRecords({ blockedSenders: ['example.com'] }) },
+    },
+    {
+      name: 'suspended user',
+      records: { ...aliasRecords(), suspended_users: { users: { [UserId]: true } } },
+    },
+    {
+      name: 'rate-limited user',
+      records: {
+        ...aliasRecords(),
+        rate_limited_users: { users: { [UserId]: Math.floor(Date.now() / 1000) + 600 } },
+      },
+    },
+  ]
+
+  it.each(blockCases)(
+    'reads the alias and three global maps without writing on the $name path',
+    async ({ records }) => {
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })))
+      const kv = createKv(records)
+      const { message, forward } = createMessage()
+      const { context, settle } = createContext()
+
+      await worker.email(message, createEnv(kv.namespace), context)
+      await settle()
+
+      expect(forward).not.toHaveBeenCalled()
+      expect(kv.get).toHaveBeenCalledTimes(4)
+      expect(kv.get.mock.calls.map(([key]) => key).sort()).toEqual(
+        [AliasAddress, ...GlobalKeys].sort(),
+      )
+      expect(kv.put).not.toHaveBeenCalled()
+      expect(kv.deleteKey).not.toHaveBeenCalled()
+    },
+  )
 })
