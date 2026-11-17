@@ -21,6 +21,17 @@ public sealed class HealthEndpointTests
     }
 
     [Fact]
+    public async Task ReadinessEndpoint_ReturnsServiceUnavailable_WithoutDatabaseAccess()
+    {
+        using var factory = ApiTestConfiguration.CreateFactory("Development");
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/health/ready");
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Swagger_IsAvailableInDevelopment()
     {
         using var factory = ApiTestConfiguration.CreateFactory("Development");
