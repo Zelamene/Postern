@@ -20,6 +20,7 @@ public sealed class NightlyMaintenanceService(
     IAccountRepository accounts,
     IDestinationService destinations,
     AdminKvSyncService kvSync,
+    IJobHeartbeat heartbeat,
     TimeProvider timeProvider)
 {
     public static readonly TimeSpan ActivityRetention = TimeSpan.FromDays(90);
@@ -71,6 +72,8 @@ public sealed class NightlyMaintenanceService(
                 CreatedAt = completedAt
             },
             cancellationToken);
+
+        await heartbeat.NotifyCompletedAsync(cancellationToken);
 
         return new NightlyJobResult(
             startedAt,

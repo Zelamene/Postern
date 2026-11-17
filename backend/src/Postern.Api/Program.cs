@@ -175,6 +175,13 @@ builder.Services.AddScoped<AdministrationService>();
 builder.Services.AddScoped<AdminAnalyticsService>();
 builder.Services.AddScoped<AdminKvSyncService>();
 builder.Services.AddScoped<NightlyMaintenanceService>();
+var heartbeatPingUrl = builder.Configuration["Healthchecks:PingUrl"] ?? string.Empty;
+builder.Services.AddHttpClient("heartbeat", client => client.Timeout = TimeSpan.FromSeconds(5));
+builder.Services.AddSingleton<IJobHeartbeat>(services =>
+    new HttpJobHeartbeat(
+        services.GetRequiredService<IHttpClientFactory>().CreateClient("heartbeat"),
+        heartbeatPingUrl,
+        services.GetRequiredService<ILogger<HttpJobHeartbeat>>()));
 builder.Services.AddScoped<IAdministrationRepository, EfAdministrationRepository>();
 builder.Services.AddSingleton(aliasPolicy);
 builder.Services.AddSingleton<IPasswordHashingService, AspNetPasswordHashingService>();
@@ -318,6 +325,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/health/ready", CheckReadinessAsync);
 app.MapHub<AdminEventsHub>("/api/admin/events").RequireAuthorization("admin");
 app.MapHub<UserEventsHub>("/api/user/events").RequireAuthorization();
 app.MapAuthenticationEndpoints();
@@ -331,6 +339,26 @@ app.MapAdministrationEndpoints();
 app.MapJobEndpoints();
 
 await app.RunAsync();
+
+static async Task<IResult> CheckReadinessAsync(
+    PosternDbContext dbContext,
+    CancellationToken cancellationToken)
+{
+    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+    timeout.CancelAfter(TimeSpan.FromSeconds(2));
+
+    try
+    {
+        await dbContext.Database.ExecuteSqlRawAsync("SELECT 1", timeout.Token);
+        return Results.Ok(new { status = "ready" });
+    }
+    catch (Exception)
+    {
+        return Results.Json(
+            new { status = "unavailable" },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+}
 
 static RateLimitPartition<string> CreateRateLimit(
     HttpContext context,

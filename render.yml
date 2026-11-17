@@ -37,6 +37,8 @@ services:
         sync: false
       - key: Jobs__SharedSecret
         sync: false
+      - key: Healthchecks__PingUrl
+        sync: false
       - key: Resend__ApiKey
         sync: false
       - key: Resend__WebhookSecret

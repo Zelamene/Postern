@@ -49,6 +49,7 @@ public class NightlyMaintenanceServiceTests
 
         Assert.Equal(2, context.Administration.AuditEntries.Count);
         Assert.Equal("kv.sync", context.Administration.AuditEntries[0].Action);
+        Assert.Equal(1, context.Heartbeat.Notifications);
         var jobAudit = context.Administration.AuditEntries[^1];
         Assert.Equal("job.nightly", jobAudit.Action);
         Assert.Null(jobAudit.AdminUserId);
@@ -132,6 +133,7 @@ public class NightlyMaintenanceServiceTests
 
         Assert.Equal(0, result.DeletedMessages);
         Assert.Equal(0, result.KvSync.AliasesSynced);
+        Assert.Equal(1, context.Heartbeat.Notifications);
         Assert.Equal("job.nightly", context.Administration.AuditEntries[^1].Action);
         Assert.Equal(2, context.Administration.AuditEntries.Count);
     }
@@ -145,6 +147,7 @@ public class NightlyMaintenanceServiceTests
             Accounts = new InMemoryAccountRepository { AutoCreateUsers = false };
             Destinations = new InMemoryDestinationService();
             Administration = new InMemoryAdministrationRepository(Aliases);
+            Heartbeat = new RecordingJobHeartbeat();
             var timeProvider = new FixedTimeProvider(Now);
             var kvSync = new AdminKvSyncService(
                 Administration,
@@ -158,6 +161,7 @@ public class NightlyMaintenanceServiceTests
                 Accounts,
                 Destinations,
                 kvSync,
+                Heartbeat,
                 timeProvider);
         }
 
@@ -170,6 +174,8 @@ public class NightlyMaintenanceServiceTests
         public InMemoryDestinationService Destinations { get; }
 
         public InMemoryAdministrationRepository Administration { get; }
+
+        public RecordingJobHeartbeat Heartbeat { get; }
 
         public NightlyMaintenanceService Service { get; }
     }
