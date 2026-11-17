@@ -1,4 +1,4 @@
-name: Pipeline
+name: Postern Pipeline
 
 on:
   pull_request:
