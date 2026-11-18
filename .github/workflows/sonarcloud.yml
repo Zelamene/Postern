@@ -148,6 +148,7 @@ jobs:
             /d:sonar.sourceEncoding=UTF-8 \
             "/d:sonar.exclusions=**/bin/**,**/obj/**,**/node_modules/**,**/coverage/**,**/artifacts/**,**/dist/**,**/.sonarqube/**" \
             "/d:sonar.cpd.exclusions=**/Migrations/**,**/*.Designer.cs,**/PosternDbContextModelSnapshot.cs" \
+            "/d:sonar.coverage.exclusions=**/scripts/**,**/test/e2e/**,**/playwright.config.ts,docs/nfr/**" \
             "/d:sonar.cs.cobertura.reportsPaths=$PWD/artifacts/coverage/Cobertura.xml" \
             "/d:sonar.javascript.lcov.reportPaths=$PWD/web/coverage/lcov.info,$PWD/worker/coverage/lcov.info" \
             /d:sonar.qualitygate.wait=true \
