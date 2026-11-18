@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { copyFile, mkdir, writeFile } from 'node:fs/promises'
+import { chmod, copyFile, mkdir, writeFile } from 'node:fs/promises'
 import {
   createProjectName,
   defaultDirectory,
@@ -15,6 +15,10 @@ const workDirectory = path.resolve(
 const zapImage =
   process.env.POSTERN_ZAP_IMAGE ||
   'ghcr.io/zaproxy/zaproxy:stable@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af'
+const scanTimeouts = {
+  admin: 15 * 60_000,
+  user: 20 * 60_000,
+}
 
 function mountPath(fileSystemPath) {
   if (process.platform !== 'win32') return fileSystemPath
@@ -35,6 +39,8 @@ async function runZapScan({ role, target, targetHost, reports }) {
   const sessionFile = `zap-${role}-session.json`
   const reportFile = `zap-${role}-report.json`
   const htmlFile = `zap-${role}-report.html`
+  // -m bounds the traditional spider and -T bounds startup/passive waiting;
+  // timeoutMs is the only bound on the full scan for this role.
   const args = [
     'run',
     '--rm',
@@ -57,9 +63,9 @@ async function runZapScan({ role, target, targetHost, reports }) {
     '-j',
     '--ajax-spider',
     '-m',
-    '20',
+    '5',
     '-T',
-    '30',
+    '10',
     '-l',
     'WARN',
     '-c',
@@ -71,9 +77,15 @@ async function runZapScan({ role, target, targetHost, reports }) {
     '--hook',
     '/zap/wrk/zap-auth-hook.py',
     '-z',
-    '-config globalexcludeurl.url_list(0).value=.*/api/auth/logout.* -config globalexcludeurl.url_list(1).value=.*/logout.*',
+    [
+      '-silent',
+      '-config globalexcludeurl.url_list(0).value=.*/api/auth/logout.*',
+      '-config globalexcludeurl.url_list(1).value=.*/logout.*',
+      '-config globalexcludeurl.url_list(2).value=.*/node_modules/.*',
+      '-config globalexcludeurl.url_list(3).value=.*/@vite/.*',
+    ].join(' '),
   ]
-  await run('docker', args, { cwd: repositoryRoot })
+  await run('docker', args, { cwd: repositoryRoot, timeoutMs: scanTimeouts[role] })
   reports.push({ role, json: reportFile, html: htmlFile, target: targetHost })
 }
 
@@ -86,6 +98,7 @@ await runDisposable({
   ),
   task: async ({ stack, webPort, webEnvironment }) => {
     await mkdir(workDirectory, { recursive: true })
+    if (process.platform !== 'win32') await chmod(workDirectory, 0o777)
     await mkdir(stack.authDirectory, { recursive: true })
     await copyFile(
       path.join(webDirectory, 'scripts', 'zap-auth-hook.py'),
@@ -96,7 +109,10 @@ await runDisposable({
       path.join(workDirectory, 'zap-rules.tsv'),
     )
 
-    await stack.startWebServer(webPort, webEnvironment)
+    await run(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'], {
+      cwd: webDirectory,
+    })
+    await stack.startWebServer(webPort, webEnvironment, 'preview')
     await stack.runPlaywright('playwright.dast-seed.config.ts', webEnvironment)
 
     await copyFile(
@@ -111,15 +127,10 @@ await runDisposable({
     const targetHost = process.platform === 'win32' ? 'host.docker.internal' : '127.0.0.1'
     const target = zapTarget(targetHost, webPort)
     const reports = []
-    const scanErrors = []
-    // The admin JWT is intentionally short-lived (15 minutes), so scan it first.
+    // The admin JWT is intentionally short-lived (15 minutes), so scan it first
+    // and fail immediately if it cannot complete.
     for (const role of ['admin', 'user']) {
-      try {
-        await runZapScan({ role, target, targetHost, reports })
-      } catch (error) {
-        scanErrors.push(error)
-        console.error(`ZAP ${role} scan failed:`, error)
-      }
+      await runZapScan({ role, target, targetHost, reports })
     }
 
     await writeFile(
@@ -136,9 +147,5 @@ await runDisposable({
         2,
       )}\n`,
     )
-
-    if (scanErrors.length) {
-      throw new AggregateError(scanErrors, `${scanErrors.length} ZAP scan(s) failed.`)
-    }
   },
 })

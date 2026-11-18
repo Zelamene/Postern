@@ -4,6 +4,19 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 
+const apiProxyTarget = process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080'
+const apiProxy = {
+  '/api': {
+    target: apiProxyTarget,
+    changeOrigin: true,
+    ws: true,
+  },
+  '/health': {
+    target: apiProxyTarget,
+    changeOrigin: true,
+  },
+}
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
@@ -15,17 +28,10 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080',
-        changeOrigin: true,
-        ws: true,
-      },
-      '/health': {
-        target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080',
-        changeOrigin: true,
-      },
-    },
+    proxy: apiProxy,
+  },
+  preview: {
+    proxy: apiProxy,
   },
   resolve: {
     alias: {

@@ -81,10 +81,12 @@ without a build failure.
   patched release, and the available forced downgrade replaces it with high and critical
   Vite/Vitest advisories. The runtime dependency audit reports 0 high advisories.
 - **QR1.6 DAST uses the real seeded E2E sessions.** The nightly `dast` job starts the
-  disposable compose stack, seeds a signed-in user and an MFA-completed admin through
-  the same helpers as the browser journeys, and replays their `Postern.Auth` cookies
-  into two ZAP `zap-full-scan.py` runs. The admin scan runs first because its JWT is
-  deliberately limited to 15 minutes. Reports are uploaded as `qr1.6-zap-reports`.
+  disposable compose stack, serves the built app through Vite preview, seeds a signed-in
+  user and an MFA-completed admin through the same helpers as the browser journeys, and
+  replays their `Postern.Auth` cookies into two ZAP `zap-full-scan.py` runs. The admin
+  scan runs first under a 15-minute role timeout because its JWT is deliberately limited
+  to 15 minutes; scans start with `-silent` so the pinned image's add-ons cannot update
+  mid-run. Reports are uploaded as `qr1.6-zap-reports`.
 - **QR1.6 medium findings are tracked by age, not suppressed.** The review script
   creates one GitHub issue per stable finding fingerprint, refreshes its last-seen
   date each night, closes issues no longer observed, and fails the nightly workflow
