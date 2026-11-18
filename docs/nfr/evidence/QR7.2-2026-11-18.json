@@ -1,0 +1,57 @@
+{
+  "requirement": "QR7.2",
+  "requirement_text": "0 new high/critical issues; duplication ≤ 3%; cognitive complexity ≤ 15 per function",
+  "record_type": "quality gate record",
+  "recorded_at": "2026-11-18",
+  "recorded_by": "shazi",
+  "analysis": {
+    "mode": "CI-based SonarCloud analysis (automatic analysis disabled)",
+    "project": "zelamene/Zelamene_Postern",
+    "scanner": "SonarScanner for .NET 12.1.0",
+    "workflow": ".github/workflows/sonarcloud.yml",
+    "commit": "39f25bafc34699ca7b61e3871402f0a1bcf2ce99",
+    "pipeline_run_id": "44246007922",
+    "pipeline_run_url": "https://github.com/Zelamene/Postern/actions/runs/44246007922",
+    "sonar_job_id": "134606573816",
+    "sonar_dashboard": "https://sonarcloud.io/dashboard?id=Zelamene_Postern&branch=main",
+    "quality_gate_status": "PASSED",
+    "quality_gate_log": "QUALITY GATE STATUS: PASSED - View details on https://sonarcloud.io/dashboard?id=Zelamene_Postern&branch=main",
+    "wait_for_quality_gate": true,
+    "new_code_period": {
+      "mode": "previous_version",
+      "since": "2026-11-06T21:41:45+0000"
+    }
+  },
+  "coverage_import": {
+    "backend": "artifacts/coverage/Cobertura.xml",
+    "web": "web/coverage/lcov.info",
+    "worker": "worker/coverage/lcov.info",
+    "note": "LCOV source paths are normalised to web/... and worker/... before import. Coverage HTML reports are downloaded under **/coverage/** so they stay excluded."
+  },
+  "gate_conditions": {
+    "new_reliability_rating": { "actual": 1, "threshold": 1, "status": "OK" },
+    "new_security_rating": { "actual": 1, "threshold": 1, "status": "OK" },
+    "new_maintainability_rating": { "actual": 1, "threshold": 1, "status": "OK" },
+    "new_coverage": { "actual": 90.0, "threshold": 80, "unit": "percent", "status": "OK" },
+    "new_duplicated_lines_density": { "actual": 0.0, "threshold": 3, "unit": "percent", "status": "OK" },
+    "new_security_hotspots_reviewed": { "actual": 100.0, "threshold": 100, "unit": "percent", "status": "OK" }
+  },
+  "requirement_actuals": {
+    "new_high_critical_issues": 0,
+    "new_duplication_percent": 0.0,
+    "open_s3776_cognitive_complexity_issues": 0,
+    "cognitive_complexity_threshold": 15
+  },
+  "remediation_applied": [
+    "Backend Cobertura report self-copy path normalised so it is imported from artifacts/coverage/Cobertura.xml.",
+    "Migrations from an empty database now emit coverage for hand-written migrations; generated files stay excluded from duplication only.",
+    "E2E support modules, repo scripts, playwright.config.ts and docs/nfr/** excluded from coverage measurement only; they remain analyzed for issues and duplication. New-code coverage rose from 75.4% to 90.0% with the 80% threshold unchanged.",
+    "Temporary gate-diagnostics workflow removed: its curl-to-interpreter pattern was the only source of new-code security findings (3x githubactions:S8482, BLOCKER). New security rating returned to 1 (A)."
+  ],
+  "caveats": [
+    "SonarCloud gate conditions live in the SonarCloud project; the workflow cannot create or change them.",
+    "New code uses previous_version mode since 2026-11-06T21:41:45+0000, so PR scans use a different new-code window than main scans.",
+    "The gate exposes ratings, coverage and duplication directly. Cognitive complexity ≤ 15 per function is enforced by quality-profile rule S3776; the CI log reports open S3776 issues after each scan, and the recorded run had none.",
+    "Coverage exclusions apply to measurement only; excluded files are still indexed for issues and duplication."
+  ]
+}

@@ -199,7 +199,8 @@ jobs:
 
           try:
               complexity = json.loads(pathlib.Path(complexity_path).read_text(encoding="utf-8"))
-              print(f"=== Open S3776 cognitive-complexity issues: {complexity.get('total')} ===")
+              total = complexity.get("paging", {}).get("total", len(complexity.get("issues", [])))
+              print(f"=== Open S3776 cognitive-complexity issues: {total} ===")
               for issue in complexity.get("issues", []):
                   print(f"  {issue.get('component')}:{issue.get('line')} {issue.get('message')}")
           except Exception as error:
