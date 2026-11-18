@@ -54,6 +54,7 @@ named here fails the pipeline; it is the evidence.
 | QR5.2 | An empty namespace rebuilds all four projections, a full sync deletes orphan keys, and a second sync rewrites no alias key | `Postern.IntegrationTests/Flows/ProjectionRebuildTests.cs` |
 | QR1.2 | A protected value stays readable by a second host with only the database configured | `Postern.IntegrationTests/Database/DataProtectionRestartTests.cs` |
 | QR1.3 | Every administrative route declares its audit events and all ten mutating routes are asserted to emit exactly those events; approve emits three, the log rejects UPDATE and DELETE, and account deletion is refused while an account is named on audit rows | `shared/admin-audit-events.json`, `Postern.IntegrationTests/Api/AdminAuditTests.cs`, migration `ProtectAdminAuditLog`, `database/init/10-postern-roles.sql` |
+| QR4.3 | Per-message `forwarded` / `dropped` / `errored` outcomes feed a monthly mail-path figure, and the first monitor and heartbeat windows are recorded | `worker/src/index.ts` (`OUTCOMES`, `aggregatePreviousMonth`), `worker/test/outcomes.test.ts`, `docs/nfr/evidence/QR4.3-2026-11-18.json`, `docs/nfr/evidence/QR4.4-2026-11-18.json` |
 
 `shared/critical-paths.json`, `shared/blocked-reasons.json` and `shared/kv-records.json`
 are cross-runtime contracts, in the same spirit as `shared/etld1-cases.json`: the Worker
@@ -79,6 +80,30 @@ without a build failure.
   can therefore recover protected invite codes, which are single-use and short-lived, but
   the row's "0 secrets at rest" intent is not met. `ProtectKeysWithCertificate` is the
   missing half and is deliberately tracked as a separate decision, not claimed here.
+- **QR4.3 availability excludes intentional drops.** The monthly figure is
+  `forwarded / (forwarded + errored)`. Policy blocks and unroutable recipients are
+  `dropped` outcomes, not unavailability; writes to blocked rows remain deliberately
+  absent for unknown recipients. Unknown-recipient drops still emit an aggregate
+  counter with no address, so the anti-abuse decision is preserved.
+- **QR4.3 counters add no KV writes.** Analytics Engine carries the per-message data,
+  so QR2.4's 4 reads / 0 writes and QR3.2's <1,000 writes/day are unchanged. The
+  monthly aggregation writes one `mail_path_last_month` record, outside the per-message
+  budget. The query uses `SUM(_sample_interval)` so Analytics Engine sampling does not
+  undercount.
+- **QR4.3 / QR4.4 clocks are recorded, not yet readable.** The readiness monitors and
+  heartbeat have measured since 17 Nov 2026; mail-path counters start when this Worker
+  bundle is deployed. No percentage is claimed until a full window closes. See
+  `QR4.3-2026-11-18.json` and `QR4.4-2026-11-18.json`.
+- **QR4.3 runtime secrets are provisioned by CD, not stored here.** The `deploy-worker`
+  job in `cd.yml` pipes two GitHub secrets into `wrangler secret put` before `wrangler
+  deploy`: `CF_ANALYTICS_ACCOUNT_ID` and `CF_ANALYTICS_API_TOKEN` (a dedicated Cloudflare
+  token with Account > Account Analytics > Read). The job fails if either is unset, so
+  the deployed Worker cannot silently lose its monthly aggregation. Do not reuse the
+  deploy token unless it also has that permission.
+- **QR2.4 evidence predates the outcomes binding.** `QR2.4-2026-11-17.json` was taken on
+  the Worker bundle without Analytics Engine writes. Deploying this bundle changes it;
+  re-run the production burst and record a fresh evidence file. The Node CPU canary is
+  not a substitute for Cloudflare `workersInvocationsAdaptive.cpuTimeP99`.
 
 Mail for an unknown recipient is still dropped without a blocked row. That is an
 anti-abuse decision, not a missing test: the alias is unknown, so there is no owner to

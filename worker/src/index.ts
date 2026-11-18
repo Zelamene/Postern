@@ -4,7 +4,26 @@ interface Env {
   INGEST_SECRET: string;
   API_BASE_URL: string;
   JOB_SECRET: string;
+  POSTERN_OUTCOMES?: AnalyticsEngineDataset;
+  CF_ACCOUNT_ID?: string;
+  CF_API_TOKEN?: string;
 }
+
+/**
+ * QR4.3: one data point per mail-path outcome. The index is the outcome so the
+ * monthly SQL query can group on index1; blob1 carries the drop reason (empty for
+ * forwarded and errored), and double1 is always 1. Analytics Engine is used rather
+ * than KV because the mail path may not add a KV write (QR2.4 / QR3.2).
+ */
+export const OUTCOMES = {
+  forwarded: "forwarded",
+  dropped: "dropped",
+  errored: "errored"
+} as const;
+
+export const OUTCOMES_DATASET = "postern_outcomes";
+export const MONTHLY_OUTCOMES_CRON = "0 4 1 * *";
+export const MAIL_PATH_SUMMARY_KEY = "mail_path_last_month";
 
 interface AliasKvRecord {
   destination: string;
@@ -43,6 +62,26 @@ export const BLOCKED_REASONS = {
   suspendedUser: "suspended_user"
 } as const;
 
+function recordOutcome(env: Env, outcome: string, reason = ""): void {
+  const dataset = env.POSTERN_OUTCOMES;
+  if (!dataset) {
+    // Older deployments and the unit fakes have no analytics binding. A missing
+    // metric must never change a mail decision.
+    return;
+  }
+
+  try {
+    dataset.writeDataPoint({
+      indexes: [outcome],
+      blobs: [reason],
+      doubles: [1]
+    });
+  } catch {
+    // Same rule as ingest failure: counters are best effort and must never stop
+    // forwarding or surface as an unhandled rejection.
+  }
+}
+
 export default {
   async email(message: ForwardableEmailMessage, env: Env, ctx: ExecutionContext): Promise<void> {
     const to = message.to;
@@ -58,7 +97,10 @@ export default {
       // nothing to attach a blocked row to. This is deliberate: the domain
       // accepts mail for any address, and recording each unknown recipient
       // would hand an attacker an unbounded write surface. Such mail is counted
-      // as a silent drop, not a postern user's message.
+      // as a silent drop, not a postern user's message. The aggregate counter has
+      // no address, so it does not create the unbounded write surface the blocked
+      // row would.
+      recordOutcome(env, OUTCOMES.dropped, "unknown_recipient");
       return;
     }
 
@@ -101,7 +143,10 @@ export default {
 
     try {
       await message.forward(aliasRecord.destination);
-    } catch {
+      recordOutcome(env, OUTCOMES.forwarded);
+    } catch (error) {
+      recordOutcome(env, OUTCOMES.errored);
+      console.warn("Postern could not forward a policy-permitted message", error);
       return;
     }
 
@@ -113,6 +158,11 @@ export default {
     env: Env,
     ctx: ExecutionContext
   ): Promise<void> {
+    if (controller.cron === MONTHLY_OUTCOMES_CRON) {
+      ctx.waitUntil(aggregatePreviousMonth(env));
+      return;
+    }
+
     if (controller.cron === "5 3 * * *") {
       ctx.waitUntil(
         fetch(`${env.API_BASE_URL}/api/jobs/nightly`, {
@@ -189,6 +239,7 @@ async function recordBlocked(
   reason: string
 ): Promise<void> {
   const fromHeader = message.headers.get("from") || message.from || "";
+  recordOutcome(env, OUTCOMES.dropped, reason);
   ctx.waitUntil(ingestBlocked(message, aliasRecord, fromHeader, reason, env));
 }
 
@@ -267,4 +318,111 @@ export function extractEtld1(header: string): string | null {
   return SECOND_LEVEL_TLDS.has(lastTwo)
     ? parts.slice(-3).join(".")
     : lastTwo;
+}
+
+/** The UTC half-open window for the calendar month before `now`. */
+export function previousMonthWindow(now: Date): { start: Date; end: Date } {
+  return {
+    start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)),
+    end: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+  };
+}
+
+/**
+ * Analytics Engine's SQL API accepts 'YYYY-MM-DD hh:mm:ss' in toDateTime. Derived
+ * entirely from Date values, so no caller-supplied text reaches the query except
+ * the dataset identifier, which is checked as a plain SQL identifier.
+ */
+export function buildOutcomesQuery(
+  start: Date,
+  end: Date,
+  dataset: string = OUTCOMES_DATASET
+): string {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(dataset)) {
+    throw new Error("Invalid Analytics Engine dataset identifier");
+  }
+
+  const stamp = (date: Date) => date.toISOString().slice(0, 19).replace("T", " ");
+  return [
+    "SELECT index1 AS outcome, SUM(_sample_interval) AS n",
+    `FROM ${dataset}`,
+    `WHERE timestamp >= toDateTime('${stamp(start)}')`,
+    `AND timestamp < toDateTime('${stamp(end)}')`,
+    "GROUP BY index1",
+    "FORMAT JSON"
+  ].join("\n");
+}
+
+export interface MailPathSummary {
+  windowStart: string;
+  windowEnd: string;
+  forwarded: number;
+  dropped: number;
+  errored: number;
+  /** forwarded / (forwarded + errored), or null when no eligible mail was seen. */
+  mailPathPct: number | null;
+  generatedAt: string;
+}
+
+interface OutcomeCountRow {
+  outcome?: unknown;
+  n?: unknown;
+}
+
+/**
+ * Runs on the first of each month. Counts the previous UTC month from Analytics
+ * Engine and stores one summary KV record. The single monthly KV write is outside
+ * the per-message budget, so QR2.4's 0 writes and QR3.2's daily cap are untouched.
+ */
+async function aggregatePreviousMonth(env: Env): Promise<void> {
+  if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) {
+    console.warn(
+      "Postern monthly outcome aggregation skipped: CF_ACCOUNT_ID and CF_API_TOKEN must be set"
+    );
+    return;
+  }
+
+  try {
+    const { start, end } = previousMonthWindow(new Date());
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(env.CF_ACCOUNT_ID)}/analytics_engine/sql`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.CF_API_TOKEN}`,
+          "Content-Type": "text/plain"
+        },
+        body: buildOutcomesQuery(start, end)
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(`Postern monthly outcome aggregation failed with HTTP ${response.status}`);
+      return;
+    }
+
+    const payload = await response.json() as { data?: OutcomeCountRow[] };
+    const counts = { forwarded: 0, dropped: 0, errored: 0 };
+    for (const row of payload.data ?? []) {
+      const outcome = row.outcome;
+      if (outcome === OUTCOMES.forwarded || outcome === OUTCOMES.dropped || outcome === OUTCOMES.errored) {
+        counts[outcome] = Number(row.n) || 0;
+      }
+    }
+
+    const eligible = counts.forwarded + counts.errored;
+    const summary: MailPathSummary = {
+      windowStart: start.toISOString(),
+      windowEnd: end.toISOString(),
+      forwarded: counts.forwarded,
+      dropped: counts.dropped,
+      errored: counts.errored,
+      mailPathPct: eligible === 0 ? null : (counts.forwarded / eligible) * 100,
+      generatedAt: new Date().toISOString()
+    };
+
+    await env.POSTERN_KV.put(MAIL_PATH_SUMMARY_KEY, JSON.stringify(summary));
+  } catch (error) {
+    console.warn("Postern monthly outcome aggregation failed", error);
+  }
 }

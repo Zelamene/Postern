@@ -100,6 +100,20 @@ jobs:
         working-directory: worker
         run: npm ci --ignore-scripts
 
+      - name: Set Worker analytics secrets
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_ANALYTICS_ACCOUNT_ID: ${{ secrets.CF_ANALYTICS_ACCOUNT_ID }}
+          CF_ANALYTICS_API_TOKEN: ${{ secrets.CF_ANALYTICS_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          : "${CF_ANALYTICS_ACCOUNT_ID:?CF_ANALYTICS_ACCOUNT_ID secret is required}"
+          : "${CF_ANALYTICS_API_TOKEN:?CF_ANALYTICS_API_TOKEN secret is required}"
+          printf '%s' "$CF_ANALYTICS_ACCOUNT_ID" | npx --no-install wrangler secret put CF_ACCOUNT_ID
+          printf '%s' "$CF_ANALYTICS_API_TOKEN" | npx --no-install wrangler secret put CF_API_TOKEN
+
       - name: Deploy Worker
         working-directory: worker
         env:
