@@ -25,14 +25,14 @@ Rules this directory follows, learned the hard way on QR2.4:
 | QR1.6 | 0 high dependency advisories; 0 high DAST findings; no medium unresolved > 30 days | `evidence/QR1.6-2026-11-18.json` (runtime SCA gates + seeded ZAP full scans, verified nightly run 44374133289); `web/scripts/run-dast.mjs`, `web/scripts/review-dast-findings.mjs`, `.github/workflows/browser-nightly.yml` | PASS: 0 high advisories, 0 high DAST findings, 2 medium findings tracked (#52, #53), 0 medium findings past the 30-day review |
 | QR7.2 | 0 new high/critical issues; duplication ≤ 3%; cognitive complexity ≤ 15 per function | `evidence/QR7.2-2026-11-18.json` (CI SonarCloud gate, main branch, 18 Nov 2026); `.github/workflows/sonarcloud.yml` | Gate PASSED: 0 new issues, 0.0% duplication, 0 open S3776; 90.0% new-code coverage |
 | QR2.1 | Ingest p95 ≤ 300 ms at 20 rps for 5 min; 0 unexpected 5xx | `evidence/QR2.1-2026-11-18.json` + raw k6 summary; `load/scripts/k6-ingest.js`, `load/scripts/seed.mjs` | PASS: 23.756 ms p95 at 20.002 rps over 5 min (n=6001), 0 unexpected 5xx |
-| QR2.2 | Dashboard reads p95 ≤ 500 ms on 50-item pages | `evidence/QR2.2-2026-11-18.json` + raw k6 summary; `load/scripts/k6-read.js`, `load/scripts/seed-messages.mjs` | PASS: 13.401 ms activity / 12.019 ms blocked p95 (n=7501), every page 50 items |
-| QR2.3 | Core-task steps p95 ≤ 2 s; task p95 ≤ 5 s; effect in mail path p95 ≤ 60 s | `evidence/QR2.3-2026-11-18.json` (mail-effect leg only); `load/scripts/time-to-effect.mjs` | Mail-effect leg PASS: 23.982 ms p95 floor (n=200), 4× `cacheTtl:60` reads verified; 2 s / 5 s journey timings remain `(build)` |
+| QR2.2 | Dashboard reads p95 ≤ 500 ms on 50-item pages | `evidence/QR2.2-2026-11-18.json` + raw k6 summary; `load/scripts/k6-read.js`, `load/scripts/seed-messages.mjs`; coarse CI read guard `Postern.IntegrationTests/Api/ReadPerformanceGuardTests.cs` wired in `.github/workflows/nfr-ci.yml` | PASS: 13.401 ms activity / 12.019 ms blocked p95 (n=7501), every page 50 items; coarse CI guard wired |
+| QR2.3 | Core-task steps p95 ≤ 2 s; task p95 ≤ 5 s; effect in mail path p95 ≤ 60 s | `evidence/QR2.3-2026-11-18.json` (mail-effect + step/task legs); `load/scripts/time-to-effect.mjs`, `backend/src/Postern.Api/Program.cs`, `web/test/e2e/support/serverTiming.ts`, `web/test/e2e/user/core-task-timing.spec.ts`, `web/test/e2e/admin/core-task-timing.spec.ts` | PASS: 60 s mail-effect leg 23.982 ms p95 floor (n=200), 4× `cacheTtl:60` reads verified; step/task journeys passed in Browser NFR Nightly #9 (2026-11-19, disposable fresh-stack, 2 s step / 5 s task budgets with `Server-Timing`) |
 | QR3.3 | ≥ 95% of core-task steps meet targets under 20 rps ingest + 25 sessions; < 1% errors; same at 28 rps peak; excess throttled, mail unaffected | `evidence/QR3.3-2026-11-18.json` + three raw k6 summaries; `load/scripts/k6-mixed.js` | PASS: 100% steps in target and 0% errors at 20 rps and 28 rps peak; 6001× 429, 0× 5xx under saturation with mail ingress 100% healthy |
 | QR3.2 | < 1,000 KV writes per day at 199 accounts; ≤ 1 write per alias change | `evidence/QR3.2-2026-11-18.json` (instrumented `IKvWriter` + advancing `TimeProvider` 24 h simulation and Cloudflare dashboard billed counts); `backend/tests/Postern.UnitTests/KvWriteBudgetSimulationTests.cs` | PASS: 226 writes in 24 h (427 incl. initial projection), 1 per alias change; dashboard Nov-to-date 63 mutating ops (18 writes + 45 deletes), 240 in all op classes |
 | QR4.2 | First request after idle p95 ≤ 30 s; waking state displayed | `evidence/QR4.2-2026-11-18.json` (delayed-response Playwright test); `web/test/e2e/user/waking-state.spec.ts`, `.github/workflows/browser-nightly.yml` | PASS (in-repo waking-state half): waking message asserted in 5/5 fresh-stack runs with a 6 s delayed response; cold-start p95 sample remains external |
-| QR6.1 | 0 serious/critical violations; WCAG 2.1 AA; keyboard-only operation of all actions | `evidence/QR6.1-2026-11-18.json` (axe scans + keyboard journey); `web/test/e2e/support/a11y.ts`, `web/test/e2e/user/accessibility.spec.ts`, `web/test/e2e/admin/accessibility.spec.ts`, `.github/workflows/browser-nightly.yml` | PASS: 0 violations across public light/dark, signed-in user and signed-in admin; keyboard alias journey passed 5/5 runs |
+| QR6.1 | 0 serious/critical violations; WCAG 2.1 AA; keyboard-only operation of all actions | `evidence/QR6.1-2026-11-18.json` (axe scans + keyboard journey), `evidence/QR6.1-2026-11-19-keyboard-all-actions.md` (keyboard all-actions review/checklist); `web/playwright.public-ci.config.ts`, `.github/workflows/web-ci.yml` (public axe gate), `.github/workflows/browser-nightly.yml` | PASS: 0 violations across public light/dark, signed-in user and signed-in admin; public CI axe gate wired; core keyboard journey passed 5/5 runs and all-actions keyboard review recorded |
 | QR6.2 | Median core-task completion ≤ 2 min; 100% of journeys pass on a fresh database | `evidence/QR6.2-2026-11-18.json` (Playwright wall-clock timing over 5 fresh-stack runs); `web/test/e2e/support/timing.ts`, `.github/workflows/browser-nightly.yml` | PASS: medians 1,323 ms create alias / 2,064 ms review activity / 588 ms sync KV; 28/28 journeys passed in 5/5 runs |
-| QR6.3 | 100% of stale-data surfaces state the propagation delay and best-effort logging | `evidence/QR6.3-2026-11-18.json` (Playwright copy assertions); `web/src/components/common/StaleDataNotice.tsx`, `web/test/e2e/user/data-freshness.spec.ts`, `web/test/e2e/admin/accessibility.spec.ts` | PASS: both statements asserted on every user and admin stale-data surface in 5/5 runs |
+| QR6.3 | 100% of stale-data surfaces state the propagation delay and best-effort logging | `evidence/QR6.3-2026-11-18.json` (Playwright copy assertions), `evidence/QR6.3-2026-11-19-copy-review.md` (per-release copy review); `web/src/components/common/StaleDataNotice.tsx`, `web/test/e2e/user/data-freshness.spec.ts`, `web/test/e2e/admin/accessibility.spec.ts` | PASS: both statements asserted on every user and admin stale-data surface in 5/5 runs; per-release copy review recorded (2026-11-19) |
 
 Reproduce the CPU figure with `./collect-qr2.4.ps1 -From <start> -To <end>` (needs
 a token with **Account Analytics: Read**). The script refuses to write evidence if
@@ -182,8 +182,8 @@ without a build failure.
   publish-then-poll harness measures only the propagation floor (23.982 ms p95); the 60 s
   production bound comes from the four `cacheTtl:60` reads in `worker/src/index.ts`, which
   the harness verifies in source. It is not claimed as an emulated edge-cache measurement.
-  The 2 s step and 5 s task legs of QR2.3 still need server-timing-instrumented Playwright
-  journeys.
+  The 2 s step and 5 s task legs of QR2.3 run as server-timing-instrumented Playwright
+  journeys in browser nightly (see `QR2.3-2026-11-18.json`, step/task leg, Browser NFR Nightly #9).
 - **QR3.3 saturation asserts 429-not-5xx on the rate-limited auth path.** The ASP.NET
   fixed-window IP limiter rejects the 11th+ login inside 15 minutes with 429; the harness
   floods that endpoint at 100 rps and confirms 0 5xx while ingest (the API-side mail
@@ -207,24 +207,25 @@ without a build failure.
   an independent 24 h measurement. GraphQL analytics is not the authoritative billing
   measure.
 
-- **Phase 8 browser checks run nightly, not as PR gates.** `.github/workflows/browser-nightly.yml`
+- **Phase 8 browser checks run nightly (with a QR6.1 public axe PR gate).** `.github/workflows/browser-nightly.yml`
   runs five fresh-stack `npm run test:e2e` passes on a cron and via manual dispatch, uploading
-  the QR6.2 timing sample as an artifact. The QR6.1 axe scans, keyboard-only journey, QR6.2
+  the QR6.2 timing sample as an artifact. The authenticated/admin QR6.1 axe scans, keyboard-only journey, QR6.2
   timing assertions, QR6.3 copy assertions and QR4.2 waking-state check all run through
   `web/scripts/run-e2e.mjs`, which allocates a disposable PostgreSQL 17 volume and applies EF
-  migrations before Playwright. None are wired into `web-ci.yml`, so they stay `[nightly]`.
+  migrations before Playwright. A public-page axe subset is additionally wired into `web-ci.yml`
+  as "Public accessibility scan (QR6.1)" via `web/playwright.public-ci.config.ts` (axe-scoped).
   The runner forwards `POSTERN_E2E_TIMING_OUT` / `POSTERN_E2E_TIMING_RUN` to the specs; actions
   are pinned to commit SHAs like the other workflows.
-- **QR6.2 timing is browser wall-clock, not server timing.** The backend emits no
-  `Server-Timing` header, so the three timed core tasks (create alias, review activity,
+- **QR6.2 timing is browser wall-clock, not server timing.** The three timed core tasks (create alias, review activity,
   sync KV) are measured with `Date.now()` around the Playwright actions. This closes the
-  "median task" and "100% pass on a fresh database" halves of QR6.2 but does not supply the
-  2 s step / 5 s task server-timing legs of QR2.3, which remain `(build)`.
-- **QR6.1 keyboard coverage is the core journey; QR6.3 checks copy presence.** The automated
-  keyboard check covers alias creation only, so the "all actions" clause still relies on the
-  per-release manual keyboard checklist. The QR6.3 assertions prove both statements render on
-  every stale-data surface (one shared `StaleDataNotice` in each page shell) but not that the
-  wording stays accurate per release, which the manual copy review covers.
+  "median task" and "100% pass on a fresh database" halves of QR6.2. QR2.3's 2 s step / 5 s task legs
+  are covered separately by instrumented browser-nightly journeys with `Server-Timing: app;dur`
+  (`QR2.3-2026-11-18.json`, step/task leg).
+- **QR6.1 keyboard coverage and QR6.3 copy review.** The automated keyboard check covers the core alias journey;
+  `evidence/QR6.1-2026-11-19-keyboard-all-actions.md` records an all-actions keyboard review/checklist across user and admin surfaces
+  (native semantic controls, dialog/menu behavior, and action inventory). The QR6.3 assertions prove both statements render on
+  every stale-data surface (one shared `StaleDataNotice` in each page shell), and `evidence/QR6.3-2026-11-19-copy-review.md`
+  records the per-release wording/completeness review for the current codebase state.
 - **QR4.2 closes only the waking-state half.** `web/test/e2e/user/waking-state.spec.ts` delays
   `/api/auth/me` by 6 s and asserts the `SLOW_AFTER_MS = 3000` UI state renders before the
   response completes. The ≤ 30 s cold-start p95 remains an external Better Stack sample with
