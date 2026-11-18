@@ -22,9 +22,10 @@ export async function createAliasViaUi(
   }
   await page.getByRole('button', { name: 'Create alias' }).click()
 
-  const aliasRow = page.getByRole('listitem').filter({
-    has: page.getByText(label, { exact: true }),
-  })
+  const aliasRow = page
+    .getByRole('listitem')
+    .filter({ has: page.getByText(label, { exact: true }) })
+    .first()
   await expect(aliasRow).toContainText('Active')
   const response = await page.request.get('/api/aliases')
   expect(response.ok()).toBeTruthy()
