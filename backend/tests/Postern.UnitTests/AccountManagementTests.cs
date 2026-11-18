@@ -347,7 +347,7 @@ public class AccountManagementTests
             timeProvider);
 
         var result = await service.DeleteAccountAsync(userId, CancellationToken.None);
-        Assert.True(result);
+        Assert.Equal(DeleteAccountResult.Deleted, result);
 
         Assert.DoesNotContain("test-abcd1234@postern.local", kvWriter.Values.Keys);
         Assert.Contains("user@example.com", destinations.Removed);
@@ -401,7 +401,7 @@ public class AccountManagementTests
 
         var result = await service.DeleteAccountAsync(userId, CancellationToken.None);
 
-        Assert.True(result);
+        Assert.Equal(DeleteAccountResult.Deleted, result);
         Assert.Null(accounts.FindUserById(userId));
     }
 
@@ -422,7 +422,9 @@ public class AccountManagementTests
             new InMemoryKvWriter(),
             new FixedTimeProvider(DateTimeOffset.UtcNow));
 
-        Assert.False(await service.DeleteAccountAsync(Guid.NewGuid(), CancellationToken.None));
+        Assert.Equal(
+            DeleteAccountResult.NotFound,
+            await service.DeleteAccountAsync(Guid.NewGuid(), CancellationToken.None));
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider

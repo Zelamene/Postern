@@ -1,0 +1,26 @@
+{
+  "description": "QR1.3 counts audit events, not mutations. Approving an invite request legitimately emits three events in one transaction, so 'exactly one row per mutation' is not a property the system has or should have. This file declares, per administrative route, the exact audit events that route must emit; a route that emits something else, or an endpoint added without a declaration, fails the test. Read-only routes declare an empty list.",
+  "routes": {
+    "GET /api/admin/analytics": [],
+    "GET /api/admin/global-blocklist": [],
+    "GET /api/admin/invite-requests": [],
+    "GET /api/admin/invites": [],
+    "GET /api/admin/notifications": [],
+    "DELETE /api/admin/global-blocklist/{domain}": ["global_blocklist.remove"],
+    "POST /api/admin/global-blocklist": ["global_blocklist.add"],
+    "POST /api/admin/invite-requests/{requestId}/approve": [
+      "invite_request.approved",
+      "invite.created",
+      "invite.approved"
+    ],
+    "POST /api/admin/invite-requests/{requestId}/reject": ["invite_request.rejected"],
+    "POST /api/admin/invites/{inviteId}/resend": ["invite.resent"],
+    "POST /api/admin/invites/{inviteId}/revoke": ["invite.revoked"],
+    "POST /api/admin/kv-sync": ["kv.sync"],
+    "POST /api/admin/notifications/read-all": [],
+    "POST /api/admin/notifications/{notificationId}/read": [],
+    "POST /api/admin/suspended-users/rebuild": ["suspended_users.rebuild"],
+    "POST /api/admin/users/{userId}/resume": ["user.resume"],
+    "POST /api/admin/users/{userId}/suspend": ["user.suspend"]
+  }
+}

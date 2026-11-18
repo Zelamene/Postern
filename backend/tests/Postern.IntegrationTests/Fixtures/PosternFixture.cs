@@ -33,7 +33,9 @@ public sealed class PosternFixture : IAsyncLifetime
         ConnectionString = _container.GetConnectionString();
 
         await using var db = CreateContext();
-        await db.Database.EnsureCreatedAsync();
+
+        await db.Database.ExecuteSqlRawAsync("CREATE SCHEMA IF NOT EXISTS postern");
+        await db.Database.MigrateAsync();
     }
 
     public Task DisposeAsync() => _container.DisposeAsync().AsTask();

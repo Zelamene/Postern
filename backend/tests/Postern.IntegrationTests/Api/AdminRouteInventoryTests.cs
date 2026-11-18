@@ -67,6 +67,36 @@ public sealed class AdminRouteInventoryTests(PosternFixture fixture) : IAsyncLif
     }
 
     [Fact]
+    public void EveryAdministrativeRoute_IsDeclaredInTheAuditContract()
+    {
+        var contract = ReadAuditContract();
+        var mapped = _routes
+
+            .Where(route => !ExemptFromOpenApi.Contains(route.Url))
+            .Select(route => $"{route.Method} {route.Url}")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var undeclared = mapped
+            .Where(route => !contract.Contains(route))
+            .Order()
+            .ToList();
+        Assert.True(
+            undeclared.Count == 0,
+            "These administrative routes have no audit-event declaration, so nobody can say what "
+            + "they record. Declare them in shared/admin-audit-events.json: "
+            + string.Join(", ", undeclared));
+
+        var stale = contract
+            .Where(route => !mapped.Contains(route))
+            .Order()
+            .ToList();
+        Assert.True(
+            stale.Count == 0,
+            "The audit contract declares routes that are no longer mapped: "
+            + string.Join(", ", stale));
+    }
+
+    [Fact]
     public async Task AnonymousRequests_AreRejectedByEveryAdministrativeRoute()
     {
         using var client = _factory.CreateClient();
@@ -176,6 +206,32 @@ public sealed class AdminRouteInventoryTests(PosternFixture fixture) : IAsyncLif
         }
 
         return routes;
+    }
+
+    private static HashSet<string> ReadAuditContract()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null
+            && !File.Exists(Path.Combine(directory.FullName, "shared", "admin-audit-events.json")))
+        {
+            directory = directory.Parent;
+        }
+
+        Assert.NotNull(directory);
+        using var document = JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(directory!.FullName, "shared", "admin-audit-events.json")));
+
+        return document.RootElement
+            .GetProperty("routes")
+            .EnumerateObject()
+            .Select(route =>
+            {
+                var separator = route.Name.IndexOf(' ');
+                var method = route.Name[..separator].ToUpperInvariant();
+                var path = CanonicalPath(route.Name[(separator + 1)..]);
+                return $"{method} {path}";
+            })
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     private sealed record AdminRoute(string Method, string Url, string RequestUrl);

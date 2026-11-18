@@ -76,6 +76,12 @@ SELECT format(
 )
 \gexec
 
+SELECT format(
+    'REVOKE UPDATE, DELETE ON postern.admin_audit_log FROM %I',
+    :'app_role'
+)
+\gexec
+
 SELECT format('GRANT %I TO %I', :'migrator_role', current_user) \gexec
 
 SELECT format(

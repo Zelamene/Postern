@@ -1,0 +1,43 @@
+{
+  "description": "The KV contract shared by the API (which writes these values) and the mobile Worker (which reads them). Both runtimes consume this file, so a field rename, a dropped key, or a changed canonical shape fails a test in one of them instead of drifting silently. The API suite asserts its serializer emits these shapes; the Worker suite asserts its handler interprets them.",
+  "aliasRecord": {
+    "requiredFields": ["destination", "status", "userId", "blockedSenders"],
+    "optionalFields": [],
+    "canonicalRules": [
+      "blockedSenders is always present, possibly empty",
+      "blockedSenders entries are distinct ignoring case, keeping the first spelling seen",
+      "blockedSenders is ordered by ordinal string comparison",
+      "unknown fields are ignored by the reader"
+    ],
+    "statusValues": ["active", "disabled", "replaced"],
+    "example": {
+      "destination": "inbox@example.test",
+      "status": "active",
+      "userId": "11111111-1111-1111-1111-111111111111",
+      "blockedSenders": ["Abuse.Example", "spam.example"]
+    },
+    "normalizationInput": ["spam.example", " ", "Abuse.Example", "spam.example"],
+    "normalizationOutput": ["Abuse.Example", "spam.example"]
+  },
+  "maps": {
+    "__global_blocklist": {
+      "description": "Domains whose mail is dropped before forwarding.",
+      "requiredFields": ["domains"],
+      "example": { "domains": ["spamco.example"] }
+    },
+    "suspended_users": {
+      "description": "User ids whose mail is dropped while suspended. Values are booleans.",
+      "requiredFields": ["users"],
+      "example": {
+        "users": { "22222222-2222-2222-2222-222222222222": true }
+      }
+    },
+    "rate_limited_users": {
+      "description": "User ids that exceeded the daily forwarding cap. Values are Unix seconds at which the limit lifts; a timestamp in the past no longer limits.",
+      "requiredFields": ["users"],
+      "example": {
+        "users": { "33333333-3333-3333-3333-333333333333": 1795000000 }
+      }
+    }
+  }
+}

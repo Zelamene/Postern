@@ -307,11 +307,6 @@ public sealed class PosternDbContext(DbContextOptions<PosternDbContext> options)
             entity.Property(entry => entry.Metadata).HasColumnName("metadata").HasColumnType("jsonb");
             entity.Property(entry => entry.CreatedAt).HasColumnName("created_at").HasColumnType("timestamp with time zone").HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.HasIndex(entry => entry.CreatedAt).HasDatabaseName("ix_admin_audit_log_created_at");
-            entity.HasOne<PosternUser>()
-                .WithMany()
-                .HasForeignKey(entry => entry.AdminUserId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName("fk_admin_audit_log_users_admin_user_id");
         });
 
         modelBuilder.Entity<GlobalBlockedDomain>(entity =>

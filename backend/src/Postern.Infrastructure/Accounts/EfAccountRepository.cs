@@ -318,6 +318,9 @@ public sealed class EfAccountRepository(
         return true;
     }
 
+    public Task<bool> HasAuditAttributionAsync(Guid userId, CancellationToken cancellationToken) =>
+        dbContext.AdminAuditLog.AnyAsync(entry => entry.AdminUserId == userId, cancellationToken);
+
     public async Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken) =>
         await dbContext.Users
             .AsNoTracking()

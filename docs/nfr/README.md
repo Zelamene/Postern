@@ -49,11 +49,36 @@ named here fails the pipeline; it is the evidence.
 | QR3.1 | The 500/day cap is inclusive at 500 and exclusive at 501 | `Postern.UnitTests/RateLimitMapRebuildTests.cs`, `IngestFlowTests.Ingest_WhenUserExceedsDailyCap_LeavesTheProjectionToTheRefresher` |
 | QR5.4 | Concurrent duplicate `Message-ID`s record exactly one row | `IngestFlowTests.Ingest_WithConcurrentDuplicateMessageIds_RecordsExactlyOneDelivery` |
 | QR5.5 | Every reason the Worker can write reaches a blocked row, from one shared list | `shared/blocked-reasons.json`, `worker/test/index.test.ts`, `Postern.UnitTests/IngestBlockedTests.cs` |
+| QR7.3 | The KV record contract is shared by the API serializers and the Worker reader, including all three map writers | `shared/kv-records.json`, `Postern.UnitTests/KvRecordContractTests.cs`, `Postern.UnitTests/GlobalBlocklistServiceTests.cs`, `Postern.UnitTests/SuspendedUserServiceTests.cs`, `Postern.UnitTests/RateLimitMapRebuildTests.cs`, `worker/test/kv-contract.test.ts` |
+| QR1.4 | Mail tables carry no body column, subject is `varchar(60)` with named check constraints, and the suite runs the real migrations | `Postern.IntegrationTests/Database/DatabaseSchemaTests.cs`, `Fixtures/PosternFixture.cs` |
+| QR5.2 | An empty namespace rebuilds all four projections, a full sync deletes orphan keys, and a second sync rewrites no alias key | `Postern.IntegrationTests/Flows/ProjectionRebuildTests.cs` |
+| QR1.2 | A protected value stays readable by a second host with only the database configured | `Postern.IntegrationTests/Database/DataProtectionRestartTests.cs` |
+| QR1.3 | Every administrative route declares its audit events and all ten mutating routes are asserted to emit exactly those events; approve emits three, the log rejects UPDATE and DELETE, and account deletion is refused while an account is named on audit rows | `shared/admin-audit-events.json`, `Postern.IntegrationTests/Api/AdminAuditTests.cs`, migration `ProtectAdminAuditLog`, `database/init/10-postern-roles.sql` |
 
-`shared/critical-paths.json` and `shared/blocked-reasons.json` are cross-runtime
-contracts, in the same spirit as `shared/etld1-cases.json`: the Worker suite and the
-API suite read the same file, so the two runtimes cannot drift apart without a build
-failure.
+`shared/critical-paths.json`, `shared/blocked-reasons.json` and `shared/kv-records.json`
+are cross-runtime contracts, in the same spirit as `shared/etld1-cases.json`: the Worker
+suite and the API suite read the same file, so the two runtimes cannot drift apart
+without a build failure.
+
+## Decisions recorded with the evidence
+
+- **QR1.3 counts audit events, not mutations.** Approving an invite request writes
+  `invite_request.approved`, `invite.created` and `invite.approved` in one transaction.
+  The requirement is enforced as "each route emits exactly its declared events", with the
+  declaration in `shared/admin-audit-events.json`; an endpoint with no declaration fails
+  the route-inventory test. The `suspended-users/rebuild` endpoint previously wrote no
+  audit row and now writes `suspended_users.rebuild` with the projected count.
+- **Immutability is enforced by a trigger, not only by grants.** The application role is
+  granted DML on all tables and receives the same grant for future tables through
+  `ALTER DEFAULT PRIVILEGES`; a REVOKE alone is one migration away from being undone. The
+  `ProtectAdminAuditLog` migration also drops the `admin_user_id` foreign key so no cascade
+  can erase attribution, and account deletion returns `409` when the account is named on
+  audit rows.
+- **QR1.2 covers restart persistence, not encryption at rest.** The Data Protection key XML
+  is stored unencrypted in `postern.data_protection_keys`. Anyone with database read access
+  can therefore recover protected invite codes, which are single-use and short-lived, but
+  the row's "0 secrets at rest" intent is not met. `ProtectKeysWithCertificate` is the
+  missing half and is deliberately tracked as a separate decision, not claimed here.
 
 Mail for an unknown recipient is still dropped without a blocked row. That is an
 anti-abuse decision, not a missing test: the alias is unknown, so there is no owner to

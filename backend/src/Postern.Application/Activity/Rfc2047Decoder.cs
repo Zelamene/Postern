@@ -54,6 +54,7 @@ public static class Rfc2047Decoder
         }
         catch
         {
+            // comment
         }
 
         return match.Value;

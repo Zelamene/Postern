@@ -110,7 +110,7 @@ public sealed class AdminKvSyncService(
             token => globalBlocklist.RebuildAsync(token),
             cancellationToken);
         var suspendedUsersRebuilt = await TryRebuildAsync(
-            token => suspendedUsers.RebuildAsync(token),
+            async token => await suspendedUsers.RebuildAsync(token),
             cancellationToken);
         var remaining = await administration.CountDirtyAliasesAsync(cancellationToken);
 
