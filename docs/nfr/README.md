@@ -22,7 +22,7 @@ Rules this directory follows, learned the hard way on QR2.4:
 | Row | Requirement | Evidence | Result |
 | --- | --- | --- | --- |
 | QR2.4 | <= 10 ms Worker CPU per message at worst-bucket P99; <= 4 KV reads; 0 KV writes per message | `evidence/QR2.4-2026-11-17.json` (Cloudflare `workersInvocationsAdaptive.cpuTimeP99`, production burst, n=30); `worker/test/kv-budget.test.ts` (reads/writes gate) | 2.725 ms P99 (= max at n=30) vs 10 ms; 4 reads / 0 writes |
-| QR1.6 | 0 high dependency advisories; 0 high DAST findings; no medium unresolved > 30 days | `evidence/QR1.6-2026-11-18.json` (runtime SCA gates + seeded ZAP full scans); `web/scripts/run-dast.mjs`, `web/scripts/review-dast-findings.mjs`, `.github/workflows/browser-nightly.yml` | PASS: 0 high advisories, 0 high DAST findings, 0 unexcluded medium findings, 0 medium findings past the 30-day review |
+| QR1.6 | 0 high dependency advisories; 0 high DAST findings; no medium unresolved > 30 days | `evidence/QR1.6-2026-11-18.json` (runtime SCA gates + seeded ZAP full scans, verified nightly run 44374133289); `web/scripts/run-dast.mjs`, `web/scripts/review-dast-findings.mjs`, `.github/workflows/browser-nightly.yml` | PASS: 0 high advisories, 0 high DAST findings, 2 medium findings tracked (#52, #53), 0 medium findings past the 30-day review |
 | QR7.2 | 0 new high/critical issues; duplication ≤ 3%; cognitive complexity ≤ 15 per function | `evidence/QR7.2-2026-11-18.json` (CI SonarCloud gate, main branch, 18 Nov 2026); `.github/workflows/sonarcloud.yml` | Gate PASSED: 0 new issues, 0.0% duplication, 0 open S3776; 90.0% new-code coverage |
 | QR2.1 | Ingest p95 ≤ 300 ms at 20 rps for 5 min; 0 unexpected 5xx | `evidence/QR2.1-2026-11-18.json` + raw k6 summary; `load/scripts/k6-ingest.js`, `load/scripts/seed.mjs` | PASS: 23.756 ms p95 at 20.002 rps over 5 min (n=6001), 0 unexpected 5xx |
 | QR2.2 | Dashboard reads p95 ≤ 500 ms on 50-item pages | `evidence/QR2.2-2026-11-18.json` + raw k6 summary; `load/scripts/k6-read.js`, `load/scripts/seed-messages.mjs` | PASS: 13.401 ms activity / 12.019 ms blocked p95 (n=7501), every page 50 items |
@@ -91,6 +91,9 @@ without a build failure.
   creates one GitHub issue per stable finding fingerprint, refreshes its last-seen
   date each night, closes issues no longer observed, and fails the nightly workflow
   when a high finding appears or a medium issue remains open for more than 30 days.
+  The verified nightly run created issues #52 and #53 for the two initial medium
+  findings (missing CSP and anti-clickjacking headers), both first and last seen
+  on 2026-11-18 and therefore well inside the review window.
   Rule `10106` (`HTTP Only Site`) is the one documented exclusion: the target is a
   disposable HTTP-only stack and TLS is reviewed per environment, so that rule is
   not treated as a product finding.

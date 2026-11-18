@@ -35,10 +35,31 @@
       }
     ],
     "rules": ["traditional spider", "Ajax spider", "passive scan", "active scan"],
-    "crawled_urls_per_scan": 5,
-    "passing_rules_per_scan": 113,
+    "crawled_urls": {
+      "admin": 49,
+      "user": 43
+    },
+    "passing_rules_per_scan": 110,
     "high_findings": 0,
-    "medium_findings": 0,
+    "medium_findings": 2,
+    "medium_findings_detail": [
+      {
+        "plugin_id": "10038",
+        "name": "Content Security Policy (CSP) Header Not Set",
+        "tracking_issue": 52,
+        "first_seen": "2026-11-18",
+        "last_seen": "2026-11-18",
+        "reports": ["zap-admin-report.json", "zap-user-report.json"]
+      },
+      {
+        "plugin_id": "10020",
+        "name": "Missing Anti-clickjacking Header",
+        "tracking_issue": 53,
+        "first_seen": "2026-11-18",
+        "last_seen": "2026-11-18",
+        "reports": ["zap-admin-report.json", "zap-user-report.json"]
+      }
+    ],
     "documented_environment_exclusions": [
       {
         "plugin_id": "10106",
@@ -46,7 +67,20 @@
         "reason": "The DAST target is a disposable HTTP-only compose stack. TLS termination is a per-environment control recorded by the separate manual review, so this rule is not a defect of the scanned stack."
       }
     ],
-    "artifact": "qr1.6-zap-reports"
+    "documented_environment_exclusions_triggered": 0,
+    "artifact": "qr1.6-zap-reports",
+    "nightly_verification": {
+      "workflow_run_id": 44374133289,
+      "workflow_url": "https://github.com/Zelamene/Postern/actions/runs/44374133289",
+      "workflow_conclusion": "success",
+      "dast_job_id": 135048601480,
+      "dast_job_url": "https://github.com/Zelamene/Postern/actions/runs/44374133289/job/135048601480",
+      "dast_job_conclusion": "success",
+      "scanned_at": "2026-11-18T19:10:16.255Z",
+      "artifact_id": 14461762283,
+      "artifact_size_bytes": 39792,
+      "review_summary": "0 high; 2 medium findings tracked as issues 52 and 53; 0 documented exclusions triggered; 0 medium findings older than 30 days"
+    }
   },
   "medium_review": {
     "window_days": 30,
@@ -54,7 +88,7 @@
     "mechanism": "One GitHub issue per stable finding fingerprint records first-seen and last-seen dates; a high finding fails immediately, a medium issue older than 30 days fails the nightly job, and a finding no longer observed is closed.",
     "medium_unresolved_over_30_days": 0
   },
-  "verdict": "PASS - 0 high runtime dependency advisories, 0 high DAST findings and 0 unexcluded medium DAST findings across seeded admin and user full scans; the 30-day issue-age review is enforced on every nightly run.",
+  "verdict": "PASS - 0 high runtime dependency advisories, 0 high DAST findings and 2 medium DAST findings tracked as issues 52 and 53 with 0 unresolved beyond the 30-day review window across seeded admin and user full scans; the 30-day issue-age review is enforced on every nightly run.",
   "reproduction": [
     "cd web && npm run test:dast",
     "cd web && npm run test:dast:review"
