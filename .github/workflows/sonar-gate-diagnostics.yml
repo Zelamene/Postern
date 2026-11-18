@@ -1,0 +1,28 @@
+name: Sonar gate diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: Report main-branch quality gate conditions
+        run: |
+          set -euo pipefail
+          : "${SONAR_TOKEN:?SONAR_TOKEN is required}"
+          project_key="${SONAR_PROJECT_KEY:-Zelamene_Postern}"
+          echo "=== project_status ==="
+          curl -sS -u "${SONAR_TOKEN}:" \
+            "https://sonarcloud.io/api/qualitygates/project_status?projectKey=${project_key}&branch=main" \
+            | python3 -m json.tool
+          echo "=== measures ==="
+          curl -sS -u "${SONAR_TOKEN}:" \
+            "https://sonarcloud.io/api/measures/component?component=${project_key}&branch=main&metricKeys=new_coverage,new_duplicated_lines_density,new_cognitive_complexity,new_violations,new_blocker_violations,new_critical_violations,new_major_violations,new_code_smells,new_lines" \
+            | python3 -m json.tool
