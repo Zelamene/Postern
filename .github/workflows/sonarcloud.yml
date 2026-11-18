@@ -51,17 +51,20 @@ jobs:
           name: backend-test-reports
           path: .
 
+      # The artifacts contain the *contents* of web/coverage and worker/coverage.
+      # Download into coverage/ so the generated HTML reports stay under the
+      # **/coverage/** sonar.exclusions pattern instead of being indexed as web source.
       - name: Download web coverage
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: web-coverage
-          path: web
+          path: web/coverage
 
       - name: Download worker coverage
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: worker-coverage
-          path: worker
+          path: worker/coverage
 
       - name: Normalize coverage report paths
         run: |
