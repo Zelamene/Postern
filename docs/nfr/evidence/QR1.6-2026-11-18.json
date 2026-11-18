@@ -1,0 +1,67 @@
+{
+  "requirement": "QR1.6",
+  "requirement_text": "0 high dependency advisories; 0 high DAST findings; no medium unresolved > 30 days",
+  "record_type": "runtime SCA gates plus seeded OWASP ZAP full scans",
+  "recorded_at": "2026-11-18",
+  "recorded_by": "shazi",
+  "status": "PASS",
+  "sca": {
+    "web_gate": "npm audit --omit=dev --audit-level=high",
+    "worker_gate": "npm audit --omit=dev --audit-level=high",
+    "backend_gate": "dotnet list package --vulnerable",
+    "gates": [".github/workflows/nfr-ci.yml", ".github/workflows/web-ci.yml"],
+    "high_runtime_advisories": 0,
+    "scope_note": "The remaining picomatch advisory is confined to the dev build toolchain and remains documented; the runtime-scoped gates hide neither that advisory nor any high advisory."
+  },
+  "dast": {
+    "entry_point": "zap-full-scan.py",
+    "image": "ghcr.io/zaproxy/zaproxy:stable@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af",
+    "harness": "web/scripts/run-dast.mjs (disposable PostgreSQL 17 + API + Vite stack, seeded from the E2E global setup)",
+    "hook": "web/scripts/zap-auth-hook.py",
+    "sessions": [
+      {
+        "role": "admin",
+        "source": "admin.json storageState from createAdminAccount (database promotion plus TOTP enrollment and verification)",
+        "cookie": "Postern.Auth with role=admin and amr=totp",
+        "scan_order": 1,
+        "report": "zap-admin-report.json"
+      },
+      {
+        "role": "user",
+        "source": "user.json storageState from createVerifiedAccount (invite, registration, destination verification and sign-in)",
+        "cookie": "Postern.Auth",
+        "scan_order": 2,
+        "report": "zap-user-report.json"
+      }
+    ],
+    "rules": ["traditional spider", "Ajax spider", "passive scan", "active scan"],
+    "crawled_urls_per_scan": 5,
+    "passing_rules_per_scan": 142,
+    "high_findings": 0,
+    "medium_findings": 0,
+    "documented_environment_exclusions": [
+      {
+        "plugin_id": "10106",
+        "name": "HTTP Only Site",
+        "reason": "The DAST target is a disposable HTTP-only compose stack. TLS termination is a per-environment control recorded by the separate manual review, so this rule is not a defect of the scanned stack."
+      }
+    ],
+    "artifact": "qr1.6-zap-reports"
+  },
+  "medium_review": {
+    "window_days": 30,
+    "implementation": "web/scripts/review-dast-findings.mjs",
+    "mechanism": "One GitHub issue per stable finding fingerprint records first-seen and last-seen dates; a high finding fails immediately, a medium issue older than 30 days fails the nightly job, and a finding no longer observed is closed.",
+    "medium_unresolved_over_30_days": 0
+  },
+  "verdict": "PASS - 0 high runtime dependency advisories, 0 high DAST findings and 0 unexcluded medium DAST findings across seeded admin and user full scans; the 30-day issue-age review is enforced on every nightly run.",
+  "reproduction": [
+    "cd web && npm run test:dast",
+    "cd web && npm run test:dast:review"
+  ],
+  "caveats": [
+    "The ZAP target is an ephemeral HTTP-only compose stack; TLS remains a separate per-environment manual control, and rule 10106 is excluded with that rationale in web/zap/finding-exclusions.json.",
+    "The admin JWT is deliberately limited to 15 minutes, so the admin scan runs first; a future change that lengthens scans beyond that window must re-seed the admin session or add ZAP re-authentication.",
+    "ZAP is a point-in-time dynamic scan of crawled routes; it does not replace manual security review of flows the spider and Ajax spider cannot reach."
+  ]
+}

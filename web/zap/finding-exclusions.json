@@ -1,0 +1,9 @@
+{
+  "exclusions": [
+    {
+      "pluginId": "10106",
+      "name": "HTTP Only Site",
+      "reason": "The DAST target is a disposable HTTP-only compose stack. TLS termination is a per-environment control recorded by the separate manual review, so this rule is not a defect of the scanned stack."
+    }
+  ]
+}
