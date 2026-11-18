@@ -102,10 +102,12 @@ without a build failure.
   `QR4.3-2026-11-18.json` and `QR4.4-2026-11-18.json`.
 - **QR4.3 runtime secrets are provisioned by CD, not stored here.** The `deploy-worker`
   job in `cd.yml` pipes two GitHub secrets into `wrangler secret put` before `wrangler
-  deploy`: `CF_ANALYTICS_ACCOUNT_ID` and `CF_ANALYTICS_API_TOKEN` (a dedicated Cloudflare
-  token with Account > Account Analytics > Read). The job fails if either is unset, so
-  the deployed Worker cannot silently lose its monthly aggregation. Do not reuse the
-  deploy token unless it also has that permission.
+  deploy`: the analytics account ID and `CF_ANALYTICS_API_TOKEN` (a dedicated Cloudflare
+  token with Account > Account Analytics > Read). The account ID is taken from
+  `CF_ANALYTICS_ACCOUNT_ID` when set, otherwise from `CLOUDFLARE_ACCOUNT_ID`, because
+  Analytics Engine lives in the deploy account. The job fails if the ID or the token
+  is unset, so the deployed Worker cannot silently lose its monthly aggregation. Do
+  not reuse the deploy token unless it also has that permission.
 - **QR2.4 evidence predates the outcomes binding.** `QR2.4-2026-11-17.json` was taken on
   the Worker bundle without Analytics Engine writes. Deploying this bundle changes it;
   re-run the production burst and record a fresh evidence file. The Node CPU canary is
@@ -126,12 +128,18 @@ without a build failure.
   `docs`, `scripts`, tests and workflows remain tracked and analyzed. EF-generated
   migration files are excluded from **duplication only** via `sonar.cpd.exclusions`,
   because their repeated scaffolding would otherwise dominate the ≤3% gate; issues and
-  complexity in hand-written migrations are still checked.
-- **QR7.2 gate conditions still live in SonarCloud.** The workflow cannot create them.
-  New Code must have "New high/critical issues = 0", "Duplication ≤ 3%", and rule
-  `S3776` (Cognitive Complexity) active at threshold 15. Until a successful scan with
-  those conditions exists, the matrix QR7.2 row remains `(build)`; this workflow is the
-  harness, not the evidence.
+  complexity in hand-written migrations are still checked. E2E support modules, repo
+  scripts, `playwright.config.ts` and `docs/nfr/**` are excluded from **coverage
+  measurement only** via `sonar.coverage.exclusions`: Sonar indexes them as source, but
+  no coverage report covers them, so their 299 new lines had dragged new-code coverage
+  to 75.4%. They remain analyzed for issues and duplication, and the 80% threshold is
+  unchanged.
+- **QR7.2 gate conditions live in SonarCloud.** The workflow cannot create them. New Code
+  must have "New high/critical issues = 0", "Duplication ≤ 3%", and rule `S3776`
+  (Cognitive Complexity) active at threshold 15. The 18 Nov 2026 main-branch scan passed
+  all six configured conditions, so the matrix QR7.2 row is `(exists)` and the recorded
+  values are in `evidence/QR7.2-2026-11-18.json`. The workflow reports the conditions and
+  open `S3776` issues in the CI log after every scan.
 
 Mail for an unknown recipient is still dropped without a blocked row. That is an
 anti-abuse decision, not a missing test: the alias is unknown, so there is no owner to

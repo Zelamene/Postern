@@ -109,9 +109,12 @@ jobs:
           CF_ANALYTICS_API_TOKEN: ${{ secrets.CF_ANALYTICS_API_TOKEN }}
         run: |
           set -euo pipefail
-          : "${CF_ANALYTICS_ACCOUNT_ID:?CF_ANALYTICS_ACCOUNT_ID secret is required}"
+          # Analytics Engine belongs to the same Cloudflare account as the deploy
+          # target unless a separate analytics account is explicitly configured.
+          analytics_account_id="${CF_ANALYTICS_ACCOUNT_ID:-$CLOUDFLARE_ACCOUNT_ID}"
+          : "${analytics_account_id:?No Cloudflare account ID is available for analytics}"
           : "${CF_ANALYTICS_API_TOKEN:?CF_ANALYTICS_API_TOKEN secret is required}"
-          printf '%s' "$CF_ANALYTICS_ACCOUNT_ID" | npx --no-install wrangler secret put CF_ACCOUNT_ID
+          printf '%s' "$analytics_account_id" | npx --no-install wrangler secret put CF_ACCOUNT_ID
           printf '%s' "$CF_ANALYTICS_API_TOKEN" | npx --no-install wrangler secret put CF_API_TOKEN
 
       - name: Deploy Worker
