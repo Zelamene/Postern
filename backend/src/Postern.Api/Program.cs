@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Threading.RateLimiting;
 using System.Security.Claims;
@@ -314,6 +315,18 @@ if (builder.Environment.IsDevelopment())
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+app.Use(async (context, next) =>
+{
+    var startedAt = Stopwatch.GetTimestamp();
+    context.Response.OnStarting(() =>
+    {
+        var elapsedMs = Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
+        context.Response.Headers.Append("Server-Timing", $"app;dur={elapsedMs:F2}");
+        return Task.CompletedTask;
+    });
+
+    await next();
+});
 app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
