@@ -119,7 +119,7 @@ jobs:
             "-reports:artifacts/**/coverage.cobertura.xml" \
             "-targetdir:artifacts/coverage" \
             "-reporttypes:Html;Cobertura;TextSummary;MarkdownSummaryGithub" \
-            "-filefilters:-**/Migrations/**;-**/PosternDesignTimeDbContextFactory.cs" \
+            "-filefilters:-**/*.Designer.cs;-**/PosternDbContextModelSnapshot.cs;-**/PosternDesignTimeDbContextFactory.cs" \
             "-assemblyfilters:-*.Tests" \
             "-verbosity:Warning"
 
