@@ -22,6 +22,7 @@ Rules this directory follows, learned the hard way on QR2.4:
 | Row | Requirement | Evidence | Result |
 | --- | --- | --- | --- |
 | QR2.4 | <= 10 ms Worker CPU per message at worst-bucket P99; <= 4 KV reads; 0 KV writes per message | `evidence/QR2.4-2026-11-17.json` (Cloudflare `workersInvocationsAdaptive.cpuTimeP99`, production burst, n=30); `worker/test/kv-budget.test.ts` (reads/writes gate) | 2.725 ms P99 (= max at n=30) vs 10 ms; 4 reads / 0 writes |
+| QR7.2 | 0 new high/critical issues; duplication ≤ 3%; cognitive complexity ≤ 15 per function | `evidence/QR7.2-2026-11-18.json` (CI SonarCloud gate, main branch, 18 Nov 2026); `.github/workflows/sonarcloud.yml` | Gate PASSED: 0 new issues, 0.0% duplication, 0 open S3776; 90.0% new-code coverage |
 
 Reproduce the CPU figure with `./collect-qr2.4.ps1 -From <start> -To <end>` (needs
 a token with **Account Analytics: Read**). The script refuses to write evidence if
