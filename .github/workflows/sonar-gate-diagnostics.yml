@@ -40,7 +40,12 @@ jobs:
           data = json.load(sys.stdin)
           rows = []
           for c in data.get("components", []):
-              vals = {m["metric"]: m.get("value", "0") for m in c.get("measures", [])}
+              vals = {}
+              for m in c.get("measures", []):
+                  value = m.get("value")
+                  if value is None and m.get("periods"):
+                      value = m["periods"][0].get("value", "0")
+                  vals[m["metric"]] = value or "0"
               try:
                   tot = int(float(vals.get("new_lines_to_cover", 0)))
                   unc = int(float(vals.get("new_uncovered_lines", 0)))
