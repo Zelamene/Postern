@@ -7,7 +7,9 @@ test('updates and reloads the forwarding destination after verification', async 
   await page.getByLabel('Destination address').fill(forwardingAddress)
   await page.getByRole('button', { name: 'Update destination' }).click()
   await expect(
-    page.getByText('Confirm the new destination from the verification email, then save again.'),
+    page
+      .getByRole('region', { name: 'Forwarding destination' })
+      .getByText('Confirm the new destination from the verification email, then save again.'),
   ).toBeVisible()
 
   const verification = await page.request.post(

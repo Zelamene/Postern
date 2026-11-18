@@ -1,16 +1,19 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '@playwright/test'
 import { createAliasViaUi } from '../support/aliases'
+import { timedTask } from '../support/timing'
 
 test('creates aliases, configures expected senders, copies addresses, and retires aliases', async ({
   page,
 }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
   const label = `shopping-${randomUUID().slice(0, 8)}`
-  const alias = await createAliasViaUi(page, label, {
-    category: 'shopping',
-    expectedSender: 'orders@shop.example',
-  })
+  const alias = await timedTask('create alias', () =>
+    createAliasViaUi(page, label, {
+      category: 'shopping',
+      expectedSender: 'orders@shop.example',
+    }),
+  )
 
   expect(alias.category).toBe('shopping')
   expect(alias.fullAddress).toMatch(/@alias\.postern\.test$/)

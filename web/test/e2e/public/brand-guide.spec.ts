@@ -1,14 +1,12 @@
-import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
-
-const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']
+import { analyzePage } from '../support/a11y'
 
 test('has no WCAG 2.2 AA accessibility violations', async ({ page }) => {
   await page.goto('/brand/')
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('A small gate')
 
-  const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()
+  const results = await analyzePage(page)
 
   expect(results.violations).toEqual([])
 })
@@ -17,7 +15,7 @@ test('has no WCAG 2.2 AA violations in dark mode either', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.goto('/brand/')
 
-  const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()
+  const results = await analyzePage(page)
 
   expect(results.violations).toEqual([])
 })

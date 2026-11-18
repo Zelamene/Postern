@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ThemeMode } from '../types'
 import { RecoveryKeyNotice } from '../components/common/RecoveryKeyNotice'
+import { StaleDataNotice } from '../components/common/StaleDataNotice'
 import { AppHeader } from '../components/app/AppHeader'
 import { AliasActivity } from '../components/app/AliasActivity'
 import { AliasComposer } from '../components/app/AliasComposer'
@@ -165,6 +166,8 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
             {signOutError}
           </p>
         )}
+
+        <StaleDataNotice />
 
         {route.view === 'aliases' && (
           <>

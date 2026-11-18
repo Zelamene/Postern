@@ -1,0 +1,61 @@
+{
+  "requirement": "QR6.2",
+  "requirement_text": "Median core-task completion ≤ 2 min; 100% of journeys pass on a fresh database",
+  "record_type": "Playwright wall-clock timing over five disposable full-stack runs",
+  "recorded_at": "2026-11-18",
+  "recorded_by": "shazi",
+  "status": "PASS",
+  "method": {
+    "runner": "web/scripts/run-e2e.mjs",
+    "database": "fresh PostgreSQL 17-alpine volume per run, EF migrations applied before Playwright",
+    "browser": "Chromium 1248 (Playwright 1.64.1)",
+    "node": "24.21.0",
+    "timing_helper": "web/test/e2e/support/timing.ts",
+    "output": "POSTERN_E2E_TIMING_OUT JSONL, one record per named task per run",
+    "budget_ms": 120000
+  },
+  "runs": {
+    "count": 5,
+    "tests_per_run": 28,
+    "passed": 5,
+    "failed": 0,
+    "pass_rate_percent": 100
+  },
+  "tasks": [
+    {
+      "name": "create alias",
+      "spec": "web/test/e2e/user/aliases.spec.ts",
+      "n": 5,
+      "durations_ms": [1210, 1319, 1323, 1448, 1526],
+      "median_ms": 1323,
+      "max_ms": 1526
+    },
+    {
+      "name": "review activity",
+      "spec": "web/test/e2e/user/activity.spec.ts",
+      "n": 5,
+      "durations_ms": [1831, 1997, 2064, 2335, 3316],
+      "median_ms": 2064,
+      "max_ms": 3316
+    },
+    {
+      "name": "sync KV",
+      "spec": "web/test/e2e/admin/operations.spec.ts",
+      "n": 5,
+      "durations_ms": [514, 531, 588, 701, 848],
+      "median_ms": 588,
+      "max_ms": 848
+    }
+  ],
+  "verdict": "PASS - all 28 journeys passed in 5/5 fresh-database runs; the slowest median core task was 2,064 ms (review activity), well under the two-minute target, and no individual timed task exceeded 3,316 ms.",
+  "reproduction": [
+    "$env:POSTERN_E2E_TIMING_OUT = '<temp>/qr6.2-timings.jsonl'",
+    "for ($i = 1; $i -le 5; $i++) { $env:POSTERN_E2E_TIMING_RUN = \"run-$i\"; npm run test:e2e }",
+    "Compute the median of durationMs per task from the JSONL file."
+  ],
+  "caveats": [
+    "These are browser wall-clock measurements on local disposable infrastructure, not server-side Server-Timing values; the backend emits no Server-Timing header, so QR2.3's 2 s step and 5 s task legs remain separately evidenced.",
+    "The three timed tasks are representative core journeys (alias creation, activity review, admin KV sync); the remaining journeys assert correctness without their own timing budget.",
+    "A fresh database is created for every run, so the pass rate is measured on a cold dataset rather than against accumulated state."
+  ]
+}
