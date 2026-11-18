@@ -56,3 +56,25 @@ jobs:
           for unc, tot, path in sorted(rows, reverse=True)[:40]:
               print(f"{unc:5d}/{tot:5d} uncovered  {path}")
           '
+          echo "=== open vulnerabilities (all severities) ==="
+          curl -sS -u "${SONAR_TOKEN}:" \
+            "https://sonarcloud.io/api/issues/search?projects=${project_key}&branch=main&types=VULNERABILITY&statuses=OPEN,CONFIRMED,REOPENED&ps=500" \
+            | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          print("total:", data.get("total"))
+          for i in data.get("issues", []):
+              print(" | ".join(str(i.get(k, "")) for k in ("key", "severity", "rule", "component", "line", "creationDate")))
+              print("   MSG:", i.get("message", ""))
+          '
+          echo "=== open security hotspots ==="
+          curl -sS -u "${SONAR_TOKEN}:" \
+            "https://sonarcloud.io/api/issues/search?projects=${project_key}&branch=main&types=SECURITY_HOTSPOT&statuses=OPEN,REVIEWED&ps=500" \
+            | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          print("total:", data.get("total"))
+          for i in data.get("issues", []):
+              print(" | ".join(str(i.get(k, "")) for k in ("key", "status", "rule", "component", "line", "creationDate")))
+              print("   MSG:", i.get("message", ""))
+          '
