@@ -8,7 +8,7 @@ id = "2aaa56ee672345cebfed9f65cf47e80d"
 
 [[analytics_engine_datasets]]
 binding = "POSTERN_OUTCOMES"
-dataset = "postern_outcomes"
+dataset = "Postern_NFR_TESTS"
 
 
 [vars]

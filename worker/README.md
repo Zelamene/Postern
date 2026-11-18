@@ -15,7 +15,7 @@ Cloudflare Worker for processing inbound mail via Cloudflare Email Routing.
 
 ## Mail-path outcomes (QR4.3)
 
-Every mail decision writes one Analytics Engine data point to the `postern_outcomes`
+Every mail decision writes one Analytics Engine data point to the `Postern_NFR_TESTS`
 dataset. `index1` is the outcome, `blob1` is the drop reason (empty otherwise), and
 `double1` is 1. Analytics Engine is used instead of KV because the mail path must not
 add a KV write. The binding is optional so local tests and older deployments keep
