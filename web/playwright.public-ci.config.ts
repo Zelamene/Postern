@@ -1,10 +1,11 @@
 import { defineConfig, devices } from '@playwright/test'
 
 // Lightweight public-page a11y gate for PR CI (QR6.1). Runs the existing brand
-// axe scan against a built preview server without the full E2E stack.
+// axe scans against a built preview server without the full E2E stack.
 export default defineConfig({
   testDir: './test/e2e/public',
   testMatch: 'brand-guide.spec.ts',
+  grep: /WCAG 2\.2 AA/,
   fullyParallel: false,
   workers: 1,
   reporter: 'list',
