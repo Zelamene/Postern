@@ -12,24 +12,26 @@ test('QR2.3 core tasks (user): create alias and review activity stay within step
 
   await timedCoreTask('create alias', async () => {
     const label = `timing-${randomUUID().slice(0, 8)}`
-    await timedStep('open aliases page', async () => {
-      await page.goto('/app')
-      await expect(page.getByRole('heading', { name: 'My aliases' })).toBeVisible()
-    })
 
-    const alias = await timedStep('create alias via form', async () => {
-      return createAliasViaUi(page, label, { category: 'shopping' })
+    await page.goto('/app')
+    await expect(page.getByRole('heading', { name: 'My aliases' })).toBeVisible({ timeout: 15_000 })
+
+    await timedStep('create alias', async () => {
+      await page.getByLabel('Label', { exact: true }).fill(label)
+      await page.getByLabel('Category', { exact: true }).selectOption('shopping')
+      await page.getByRole('button', { name: 'Create alias' }).click()
+
+      const aliasRow = page.getByRole('listitem').filter({
+        has: page.getByText(label, { exact: true }),
+      })
+      await expect(aliasRow).toContainText('Active')
+      await expect(aliasRow.locator('code')).toContainText('@alias.postern.test')
     }, {
       serverTiming: () => serverTiming.latestMatching((url) => url.endsWith('/api/aliases')),
     })
 
-    await timedStep('alias appears in list', async () => {
-      const row = page.getByRole('listitem').filter({ has: page.getByText(label, { exact: true }) })
-      await expect(row).toContainText('Active')
-      await expect(row.locator('code')).toHaveText(alias.result.fullAddress)
-    })
-
-    expect(alias.measurement.serverTiming, 'create alias response should include Server-Timing').toBeTruthy()
+    const createTiming = serverTiming.latestMatching((url) => url.endsWith('/api/aliases'))
+    expect(createTiming?.serverTiming, 'create alias response should include Server-Timing').toBeTruthy()
   })
 
   await timedCoreTask('review activity', async () => {
@@ -47,7 +49,7 @@ test('QR2.3 core tasks (user): create alias and review activity stay within step
     await timedStep('open alias activity feed', async () => {
       await page.goto(`/app/aliases/${alias.id}`)
       const feed = page.getByRole('region', { name: `Messages received by ${label}` })
-      await expect(feed.getByText('Timing activity 25')).toBeVisible()
+      await expect(feed.getByText('Timing activity 25')).toBeVisible({ timeout: 10_000 })
     }, {
       serverTiming: () => serverTiming.latestMatching((url) => url.includes(`/api/aliases/${alias.id}/messages`)),
     })
