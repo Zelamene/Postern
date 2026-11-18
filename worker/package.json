@@ -7,10 +7,14 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test:coverage": "vitest run --coverage",
+    "measure:cpu": "vitest run --config vitest.perf.config.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p perf/tsconfig.json"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260702.1",
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-v8": "^5.1.0",
     "typescript": "~5.9.3",
     "vitest": "^5.1.0",
     "wrangler": "^3.78.12"

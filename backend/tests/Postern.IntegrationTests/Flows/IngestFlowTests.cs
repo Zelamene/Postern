@@ -373,6 +373,38 @@ public sealed class IngestFlowTests(PosternFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Ingest_WithConcurrentDuplicateMessageIds_RecordsExactlyOneDelivery()
+    {
+        var user = await fixture.AUserAsync();
+        var alias = await fixture.AnAliasAsync(user.Id);
+        var messageId = $"<race-{Guid.NewGuid():N}@shop.example>";
+        using var worker = _factory.CreateClient();
+
+        object Payload(string subject) => new
+        {
+            recipientAddress = alias.FullAddress,
+            envelopeSender = "orders@shop.example",
+            fromHeader = "Shop <orders@shop.example>",
+            subject,
+            authenticationResult = "pass",
+            messageId
+        };
+
+        var responses = await Task.WhenAll(
+            worker.PostAsJsonAsync("/api/ingest", Payload("first delivery")),
+            worker.PostAsJsonAsync("/api/ingest", Payload("second delivery")));
+
+        Assert.All(
+            responses,
+            response => Assert.True(
+                response.StatusCode is HttpStatusCode.Accepted or HttpStatusCode.OK,
+                $"A concurrent duplicate returned {(int)response.StatusCode}."));
+
+        await using var db = fixture.CreateContext();
+        Assert.Equal(1, await db.Messages.CountAsync(message => message.AliasId == alias.Id));
+    }
+
+    [Fact]
     public async Task Ingest_WithDistinctMessageIds_RecordsEachDelivery()
     {
         var user = await fixture.AUserAsync();

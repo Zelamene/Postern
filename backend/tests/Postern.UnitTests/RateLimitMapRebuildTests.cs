@@ -134,6 +134,36 @@ public class RateLimitMapRebuildTests
         Assert.False(kvWriter.Values.ContainsKey(RateLimitService.KvKey));
     }
 
+    [Fact]
+    public async Task Rebuild_EmitsTheFieldsAndValueTypeDeclaredByTheSharedContract()
+    {
+        var declaration = SharedContractFixture.Load("kv-records.json")
+            .GetProperty("maps")
+            .GetProperty(RateLimitService.KvKey);
+        var userIds = declaration.GetProperty("example")
+            .GetProperty("users")
+            .EnumerateObject()
+            .Select(property => Guid.Parse(property.Name))
+            .ToArray();
+        var repository = new CountingActivityRepository(
+            userIds.ToDictionary(id => id, _ => RateLimitService.DailyForwardingLimit + 1));
+        var kvWriter = new InMemoryKvWriter();
+        var service = new RateLimitService(repository, kvWriter, new FixedTimeProvider(Now));
+
+        await service.RebuildRateLimitedUsersAsync(CancellationToken.None);
+
+        var payload = JsonDocument.Parse(kvWriter.Values[RateLimitService.KvKey]).RootElement;
+        SharedContractFixture.AssertEmitsDeclaredFields(payload, declaration, RateLimitService.KvKey);
+        var users = payload.GetProperty("users");
+        Assert.Equal(userIds.Length, users.GetPropertyCount());
+        foreach (var id in userIds)
+        {
+            var liftedAt = users.GetProperty(id.ToString());
+            Assert.Equal(JsonValueKind.Number, liftedAt.ValueKind);
+            Assert.True(liftedAt.GetInt64() > Now.ToUnixTimeSeconds());
+        }
+    }
+
     private static JsonElement ReadUsers(InMemoryKvWriter kvWriter)
     {
         var json = kvWriter.Values[RateLimitService.KvKey];

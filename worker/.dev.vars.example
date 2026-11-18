@@ -3,3 +3,8 @@ API_BASE_URL=http://localhost:8080
 POSTERN_DOMAIN=postern.local
 INGEST_SECRET=replace-with-local-ingest-secret
 JOB_SECRET=replace-with-local-job-secret
+# Only needed for the monthly outcomes aggregation. Create a Cloudflare API token
+# with Account > Account Analytics > Read. In production the CD workflow writes the
+# Worker secrets from GitHub secrets CF_ANALYTICS_ACCOUNT_ID / CF_ANALYTICS_API_TOKEN.
+CF_ACCOUNT_ID=
+CF_API_TOKEN=

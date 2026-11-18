@@ -127,6 +127,24 @@ jobs:
           cat artifacts/coverage/Summary.txt
           cat artifacts/coverage/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Enforce line coverage threshold
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ ! -f artifacts/coverage/Cobertura.xml ]; then
+            echo "No merged coverage report is present, so the threshold cannot be enforced." >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import sys
+          import xml.etree.ElementTree as ElementTree
+
+          root = ElementTree.parse('artifacts/coverage/Cobertura.xml').getroot()
+          rate = float(root.get('line-rate', '0')) * 100
+          print(f'Backend line coverage: {rate:.2f}% (required: 85.00%)')
+          sys.exit(0 if rate >= 85 else 1)
+          PY
+
       - name: Upload test and coverage reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

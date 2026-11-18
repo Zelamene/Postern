@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <None Include="../../../shared/etld1-cases.json" Link="etld1-cases.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../../shared/blocked-reasons.json" Link="blocked-reasons.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

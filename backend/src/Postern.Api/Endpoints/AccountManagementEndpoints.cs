@@ -79,8 +79,17 @@ public static class AccountManagementEndpoints
             return Results.Unauthorized();
         }
 
-        var success = await service.DeleteAccountAsync(userId.Value, cancellationToken);
-        if (!success)
+        var result = await service.DeleteAccountAsync(userId.Value, cancellationToken);
+        if (result == DeleteAccountResult.AuditAttributionRequired)
+        {
+            return Results.Conflict(new
+            {
+                error = "audit_attribution_required",
+                message = "This account is named on audit records, so it cannot be deleted."
+            });
+        }
+
+        if (result == DeleteAccountResult.NotFound)
         {
             return Results.NotFound();
         }

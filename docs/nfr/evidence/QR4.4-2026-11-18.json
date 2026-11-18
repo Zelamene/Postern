@@ -1,0 +1,32 @@
+{
+  "requirement": "QR4.4",
+  "requirement_text": "Nightly maintenance completes at least every 26 h; a missed run alerts within one grace window",
+  "record_type": "first-window record",
+  "recorded_at": "2026-11-18",
+  "recorded_by": "shazi",
+  "heartbeat": {
+    "provider": "Better Stack",
+    "name": "Postern nightly maintenance (03:05 UTC)",
+    "schedule_cron": "5 3 * * *",
+    "period_hours": 24,
+    "grace_hours": 2,
+    "effective_deadline_hours": 26,
+    "first_ping": "2026-11-17",
+    "ping_source": "HttpJobHeartbeat, called only after the maintenance audit entry is committed",
+    "configuration": "Healthchecks__PingUrl (Worker env / Render secret); URL itself is not stored in the repo"
+  },
+  "first_full_30_day_window": {
+    "from": "2026-11-17T00:00:00Z",
+    "to": "2026-12-17T00:00:00Z",
+    "readable_on": "2026-12-17"
+  },
+  "repo_backed_checks": [
+    "backend/tests/Postern.IntegrationTests/Integrations/HttpJobHeartbeatTests.cs (4 tests)",
+    "backend/tests/Postern.UnitTests/NightlyMaintenanceServiceTests.cs (heartbeat fires once per completed run)",
+    "worker/test/index.test.ts (the 5 3 * * * trigger posts to /api/jobs/nightly)"
+  ],
+  "caveats": [
+    "The heartbeat is configured outside the repository; source can evidence the ping and its tests, not the alert delivery.",
+    "No missed runs can be claimed until the first full window closes; the matrix actual stays 'first ping 17 Nov 2026'."
+  ]
+}

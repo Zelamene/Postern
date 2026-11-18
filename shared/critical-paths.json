@@ -1,0 +1,40 @@
+{
+  "description": "The five end-to-end journeys that QR7.1 tracks. Each entry names the integration test that guards the journey. CriticalPathInventoryTests asserts every name resolves to a live, unskipped test in this assembly, so renaming or deleting one of these tests fails the build instead of silently shrinking the gate. Add a path only when its test exercises the real API and database.",
+  "paths": [
+    {
+      "id": "account-lifecycle",
+      "description": "Register with an invite, verify the destination, log in, recover, and log out.",
+      "tests": [
+        "Postern.IntegrationTests.Flows.AuthenticationEndpointsTests.RegistrationVerificationLoginRecoveryAndLogoutWorkEndToEnd"
+      ]
+    },
+    {
+      "id": "invite-administration",
+      "description": "An admin approves an invite request, which produces a protected outbox entry, and a resend rotates the invite.",
+      "tests": [
+        "Postern.IntegrationTests.Modules.InviteDeliveryEndpointsTests.AdminApprovalCreatesProtectedOutboxAndResendRotatesInvite"
+      ]
+    },
+    {
+      "id": "alias-create-to-kv-publish",
+      "description": "Creating an alias mints an address and publishes the owner's destination to the Worker's KV namespace.",
+      "tests": [
+        "Postern.IntegrationTests.Modules.AliasEndpointsTests.Create_PublishesAliasRecordWithOwnerDestination"
+      ]
+    },
+    {
+      "id": "mail-ingest-to-activity",
+      "description": "The Worker's ingest call records a message that the owner can then read back.",
+      "tests": [
+        "Postern.IntegrationTests.Flows.IngestFlowTests.Ingest_FromExpectedSender_IsAcceptedAndReadableAsUnflagged"
+      ]
+    },
+    {
+      "id": "account-isolation",
+      "description": "A request for another account's alias is refused rather than answered.",
+      "tests": [
+        "Postern.IntegrationTests.Modules.ActivityEndpointsTests.Messages_ForForeignAlias_ReturnNotFound"
+      ]
+    }
+  ]
+}

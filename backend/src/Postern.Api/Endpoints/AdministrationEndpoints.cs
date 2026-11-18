@@ -1,9 +1,11 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Postern.Api.Notifications;
 using Postern.Api.Realtime;
 using Postern.Application.Accounts;
 using Postern.Application.Administration;
+using Postern.Domain.Administration;
 using Postern.Domain.Notifications;
 
 namespace Postern.Api.Endpoints;
@@ -28,12 +30,32 @@ public static class AdministrationEndpoints
     }
 
     private static async Task<IResult> RebuildSuspendedUsersAsync(
+        ClaimsPrincipal user,
         SuspendedUserService service,
+        IAdministrationRepository administration,
+        TimeProvider timeProvider,
         IAdminRealtimeNotifier realtimeNotifier,
         INotificationPublisher notifications,
         CancellationToken cancellationToken)
     {
-        await service.RebuildAsync(cancellationToken);
+        var adminUserId = GetCurrentUserId(user);
+        if (adminUserId is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var suspendedCount = await service.RebuildAsync(cancellationToken);
+        await administration.RecordAuditEntryAsync(
+            new AdminAuditLogEntry
+            {
+                Id = Guid.NewGuid(),
+                AdminUserId = adminUserId,
+                Action = "suspended_users.rebuild",
+                TargetId = null,
+                Metadata = JsonSerializer.Serialize(new { suspendedUsers = suspendedCount }),
+                CreatedAt = timeProvider.GetUtcNow()
+            },
+            cancellationToken);
         await realtimeNotifier.OperationsChangedAsync();
         await notifications.PublishAdminAsync(
             NotificationKind.SuspendedUsersRebuilt,

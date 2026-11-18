@@ -144,7 +144,11 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
             FlagReason = flagReason
         };
 
-        await activityRepository.RecordMessageAsync(message, cancellationToken);
+        if (!await activityRepository.TryRecordMessageAsync(message, cancellationToken))
+        {
+            return new IngestOutcome(IngestResult.Duplicate, alias.Id, alias.UserId);
+        }
+
         return new IngestOutcome(IngestResult.Accepted, alias.Id, alias.UserId);
     }
 

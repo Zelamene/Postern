@@ -9,6 +9,14 @@ public sealed class RecordingKvWriter : IKvWriter
 
     public bool ShouldFail { get; set; }
 
+    public int PutCount { get; private set; }
+
+    public int DeleteCount { get; private set; }
+
+    private readonly ConcurrentDictionary<string, int> _putCountsByKey = new(StringComparer.Ordinal);
+
+    public int PutsFor(string key) => _putCountsByKey.GetValueOrDefault(key);
+
     public IReadOnlyDictionary<string, string> Values => _values;
 
     public Task PutAsync(string key, string jsonValue, CancellationToken cancellationToken)
@@ -20,6 +28,8 @@ public sealed class RecordingKvWriter : IKvWriter
         }
 
         _values[key] = jsonValue;
+        PutCount += 1;
+        _putCountsByKey.AddOrUpdate(key, 1, (_, count) => count + 1);
         return Task.CompletedTask;
     }
 
@@ -31,7 +41,11 @@ public sealed class RecordingKvWriter : IKvWriter
             throw new InvalidOperationException("The recording KV writer is configured to fail.");
         }
 
-        _values.TryRemove(key, out _);
+        if (_values.TryRemove(key, out _))
+        {
+            DeleteCount += 1;
+        }
+
         return Task.CompletedTask;
     }
 

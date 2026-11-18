@@ -26,9 +26,25 @@ jobs:
     permissions:
       contents: read
 
+  nfr:
+    name: NFR
+    needs: [backend, web]
+    uses: ./.github/workflows/nfr-ci.yml
+    permissions:
+      contents: read
+
+  sonarcloud:
+    name: SonarCloud
+    needs: [backend, web, nfr]
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.fork == false
+    uses: ./.github/workflows/sonarcloud.yml
+    permissions:
+      contents: read
+    secrets: inherit
+
   deploy:
     name: Deploy
-    needs: [backend, web]
+    needs: [backend, web, nfr, sonarcloud]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/cd.yml
     permissions:

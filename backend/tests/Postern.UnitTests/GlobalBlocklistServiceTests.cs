@@ -36,6 +36,31 @@ public class GlobalBlocklistServiceTests
         Assert.Empty(ReadDomains(kvWriter));
     }
 
+    [Fact]
+    public async Task Rebuild_EmitsTheFieldsDeclaredByTheSharedContract()
+    {
+        var declaration = SharedContractFixture.Load("kv-records.json")
+            .GetProperty("maps")
+            .GetProperty(GlobalBlocklistService.KvKey);
+        var domains = declaration.GetProperty("example")
+            .GetProperty("domains")
+            .EnumerateArray()
+            .Select(domain => domain.GetString()!)
+            .ToArray();
+        var administration = new InMemoryAdministrationRepository();
+        foreach (var domain in domains)
+        {
+            administration.Seed(ADomain(domain));
+        }
+        var kvWriter = new InMemoryKvWriter();
+
+        await new GlobalBlocklistService(administration, kvWriter).RebuildAsync(CancellationToken.None);
+
+        var payload = JsonDocument.Parse(kvWriter.Values[GlobalBlocklistService.KvKey]).RootElement;
+        SharedContractFixture.AssertEmitsDeclaredFields(payload, declaration, GlobalBlocklistService.KvKey);
+        Assert.Equal(domains, ReadDomains(kvWriter));
+    }
+
     private static List<string> ReadDomains(InMemoryKvWriter kvWriter)
     {
         var json = kvWriter.Values[GlobalBlocklistService.KvKey];

@@ -9,7 +9,7 @@ public sealed class SuspendedUserService(IAccountRepository accounts, IKvWriter 
 
     private static readonly SemaphoreSlim WriterLock = new(1, 1);
 
-    public async Task RebuildAsync(CancellationToken cancellationToken)
+    public async Task<int> RebuildAsync(CancellationToken cancellationToken)
     {
         await WriterLock.WaitAsync(cancellationToken);
         try
@@ -21,6 +21,8 @@ public sealed class SuspendedUserService(IAccountRepository accounts, IKvWriter 
                 KvKey,
                 JsonSerializer.Serialize(new { users }),
                 cancellationToken);
+
+            return users.Count;
         }
         finally
         {

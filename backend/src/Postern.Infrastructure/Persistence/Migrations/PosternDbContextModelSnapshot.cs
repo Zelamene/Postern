@@ -557,8 +557,6 @@ namespace Postern.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AdminUserId");
-
                     b.HasIndex("CreatedAt")
                         .HasDatabaseName("ix_admin_audit_log_created_at");
 
@@ -854,15 +852,6 @@ namespace Postern.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_messages_aliases_alias_id");
 
                     b.Navigation("Alias");
-                });
-
-            modelBuilder.Entity("Postern.Domain.Administration.AdminAuditLogEntry", b =>
-                {
-                    b.HasOne("Postern.Domain.Accounts.PosternUser", null)
-                        .WithMany()
-                        .HasForeignKey("AdminUserId")
-                        .OnDelete(DeleteBehavior.SetNull)
-                        .HasConstraintName("fk_admin_audit_log_users_admin_user_id");
                 });
 
             modelBuilder.Entity("Postern.Domain.Administration.GlobalBlockedDomain", b =>

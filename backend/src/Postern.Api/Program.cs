@@ -168,6 +168,8 @@ builder.Services.AddScoped<AliasService>();
 builder.Services.AddScoped<IngestService>();
 builder.Services.AddScoped<ActivityService>();
 builder.Services.AddScoped<RateLimitService>();
+builder.Services.AddSingleton<IProjectionTicker>(
+    _ => new PeriodicProjectionTicker(RateLimitProjectionWorker.RefreshInterval));
 builder.Services.AddHostedService<RateLimitProjectionWorker>();
 builder.Services.AddScoped<SuspendedUserService>();
 builder.Services.AddScoped<GlobalBlocklistService>();

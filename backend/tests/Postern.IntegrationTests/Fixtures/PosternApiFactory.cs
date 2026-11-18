@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -58,6 +60,12 @@ public sealed class PosternApiFactory : WebApplicationFactory<Program>
 
     public DevelopmentDestinationService Destinations =>
         (DevelopmentDestinationService)Services.GetRequiredService<IDestinationService>();
+
+
+    public IReadOnlyList<Endpoint> Endpoints =>
+        Services.GetServices<EndpointDataSource>()
+            .SelectMany(source => source.Endpoints)
+            .ToList();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

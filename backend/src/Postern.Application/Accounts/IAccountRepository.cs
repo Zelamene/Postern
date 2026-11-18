@@ -83,6 +83,13 @@ public interface IAccountRepository
 
     Task<IReadOnlyCollection<Guid>> ListSuspendedUserIdsAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// True when the user is the attributed actor on an audit row. Deleting such a
+    /// user would destroy audit attribution, so the account deletion path refuses it.
+    /// </summary>
+    Task<bool> HasAuditAttributionAsync(Guid userId, CancellationToken cancellationToken) =>
+        Task.FromResult(false);
+
     Task<bool> SetStatusAsync(Guid userId, string status, CancellationToken cancellationToken);
 
     Task AddInviteAsync(InviteCode invite, CancellationToken cancellationToken);

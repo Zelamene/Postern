@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Postern.Application.Activity;
 using Postern.Domain.Activity;
 using Postern.Domain.Aliases;
@@ -28,6 +29,28 @@ public sealed class EfActivityRepository(PosternDbContext dbContext) : IActivity
         await dbContext.SaveChangesAsync(cancellationToken);
         return message;
     }
+
+    public async Task<bool> TryRecordMessageAsync(Message message, CancellationToken cancellationToken)
+    {
+        dbContext.Messages.Add(message);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException exception) when (IsDuplicateMessageId(exception))
+        {
+            dbContext.Entry(message).State = EntityState.Detached;
+            return false;
+        }
+    }
+
+    private static bool IsDuplicateMessageId(DbUpdateException exception) =>
+        exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "ux_messages_alias_id_message_id"
+        };
 
     public async Task<BlockedMessage> RecordBlockedMessageAsync(BlockedMessage blockedMessage, CancellationToken cancellationToken)
     {
@@ -62,8 +85,24 @@ public sealed class EfActivityRepository(PosternDbContext dbContext) : IActivity
         };
 
         dbContext.ExpectedSenders.Add(entry);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsDuplicateExpectedSender(exception))
+        {
+            // A concurrent delivery from the same sender already recorded it.
+            dbContext.Entry(entry).State = EntityState.Detached;
+        }
     }
+
+    private static bool IsDuplicateExpectedSender(DbUpdateException exception) =>
+        exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "ux_expected_senders_alias_id_sender_address"
+                or "ux_expected_senders_alias_id_sender_etld1"
+        };
 
     public async Task<IReadOnlyDictionary<Guid, int>> CountForwardedMessagesPerUserAsync(
         DateTimeOffset receivedAfter,

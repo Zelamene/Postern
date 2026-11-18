@@ -1,0 +1,10 @@
+{
+  "description": "Reason codes the mail Worker writes to blocked_messages when it refuses to forward a message for a known alias. Consumed by worker/test/index.test.ts (every code has a producing path) and by the API suite (every code round-trips into a blocked row). Mail for an unknown recipient is dropped before an alias is known and is deliberately not recorded, so it is outside this list.",
+  "reasons": [
+    "disabled_or_replaced",
+    "rate_limited",
+    "global_blocklist",
+    "blocked_sender",
+    "suspended_user"
+  ]
+}

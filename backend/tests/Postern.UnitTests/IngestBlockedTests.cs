@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Postern.Application.Activity;
 using Postern.Application.Aliases;
 using Postern.Domain.Activity;
@@ -8,6 +9,49 @@ namespace Postern.UnitTests;
 public class IngestBlockedTests
 {
     private static readonly Guid AliasId = Guid.NewGuid();
+
+    /// <summary>
+    /// Every reason the Worker can emit, read from the shared cross-runtime fixture.
+    /// worker/test/index.test.ts asserts its BLOCKED_REASONS object equals this list, so a
+    /// new drop path that is not represented here fails the Worker suite first.
+    /// </summary>
+    public static IEnumerable<object[]> SharedBlockedReasons()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "blocked-reasons.json");
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException($"Missing shared fixture at {path}.");
+        }
+
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        foreach (var reason in document.RootElement.GetProperty("reasons").EnumerateArray())
+        {
+            yield return [reason.GetString()!];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SharedBlockedReasons))]
+    public async Task EverySharedBlockedReason_IsRecordedVerbatim(string reason)
+    {
+        var repository = new RecordingActivityRepository();
+        var service = new IngestService(repository, TimeProvider.System);
+
+        var result = await service.IngestAsync(
+            new IngestRequest(
+                "shop.abcd@postern.local",
+                "promo@spamco.ru",
+                "Promo <promo@spamco.ru>",
+                "buy now",
+                "pass",
+                Blocked: true,
+                Reason: reason),
+            CancellationToken.None);
+
+        Assert.Equal(IngestResult.Blocked, result);
+        Assert.Empty(repository.Messages);
+        Assert.Equal(reason, Assert.Single(repository.BlockedMessages).Reason);
+    }
 
     [Fact]
     public async Task BlockedDecision_RecordsBlockedMessageInsteadOfMessage()

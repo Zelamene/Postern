@@ -1,0 +1,158 @@
+name: SonarCloud
+
+on:
+  workflow_call:
+    secrets:
+      SONAR_TOKEN:
+        required: true
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonarcloud-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+
+jobs:
+  analyze:
+    name: Analyze and wait for quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Setup Java
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Download backend coverage
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: backend-test-reports
+          path: .
+
+      - name: Download web coverage
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: web-coverage
+          path: web
+
+      - name: Download worker coverage
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: worker-coverage
+          path: worker
+
+      - name: Normalize coverage report paths
+        run: |
+          set -euo pipefail
+
+          backend_report=$(find . -type f -name Cobertura.xml -not -path './node_modules/*' -print -quit)
+          if [ -z "$backend_report" ]; then
+            echo "::error::No backend Cobertura.xml was found in the backend-test-reports artifact."
+            exit 1
+          fi
+          mkdir -p artifacts/coverage
+          if [ "$backend_report" != "artifacts/coverage/Cobertura.xml" ]; then
+            cp "$backend_report" artifacts/coverage/Cobertura.xml
+          fi
+
+          for project in web worker; do
+            report=$(find "$project" -type f -name lcov.info -print -quit)
+            if [ -z "$report" ]; then
+              echo "::error::No lcov.info was found for $project."
+              exit 1
+            fi
+            mkdir -p "$project/coverage"
+            if [ "$report" != "$project/coverage/lcov.info" ]; then
+              cp "$report" "$project/coverage/lcov.info"
+            fi
+          done
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import sys
+
+          for project in ("web", "worker"):
+              path = Path(project) / "coverage" / "lcov.info"
+              lines = []
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  if line.startswith("SF:"):
+                      source = line[3:].replace("\\", "/")
+                      if not source.startswith("/"):
+                          source = f"{project}/{source}"
+                      line = f"SF:{source}"
+                      if not Path(source).is_file():
+                          print(f"::error::Coverage source not found for {project}: {source}")
+                          sys.exit(1)
+                  lines.append(line)
+              path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+
+          test -s artifacts/coverage/Cobertura.xml
+          test -s web/coverage/lcov.info
+          test -s worker/coverage/lcov.info
+
+      - name: Install SonarScanner for .NET
+        run: |
+          set -euo pipefail
+          : "${SONAR_TOKEN:?SONAR_TOKEN is required}"
+          dotnet tool install dotnet-sonarscanner \
+            --version 12.1.0 \
+            --tool-path "$RUNNER_TEMP/sonar-scanner"
+          echo "$RUNNER_TEMP/sonar-scanner" >> "$GITHUB_PATH"
+
+      - name: Restore backend dependencies
+        run: dotnet restore backend/Postern.slnx
+
+      - name: Analyze with SonarCloud
+        env:
+          SCANNER: ${{ runner.temp }}/sonar-scanner/dotnet-sonarscanner
+        run: |
+          set -euo pipefail
+          repo_key="${GITHUB_REPOSITORY//\//_}"
+          project_key="${SONAR_PROJECT_KEY:-$repo_key}"
+          organization="${SONAR_ORGANIZATION:-${GITHUB_REPOSITORY_OWNER,,}}"
+
+          echo "SonarCloud project: $organization/$project_key"
+
+          "$SCANNER" begin \
+            "/k:$project_key" \
+            "/o:$organization" \
+            "/d:sonar.token=$SONAR_TOKEN" \
+            /d:sonar.scanner.scanAll=true \
+            /d:sonar.sourceEncoding=UTF-8 \
+            "/d:sonar.exclusions=**/bin/**,**/obj/**,**/node_modules/**,**/coverage/**,**/artifacts/**,**/dist/**,**/.sonarqube/**" \
+            "/d:sonar.cpd.exclusions=**/Migrations/**,**/*.Designer.cs,**/PosternDbContextModelSnapshot.cs" \
+            "/d:sonar.cs.cobertura.reportsPaths=$PWD/artifacts/coverage/Cobertura.xml" \
+            "/d:sonar.javascript.lcov.reportPaths=$PWD/web/coverage/lcov.info,$PWD/worker/coverage/lcov.info" \
+            /d:sonar.qualitygate.wait=true \
+            /d:sonar.qualitygate.timeout=300
+
+          dotnet build backend/Postern.slnx \
+            --configuration Release \
+            --no-restore \
+            --no-incremental \
+            --disable-build-servers
+
+          "$SCANNER" end "/d:sonar.token=$SONAR_TOKEN"

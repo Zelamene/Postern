@@ -11,6 +11,17 @@ public enum ForwardingChangeResult
     NotFound
 }
 
+public enum DeleteAccountResult
+{
+    Deleted,
+    NotFound,
+    /// <summary>
+    /// The account is the attributed actor on at least one audit row. Deleting it
+    /// would erase who performed those administrative actions.
+    /// </summary>
+    AuditAttributionRequired
+}
+
 public sealed class AccountManagementService(
     IAccountRepository accounts,
     IAliasRepository aliases,
@@ -80,14 +91,19 @@ public sealed class AccountManagementService(
         return ForwardingChangeResult.Success;
     }
 
-    public async Task<bool> DeleteAccountAsync(
+    public async Task<DeleteAccountResult> DeleteAccountAsync(
         Guid userId,
         CancellationToken cancellationToken)
     {
+        if (await accounts.HasAuditAttributionAsync(userId, cancellationToken))
+        {
+            return DeleteAccountResult.AuditAttributionRequired;
+        }
+
         var user = await accounts.FindByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return false;
+            return DeleteAccountResult.NotFound;
         }
 
         foreach (var alias in user.Aliases.ToList())
@@ -112,7 +128,9 @@ public sealed class AccountManagementService(
         {
         }
 
-        return await accounts.DeleteAccountAsync(userId, timeProvider.GetUtcNow(), cancellationToken);
+        return await accounts.DeleteAccountAsync(userId, timeProvider.GetUtcNow(), cancellationToken)
+            ? DeleteAccountResult.Deleted
+            : DeleteAccountResult.NotFound;
     }
 
     private async Task RepublishAliasesAsync(
