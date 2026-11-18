@@ -218,12 +218,13 @@ export class DisposableStack {
     )
   }
 
-  async startWebServer(port, environment, mode = 'development') {
+  async startWebServer(port, environment, mode = 'development', configFile) {
     const viteEntry = path.join(webDirectory, 'node_modules', 'vite', 'bin', 'vite.js')
     const viteArgs =
       mode === 'preview'
         ? [viteEntry, 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort']
         : [viteEntry, '--host', '127.0.0.1', '--port', String(port), '--strictPort']
+    if (configFile) viteArgs.push('--config', configFile)
     const label = mode === 'preview' ? 'Vite preview' : 'Vite'
     this.webProcess = spawn(process.execPath, viteArgs, {
       cwd: webDirectory,

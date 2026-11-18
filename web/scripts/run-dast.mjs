@@ -112,7 +112,7 @@ await runDisposable({
     await run(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'], {
       cwd: webDirectory,
     })
-    await stack.startWebServer(webPort, webEnvironment, 'preview')
+    await stack.startWebServer(webPort, webEnvironment, 'preview', 'scripts/vite.dast.config.ts')
     await stack.runPlaywright('playwright.dast-seed.config.ts', webEnvironment)
 
     await copyFile(
