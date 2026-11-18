@@ -8,6 +8,11 @@ namespace Postern.Infrastructure.Persistence.Migrations
     /// <inheritdoc />
     public partial class InitialSchema : Migration
     {
+        private static readonly string[] AliasUserStatusColumns = new[] { "user_id", "status" };
+        private static readonly string[] BlockedMessageAliasReceivedColumns = new[] { "alias_id", "received_at" };
+        private static readonly string[] ExpectedSenderAliasEtld1Columns = new[] { "alias_id", "sender_etld1" };
+        private static readonly string[] MessageAliasReceivedColumns = new[] { "alias_id", "received_at" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -244,7 +249,7 @@ namespace Postern.Infrastructure.Persistence.Migrations
                 name: "ix_aliases_user_id_status",
                 schema: "postern",
                 table: "aliases",
-                columns: new[] { "user_id", "status" });
+                columns: AliasUserStatusColumns);
 
             migrationBuilder.CreateIndex(
                 name: "ux_aliases_full_address_hash",
@@ -257,13 +262,13 @@ namespace Postern.Infrastructure.Persistence.Migrations
                 name: "ix_blocked_messages_alias_id_received_at",
                 schema: "postern",
                 table: "blocked_messages",
-                columns: new[] { "alias_id", "received_at" });
+                columns: BlockedMessageAliasReceivedColumns);
 
             migrationBuilder.CreateIndex(
                 name: "ux_expected_senders_alias_id_sender_etld1",
                 schema: "postern",
                 table: "expected_senders",
-                columns: new[] { "alias_id", "sender_etld1" },
+                columns: ExpectedSenderAliasEtld1Columns,
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -283,7 +288,7 @@ namespace Postern.Infrastructure.Persistence.Migrations
                 name: "ix_messages_alias_id_received_at",
                 schema: "postern",
                 table: "messages",
-                columns: new[] { "alias_id", "received_at" });
+                columns: MessageAliasReceivedColumns);
 
             migrationBuilder.CreateIndex(
                 name: "IX_users_invite_code_used_id",

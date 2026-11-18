@@ -7,6 +7,8 @@ namespace Postern.Infrastructure.Persistence.Migrations
     /// <inheritdoc />
     public partial class AddMessageIdDedupe : Migration
     {
+        private static readonly string[] MessageAliasMessageIdColumns = new[] { "alias_id", "message_id" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -22,7 +24,7 @@ namespace Postern.Infrastructure.Persistence.Migrations
                 name: "ux_messages_alias_id_message_id",
                 schema: "postern",
                 table: "messages",
-                columns: new[] { "alias_id", "message_id" },
+                columns: MessageAliasMessageIdColumns,
                 unique: true,
                 filter: "message_id IS NOT NULL");
         }

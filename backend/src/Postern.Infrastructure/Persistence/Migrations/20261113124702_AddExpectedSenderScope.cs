@@ -7,6 +7,9 @@ namespace Postern.Infrastructure.Persistence.Migrations
     /// <inheritdoc />
     public partial class AddExpectedSenderScope : Migration
     {
+        private static readonly string[] ExpectedSenderAliasAddressColumns = new[] { "alias_id", "sender_address" };
+        private static readonly string[] ExpectedSenderAliasEtld1Columns = new[] { "alias_id", "sender_etld1" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -35,7 +38,7 @@ namespace Postern.Infrastructure.Persistence.Migrations
                 name: "ux_expected_senders_alias_id_sender_address",
                 schema: "postern",
                 table: "expected_senders",
-                columns: new[] { "alias_id", "sender_address" },
+                columns: ExpectedSenderAliasAddressColumns,
                 unique: true,
                 filter: "sender_address IS NOT NULL");
 
@@ -43,7 +46,7 @@ namespace Postern.Infrastructure.Persistence.Migrations
                 name: "ux_expected_senders_alias_id_sender_etld1",
                 schema: "postern",
                 table: "expected_senders",
-                columns: new[] { "alias_id", "sender_etld1" },
+                columns: ExpectedSenderAliasEtld1Columns,
                 unique: true,
                 filter: "sender_address IS NULL");
         }
@@ -75,7 +78,7 @@ namespace Postern.Infrastructure.Persistence.Migrations
                 name: "ux_expected_senders_alias_id_sender_etld1",
                 schema: "postern",
                 table: "expected_senders",
-                columns: new[] { "alias_id", "sender_etld1" },
+                columns: ExpectedSenderAliasEtld1Columns,
                 unique: true);
         }
     }

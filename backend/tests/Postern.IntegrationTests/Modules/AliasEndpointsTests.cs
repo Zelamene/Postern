@@ -11,6 +11,8 @@ namespace Postern.IntegrationTests.Modules;
 [Collection(IntegrationCollection.Name)]
 public sealed class AliasEndpointsTests(PosternFixture fixture) : IAsyncLifetime
 {
+    private static readonly string[] ExpectedCopiedSenderEtld1 = new[] { "shop.example" };
+
     private PosternApiFactory _factory = null!;
 
     public Task InitializeAsync()
@@ -144,7 +146,7 @@ public sealed class AliasEndpointsTests(PosternFixture fixture) : IAsyncLifetime
         var user = await fixture.AUserAsync();
         var alias = await fixture.AnAliasAsync(user.Id);
         var kv = new RecordingKvWriter();
-        kv.PutAsync(alias.FullAddress!.ToLowerInvariant(), "{}", CancellationToken.None).GetAwaiter().GetResult();
+        await kv.PutAsync(alias.FullAddress!.ToLowerInvariant(), "{}", CancellationToken.None);
         using var factory = new PosternApiFactory(fixture, kv);
         using var client = factory.CreateAuthenticatedClient(user.Id, user.Email);
 
@@ -323,7 +325,7 @@ public sealed class AliasEndpointsTests(PosternFixture fixture) : IAsyncLifetime
             .Where(sender => sender.AliasId == replacement.Id)
             .Select(sender => sender.SenderEtld1)
             .ToListAsync();
-        Assert.Equal(new[] { "shop.example" }, copied);
+        Assert.Equal(ExpectedCopiedSenderEtld1, copied);
     }
 
     [Fact]
@@ -364,7 +366,7 @@ public sealed class AliasEndpointsTests(PosternFixture fixture) : IAsyncLifetime
             .Where(sender => sender.AliasId == replacement.Id)
             .Select(sender => sender.SenderEtld1)
             .ToListAsync();
-        Assert.Equal(new[] { "shop.example" }, copied);
+        Assert.Equal(ExpectedCopiedSenderEtld1, copied);
     }
 
     [Fact]

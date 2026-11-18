@@ -96,7 +96,7 @@ jobs:
           cache: npm
           cache-dependency-path: worker/package-lock.json
 
-      - run: npm ci
+      - run: npm ci --ignore-scripts
         working-directory: worker
 
       - run: npm run test:coverage

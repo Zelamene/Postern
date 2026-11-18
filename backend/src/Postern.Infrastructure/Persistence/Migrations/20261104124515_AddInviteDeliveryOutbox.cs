@@ -8,6 +8,8 @@ namespace Postern.Infrastructure.Persistence.Migrations
     /// <inheritdoc />
     public partial class AddInviteDeliveryOutbox : Migration
     {
+        private static readonly string[] InviteOutboxPendingColumns = new[] { "status", "next_attempt_at", "created_at" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -158,7 +160,7 @@ namespace Postern.Infrastructure.Persistence.Migrations
                 name: "ix_invite_email_outbox_pending",
                 schema: "postern",
                 table: "invite_email_outbox",
-                columns: new[] { "status", "next_attempt_at", "created_at" });
+                columns: InviteOutboxPendingColumns);
 
             migrationBuilder.CreateIndex(
                 name: "ix_invite_requests_requested_at",

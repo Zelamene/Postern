@@ -122,7 +122,7 @@ public sealed class AdminAnalyticsService(
             ? DefaultMinimumDomainVolume
             : Math.Min(minimumDomainVolume.Value, MaximumMinimumDomainVolume);
 
-    private static IReadOnlyList<AdminHourlyIngestion> BuildHourlyIngestion(
+    private static AdminHourlyIngestion[] BuildHourlyIngestion(
         DateTimeOffset now,
         int hours,
         IReadOnlyList<DateTimeOffset> forwardedTimestamps,
@@ -162,7 +162,7 @@ public sealed class AdminAnalyticsService(
         }
     }
 
-    private static IReadOnlyList<AdminDistributionItem> MergeDistribution(
+    private static AdminDistributionItem[] MergeDistribution(
         IReadOnlyList<AdminDistributionItem> stored,
         IReadOnlyList<string> keys)
     {

@@ -6,6 +6,10 @@ namespace Postern.UnitTests;
 public class AdminAnalyticsServiceTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 30, 12, 34, 0, TimeSpan.Zero);
+    private static readonly string[] ExpectedVisibleSenderDomains =
+        ["a.example", "b.example", "c.example", "d.example", "e.example", "f.example", "g.example", "h.example"];
+    private static readonly int[] ExpectedHourlyForwarded = [2, 1, 1];
+    private static readonly int[] ExpectedHourlyBlocked = [0, 1, 1];
 
     [Fact]
     public async Task GetAsync_HidesLowVolumeDomainsAndReportsTheHiddenCount()
@@ -55,17 +59,7 @@ public class AdminAnalyticsServiceTests
 
         Assert.Equal(AdminAnalyticsService.MaximumVisibleSenderDomains, analytics.SenderDomains.Count);
         Assert.Equal(
-            new[]
-            {
-                "a.example",
-                "b.example",
-                "c.example",
-                "d.example",
-                "e.example",
-                "f.example",
-                "g.example",
-                "h.example"
-            },
+            ExpectedVisibleSenderDomains,
             analytics.SenderDomains.Select(domain => domain.Domain));
         Assert.Equal(0, analytics.HiddenSenderDomains);
     }
@@ -95,8 +89,8 @@ public class AdminAnalyticsServiceTests
         var analytics = await context.Service.GetAsync(3, null, CancellationToken.None);
 
         Assert.Equal(3, analytics.HourlyIngestion.Count);
-        Assert.Equal(new[] { 2, 1, 1 }, analytics.HourlyIngestion.Select(item => item.Forwarded));
-        Assert.Equal(new[] { 0, 1, 1 }, analytics.HourlyIngestion.Select(item => item.Blocked));
+        Assert.Equal(ExpectedHourlyForwarded, analytics.HourlyIngestion.Select(item => item.Forwarded));
+        Assert.Equal(ExpectedHourlyBlocked, analytics.HourlyIngestion.Select(item => item.Blocked));
         Assert.Equal(
             new[]
             {

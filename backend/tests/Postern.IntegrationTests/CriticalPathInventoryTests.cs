@@ -11,6 +11,8 @@ namespace Postern.IntegrationTests;
 /// </summary>
 public sealed class CriticalPathInventoryTests
 {
+    private static readonly JsonSerializerOptions InventoryJsonOptions = new(JsonSerializerDefaults.Web);
+
     private static readonly string[] ExpectedPathIds =
     [
         "account-lifecycle",
@@ -100,7 +102,7 @@ public sealed class CriticalPathInventoryTests
 
         var inventory = JsonSerializer.Deserialize<CriticalPathInventory>(
             File.ReadAllText(path),
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            InventoryJsonOptions);
 
         Assert.NotNull(inventory);
         return inventory!;
