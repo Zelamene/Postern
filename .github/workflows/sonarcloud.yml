@@ -175,8 +175,13 @@ jobs:
           complexity_file="$RUNNER_TEMP/sonar-complexity.json"
           security_file="$RUNNER_TEMP/sonar-security.json"
 
+          if [ -n "$PR_NUMBER" ]; then
+            gate_scope="pullRequest=${PR_NUMBER}"
+          else
+            gate_scope="branch=${branch}"
+          fi
           curl -sS -u "${SONAR_TOKEN}:" -o "$gate_file" \
-            "https://sonarcloud.io/api/qualitygates/project_status?projectKey=${project_key}&branch=${branch}" || true
+            "https://sonarcloud.io/api/qualitygates/project_status?projectKey=${project_key}&${gate_scope}" || true
           curl -sS -u "${SONAR_TOKEN}:" -o "$complexity_file" \
             "https://sonarcloud.io/api/issues/search?projects=${project_key}&branch=${branch}&rules=S3776&statuses=OPEN,CONFIRMED,REOPENED&ps=500" || true
           curl -sS -u "${SONAR_TOKEN}:" -o "$security_file" \
