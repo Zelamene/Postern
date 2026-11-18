@@ -14,7 +14,7 @@ test('QR2.3 core tasks (user): create alias and review activity stay within step
     const label = `timing-${randomUUID().slice(0, 8)}`
 
     await page.goto('/app')
-    await expect(page.getByRole('heading', { name: 'My aliases' })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('button', { name: 'Create alias' })).toBeVisible({ timeout: 15_000 })
 
     await timedStep('create alias', async () => {
       await page.getByLabel('Label', { exact: true }).fill(label)
