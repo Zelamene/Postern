@@ -27,6 +27,7 @@ Rules this directory follows, learned the hard way on QR2.4:
 | QR2.2 | Dashboard reads p95 ≤ 500 ms on 50-item pages | `evidence/QR2.2-2026-11-18.json` + raw k6 summary; `load/scripts/k6-read.js`, `load/scripts/seed-messages.mjs` | PASS: 13.401 ms activity / 12.019 ms blocked p95 (n=7501), every page 50 items |
 | QR2.3 | Core-task steps p95 ≤ 2 s; task p95 ≤ 5 s; effect in mail path p95 ≤ 60 s | `evidence/QR2.3-2026-11-18.json` (mail-effect leg only); `load/scripts/time-to-effect.mjs` | Mail-effect leg PASS: 23.982 ms p95 floor (n=200), 4× `cacheTtl:60` reads verified; 2 s / 5 s journey timings remain `(build)` |
 | QR3.3 | ≥ 95% of core-task steps meet targets under 20 rps ingest + 25 sessions; < 1% errors; same at 28 rps peak; excess throttled, mail unaffected | `evidence/QR3.3-2026-11-18.json` + three raw k6 summaries; `load/scripts/k6-mixed.js` | PASS: 100% steps in target and 0% errors at 20 rps and 28 rps peak; 6001× 429, 0× 5xx under saturation with mail ingress 100% healthy |
+| QR3.2 | < 1,000 KV writes per day at 199 accounts; ≤ 1 write per alias change | `evidence/QR3.2-2026-11-18.json` (instrumented `IKvWriter` + advancing `TimeProvider` 24 h simulation and Cloudflare dashboard billed counts); `backend/tests/Postern.UnitTests/KvWriteBudgetSimulationTests.cs` | PASS: 226 writes in 24 h (427 incl. initial projection), 1 per alias change; dashboard Nov-to-date 63 mutating ops (18 writes + 45 deletes), 240 in all op classes |
 
 Reproduce the CPU figure with `./collect-qr2.4.ps1 -From <start> -To <end>` (needs
 a token with **Account Analytics: Read**). The script refuses to write evidence if
@@ -166,6 +167,23 @@ without a build failure.
   floods that endpoint at 100 rps and confirms 0 5xx while ingest (the API-side mail
   ingress) continues at 20 rps with 100% 202/200. The Cloudflare Worker's forwarding
   decision path is independent of the API and is evidenced separately by QR4.1.
+- **QR3.2 counts mutating API operations, not net state changes.** The instrumented
+  `IKvWriter` counts every `PutAsync` and `DeleteAsync`, including deletes of absent
+  keys, because Cloudflare bills the API call. The Worker mail path performs 0 KV
+  writes (QR2.4), so the daily budget is owned by the API-side writers exercised by
+  the simulation. Production still uses `CloudflareKvWriter`; the instrumentation and
+  advancing clock exist only in the test.
+- **QR3.2 includes the one-off initial projection in the stricter total.** The full
+  sync of an empty namespace writes 201 alias and map keys; it is reported separately
+  and also added to the 226 writes of the simulated day to give 427/day, still below
+  1,000. Steady-state operation has no recurring projection cost.
+- **QR3.2 dashboard cross-check uses billed operations, not GraphQL analytics.** The
+  first manual check reads the `postern-kv` namespace Metrics page on 18 Nov 2026:
+  18 writes + 45 deletes = 63 mutating operations, plus 169 reads and 8 lists = 240
+  in all operation classes. The window is the November billing month to date, not a
+  completed 30-day invoice, so this corroborates the simulation rather than supplying
+  an independent 24 h measurement. GraphQL analytics is not the authoritative billing
+  measure.
 
 Mail for an unknown recipient is still dropped without a blocked row. That is an
 anti-abuse decision, not a missing test: the alias is unknown, so there is no owner to

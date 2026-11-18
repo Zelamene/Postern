@@ -1,0 +1,85 @@
+{
+  "requirement": "QR3.2",
+  "requirement_text": "< 1,000 KV writes per day at 199 accounts; ≤ 1 write per alias change",
+  "record_type": "instrumented simulation plus manual dashboard cross-check",
+  "recorded_at": "2026-11-18",
+  "recorded_by": "shazi",
+  "status": "PASS",
+  "simulation": {
+    "test": "backend/tests/Postern.UnitTests/KvWriteBudgetSimulationTests.cs",
+    "test_name": "KvWriteBudgetSimulationTests.Accelerated24HourSimulation_StaysBelowTheDailyWriteBudget",
+    "instrumentation": "test-only IKvWriter that counts every PutAsync and DeleteAsync (including deletes of absent keys), stamped with the timestamp of an injected advancing TimeProvider",
+    "services_driven": [
+      "AdminKvSyncService.SyncAsync (fullSync:true for the initial projection, fullSync:false at the end of the day)",
+      "AliasService.DisableAsync (one publish per alias change)",
+      "RateLimitService.RebuildRateLimitedUsersAsync (every five-minute tick)",
+      "GlobalBlocklistService.RebuildAsync and SuspendedUserService.RebuildAsync (via sync)"
+    ],
+    "dataset": {
+      "accounts": 199,
+      "aliases": 199,
+      "alias_format": "nfr-<NNN>-n<NNN>@postern.local",
+      "source": "mirrors load/scripts/nfr-dataset.mjs",
+      "blocked_domains_seeded": 1,
+      "suspended_users_seeded": 1
+    },
+    "clock": {
+      "start_utc": "2026-11-18T00:00:00Z",
+      "step": "5 minutes",
+      "ticks": 288,
+      "covered_window": "24 h"
+    },
+    "counts": {
+      "initial_projection_writes": 201,
+      "writes_in_24h": 226,
+      "alias_writes": 199,
+      "rate_limit_writes": 25,
+      "global_map_writes": 2,
+      "max_writes_per_alias_change": 1,
+      "total_including_initial_projection": 427
+    },
+    "thresholds": {
+      "daily_write_budget": "< 1000",
+      "per_alias_change": "<= 1",
+      "passed": true
+    },
+    "interpretation": "226 writes/day in steady state; 427/day when the one-off empty-namespace projection is folded into the same 24 h window. Both are below 1,000. Every mutating KV call is counted, so the figure is conservative relative to state changes."
+  },
+  "dashboard_cross_check": {
+    "source": "Cloudflare dashboard (authoritative billing view), not GraphQL analytics",
+    "url": "https://dash.cloudflare.com/9dff4d124657c0730aa2c8078579dda5/workers/kv/namespaces/2aaa56ee672345cebfed9f65cf47e80d/metrics",
+    "namespace_name": "postern-kv",
+    "namespace_id": "2aaa56ee672345cebfed9f65cf47e80d",
+    "account_id": "9dff4d124657c0730aa2c8078579dda5",
+    "window_label": "November billing month to date, read 18 Nov 2026",
+    "read_at": "2026-11-18",
+    "operations": {
+      "reads": 169,
+      "writes": 18,
+      "lists": 8,
+      "deletes": 45,
+      "all_operation_classes": 240
+    },
+    "mutating_operations": {
+      "writes_plus_deletes": 63,
+      "note": "QR3.2 compares writes + deletes = 63; Cloudflare bills reads, writes, deletes and lists as separate operation classes, so the full billed-operation count is 240."
+    },
+    "other_metrics": {
+      "storage": "1.4 kB",
+      "key_count": 6
+    },
+    "screenshot": "docs/nfr/evidence/QR3.2-2026-11-18-cloudflare-dashboard.jpeg"
+  },
+  "verdict": "PASS - 226 writes in 24 h (427 including the initial projection) is below 1,000, one write per alias change, and the first dashboard billed-count cross-check is recorded for the November month-to-date window.",
+  "reproduction": [
+    "dotnet test backend/tests/Postern.UnitTests --configuration Release --filter FullyQualifiedName~KvWriteBudgetSimulationTests --logger \"console;verbosity=detailed\"",
+    "Open the dashboard URL above while signed in and read the operation counts for the postern-kv namespace."
+  ],
+  "caveats": [
+    "The simulation is a deterministic unit-test harness over the real application services with an in-memory IKvWriter; it is not a production traffic replay. It counts API-side writes only and does not include the Worker mail path, which performs 0 KV writes (see QR2.4 / worker/test/kv-budget.test.ts).",
+    "Every PutAsync and DeleteAsync call counts, including deletes of absent keys. Cloudflare bills the API operation, so this is conservative versus counting only state changes.",
+    "The initial empty-namespace full sync (201 writes) is reported separately and also folded into the 24 h total (427) for a stricter comparison, even though in practice it is a one-off bootstrap rather than a recurring daily cost.",
+    "Dashboard figures are the current billing month to date as read on 18 Nov 2026, not a completed 30-day invoice; the 63 mutating operations are far below the simulated daily budget but are not themselves a 24 h measurement. GraphQL analytics was not used as the billing source.",
+    "Cloudflare charges each operation class separately (reads, writes, deletes, lists); the 1,000/day QR3.2 budget is a write-count budget, so the comparison uses writes + deletes = 63 and reports the 240 all-class total for context."
+  ]
+}
