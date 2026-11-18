@@ -55,6 +55,7 @@ named here fails the pipeline; it is the evidence.
 | QR1.2 | A protected value stays readable by a second host with only the database configured | `Postern.IntegrationTests/Database/DataProtectionRestartTests.cs` |
 | QR1.3 | Every administrative route declares its audit events and all ten mutating routes are asserted to emit exactly those events; approve emits three, the log rejects UPDATE and DELETE, and account deletion is refused while an account is named on audit rows | `shared/admin-audit-events.json`, `Postern.IntegrationTests/Api/AdminAuditTests.cs`, migration `ProtectAdminAuditLog`, `database/init/10-postern-roles.sql` |
 | QR4.3 | Per-message `forwarded` / `dropped` / `errored` outcomes feed a monthly mail-path figure, and the first monitor and heartbeat windows are recorded | `worker/src/index.ts` (`OUTCOMES`, `aggregatePreviousMonth`), `worker/test/outcomes.test.ts`, `docs/nfr/evidence/QR4.3-2026-11-18.json`, `docs/nfr/evidence/QR4.4-2026-11-18.json` |
+| QR7.2 | CI-based SonarCloud analysis imports backend Cobertura and both LCOV reports, waits for the quality gate, and fails the pipeline on a gate failure | `.github/workflows/sonarcloud.yml`, `.github/workflows/pipeline.yml`, `.github/workflows/nfr-ci.yml` (`worker-coverage` artifact) |
 
 `shared/critical-paths.json`, `shared/blocked-reasons.json` and `shared/kv-records.json`
 are cross-runtime contracts, in the same spirit as `shared/etld1-cases.json`: the Worker
@@ -104,6 +105,28 @@ without a build failure.
   the Worker bundle without Analytics Engine writes. Deploying this bundle changes it;
   re-run the production burst and record a fresh evidence file. The Node CPU canary is
   not a substitute for Cloudflare `workersInvocationsAdaptive.cpuTimeP99`.
+- **QR7.2 uses CI-based analysis, not automatic analysis.** Automatic analysis cannot
+  import coverage and cannot run alongside a CI scan. `sonarcloud.yml` uses the
+  SonarScanner for .NET because C# analysis requires it; the scanner does not read
+  `sonar-project.properties`, so analysis properties are passed in the workflow. The
+  scanner imports `artifacts/coverage/Cobertura.xml`, `web/coverage/lcov.info` and
+  `worker/coverage/lcov.info`, and sets `sonar.qualitygate.wait=true`.
+- **QR7.2 source identifiers are configurable.** The workflow defaults the project key
+  to `${GITHUB_REPOSITORY//\//_}` and the organization to the lower-cased repository
+  owner. If SonarCloud shows different keys, set repository variables
+  `SONAR_PROJECT_KEY` and `SONAR_ORGANIZATION`; no workflow edit is needed.
+- **QR7.2 keeps tracked code in scope.** `sonar.exclusions` only removes build output,
+  dependencies and downloaded coverage artifacts: `bin`, `obj`, `node_modules`,
+  `coverage`, `artifacts`, `dist`, `.sonarqube`. Migrations, `database/init`, `shared`,
+  `docs`, `scripts`, tests and workflows remain tracked and analyzed. EF-generated
+  migration files are excluded from **duplication only** via `sonar.cpd.exclusions`,
+  because their repeated scaffolding would otherwise dominate the ≤3% gate; issues and
+  complexity in hand-written migrations are still checked.
+- **QR7.2 gate conditions still live in SonarCloud.** The workflow cannot create them.
+  New Code must have "New high/critical issues = 0", "Duplication ≤ 3%", and rule
+  `S3776` (Cognitive Complexity) active at threshold 15. Until a successful scan with
+  those conditions exists, the matrix QR7.2 row remains `(build)`; this workflow is the
+  harness, not the evidence.
 
 Mail for an unknown recipient is still dropped without a blocked row. That is an
 anti-abuse decision, not a missing test: the alias is unknown, so there is no owner to
