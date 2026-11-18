@@ -23,6 +23,10 @@ Rules this directory follows, learned the hard way on QR2.4:
 | --- | --- | --- | --- |
 | QR2.4 | <= 10 ms Worker CPU per message at worst-bucket P99; <= 4 KV reads; 0 KV writes per message | `evidence/QR2.4-2026-11-17.json` (Cloudflare `workersInvocationsAdaptive.cpuTimeP99`, production burst, n=30); `worker/test/kv-budget.test.ts` (reads/writes gate) | 2.725 ms P99 (= max at n=30) vs 10 ms; 4 reads / 0 writes |
 | QR7.2 | 0 new high/critical issues; duplication ≤ 3%; cognitive complexity ≤ 15 per function | `evidence/QR7.2-2026-11-18.json` (CI SonarCloud gate, main branch, 18 Nov 2026); `.github/workflows/sonarcloud.yml` | Gate PASSED: 0 new issues, 0.0% duplication, 0 open S3776; 90.0% new-code coverage |
+| QR2.1 | Ingest p95 ≤ 300 ms at 20 rps for 5 min; 0 unexpected 5xx | `evidence/QR2.1-2026-11-18.json` + raw k6 summary; `load/scripts/k6-ingest.js`, `load/scripts/seed.mjs` | PASS: 23.756 ms p95 at 20.002 rps over 5 min (n=6001), 0 unexpected 5xx |
+| QR2.2 | Dashboard reads p95 ≤ 500 ms on 50-item pages | `evidence/QR2.2-2026-11-18.json` + raw k6 summary; `load/scripts/k6-read.js`, `load/scripts/seed-messages.mjs` | PASS: 13.401 ms activity / 12.019 ms blocked p95 (n=7501), every page 50 items |
+| QR2.3 | Core-task steps p95 ≤ 2 s; task p95 ≤ 5 s; effect in mail path p95 ≤ 60 s | `evidence/QR2.3-2026-11-18.json` (mail-effect leg only); `load/scripts/time-to-effect.mjs` | Mail-effect leg PASS: 23.982 ms p95 floor (n=200), 4× `cacheTtl:60` reads verified; 2 s / 5 s journey timings remain `(build)` |
+| QR3.3 | ≥ 95% of core-task steps meet targets under 20 rps ingest + 25 sessions; < 1% errors; same at 28 rps peak; excess throttled, mail unaffected | `evidence/QR3.3-2026-11-18.json` + three raw k6 summaries; `load/scripts/k6-mixed.js` | PASS: 100% steps in target and 0% errors at 20 rps and 28 rps peak; 6001× 429, 0× 5xx under saturation with mail ingress 100% healthy |
 
 Reproduce the CPU figure with `./collect-qr2.4.ps1 -From <start> -To <end>` (needs
 a token with **Account Analytics: Read**). The script refuses to write evidence if
@@ -141,6 +145,27 @@ without a build failure.
   all six configured conditions, so the matrix QR7.2 row is `(exists)` and the recorded
   values are in `evidence/QR7.2-2026-11-18.json`. The workflow reports the conditions and
   open `S3776` issues in the CI log after every scan.
+- **Phase 6 load rig measures the local compose stack, not production.** All four harnesses
+  were run on 18 Nov 2026 against `http://127.0.0.1:8080` in Development. The 199-account
+  dataset is deterministic (`load/scripts/nfr-dataset.mjs`); `seed.mjs` writes it to
+  PostgreSQL because the dev login endpoint is capped at 10 per 15 min per source IP, and
+  `seed-messages.mjs` tops every alias up to full 50-item activity and blocked pages. Raw
+  k6 summaries sit beside each curated JSON file.
+- **Read and mixed scenarios mint JWTs locally instead of logging in.** `k6-read.js` and
+  `k6-mixed.js` build HS256 tokens in the `Postern.Auth` cookie with issuer `Postern`,
+  audience `Postern.Web`, the `sub`/`email`/`jti` claims and the real signing key from
+  `env/api.env`. No login call is made by those scenarios.
+- **Miniflare does not emulate KV `cacheTtl` staleness.** The `time-to-effect.mjs`
+  publish-then-poll harness measures only the propagation floor (23.982 ms p95); the 60 s
+  production bound comes from the four `cacheTtl:60` reads in `worker/src/index.ts`, which
+  the harness verifies in source. It is not claimed as an emulated edge-cache measurement.
+  The 2 s step and 5 s task legs of QR2.3 still need server-timing-instrumented Playwright
+  journeys.
+- **QR3.3 saturation asserts 429-not-5xx on the rate-limited auth path.** The ASP.NET
+  fixed-window IP limiter rejects the 11th+ login inside 15 minutes with 429; the harness
+  floods that endpoint at 100 rps and confirms 0 5xx while ingest (the API-side mail
+  ingress) continues at 20 rps with 100% 202/200. The Cloudflare Worker's forwarding
+  decision path is independent of the API and is evidenced separately by QR4.1.
 
 Mail for an unknown recipient is still dropped without a blocked row. That is an
 anti-abuse decision, not a missing test: the alias is unknown, so there is no owner to

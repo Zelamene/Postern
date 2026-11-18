@@ -74,3 +74,5 @@ THIRD-PARTY-AUDIT.md
 .wrangler/
 worker/perf/cpu-measurement.json
 send-nfr-burst.mjs
+
+load/scripts/generated/
