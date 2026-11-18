@@ -8,6 +8,8 @@ namespace Postern.Infrastructure.Persistence.Migrations
     /// <inheritdoc />
     public partial class AddNotifications : Migration
     {
+        private static readonly string[] NotificationAudienceRecipientCreatedColumns = new[] { "audience", "recipient_user_id", "created_at" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -43,7 +45,7 @@ namespace Postern.Infrastructure.Persistence.Migrations
                 name: "ix_notifications_audience_recipient_created_at",
                 schema: "postern",
                 table: "notifications",
-                columns: new[] { "audience", "recipient_user_id", "created_at" });
+                columns: NotificationAudienceRecipientCreatedColumns);
 
             migrationBuilder.CreateIndex(
                 name: "IX_notifications_recipient_user_id",

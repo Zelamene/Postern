@@ -15,7 +15,7 @@ public class IngestBlockedTests
     /// worker/test/index.test.ts asserts its BLOCKED_REASONS object equals this list, so a
     /// new drop path that is not represented here fails the Worker suite first.
     /// </summary>
-    public static IEnumerable<object[]> SharedBlockedReasons()
+    public static TheoryData<string> SharedBlockedReasons()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "blocked-reasons.json");
         if (!File.Exists(path))
@@ -24,10 +24,13 @@ public class IngestBlockedTests
         }
 
         using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var reasons = new TheoryData<string>();
         foreach (var reason in document.RootElement.GetProperty("reasons").EnumerateArray())
         {
-            yield return [reason.GetString()!];
+            reasons.Add(reason.GetString()!);
         }
+
+        return reasons;
     }
 
     [Theory]

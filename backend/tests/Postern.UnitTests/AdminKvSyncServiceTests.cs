@@ -8,6 +8,7 @@ namespace Postern.UnitTests;
 public class AdminKvSyncServiceTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
+    private static readonly string[] ExpectedBlockedSenders = new[] { "spam.example" };
 
     [Fact]
     public async Task SyncAsync_WritesMissingRecordsAndClearsConfirmedAliases()
@@ -39,7 +40,7 @@ public class AdminKvSyncServiceTests
         Assert.Equal("active", payload.GetProperty("status").GetString());
         Assert.Equal(userId.ToString(), payload.GetProperty("userId").GetString());
         Assert.Equal(
-            new[] { "spam.example" },
+            ExpectedBlockedSenders,
             payload.GetProperty("blockedSenders").EnumerateArray().Select(item => item.GetString()));
         Assert.True(context.Kv.Values.ContainsKey(SuspendedUserService.KvKey));
         Assert.True(context.Kv.Values.ContainsKey(GlobalBlocklistService.KvKey));

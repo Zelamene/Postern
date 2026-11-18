@@ -286,12 +286,12 @@ builder.Services
             }
         };
     });
-builder.Services.AddAuthorization(options =>
-    options.AddPolicy("admin", policy =>
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("admin", policy =>
     {
         policy.RequireRole("admin").RequireClaim(ClaimTypes.AuthenticationMethod, "totp");
         policy.AddRequirements(new AdminTotpSessionRequirement());
-    }));
+    });
 builder.Services.AddScoped<IAuthorizationHandler, AdminTotpSessionHandler>();
 builder.Services.AddRateLimiter(options =>
 {
@@ -375,5 +375,3 @@ static RateLimitPartition<string> CreateRateLimit(
             QueueLimit = 0,
             AutoReplenishment = true
         });
-
-public partial class Program { }

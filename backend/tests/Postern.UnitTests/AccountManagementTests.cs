@@ -10,6 +10,8 @@ namespace Postern.UnitTests;
 
 public class AccountManagementTests
 {
+    private static readonly string[] ExpectedBlockedSenders = new[] { "spam.example" };
+
     [Fact]
     public async Task ChangeForwardingAddress_SwitchesAfterVerification_AndRemovesOldDestination()
     {
@@ -262,7 +264,7 @@ public class AccountManagementTests
         var payload = System.Text.Json.JsonDocument.Parse(kvWriter.Values["l-s@postern.local"]).RootElement;
         Assert.Equal("new@example.com", payload.GetProperty("destination").GetString());
         Assert.Equal(
-            new[] { "spam.example" },
+            ExpectedBlockedSenders,
             payload.GetProperty("blockedSenders").EnumerateArray().Select(item => item.GetString()));
 
         var failing = new AccountManagementService(

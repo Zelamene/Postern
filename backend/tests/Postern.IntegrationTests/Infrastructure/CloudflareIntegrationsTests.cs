@@ -7,6 +7,11 @@ namespace Postern.IntegrationTests.Infrastructure;
 
 public sealed class CloudflareIntegrationsTests
 {
+    private static readonly System.Text.Json.JsonSerializerOptions SnakeCaseJsonOptions = new()
+    {
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower
+    };
+
     private static readonly CloudflareOptions Options = new()
     {
         AccountId = "account-id",
@@ -211,10 +216,7 @@ public sealed class CloudflareIntegrationsTests
         new(status)
         {
             Content = new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(payload, new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower
-                }),
+                System.Text.Json.JsonSerializer.Serialize(payload, SnakeCaseJsonOptions),
                 Encoding.UTF8,
                 "application/json")
         };

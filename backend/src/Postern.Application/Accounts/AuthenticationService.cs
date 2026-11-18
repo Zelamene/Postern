@@ -198,7 +198,7 @@ public sealed class AuthenticationService(
 
     private static string NormalizeLegacyEmail(string email) => email.Trim().ToUpperInvariant();
 
-    private static IReadOnlyCollection<string> GetLegacyIdentities(
+    private static HashSet<string> GetLegacyIdentities(
         string originalEmail,
         string normalizedEmail,
         string normalizedIdentity) =>

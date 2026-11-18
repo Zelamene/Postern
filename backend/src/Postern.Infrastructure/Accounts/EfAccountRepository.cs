@@ -113,10 +113,12 @@ public sealed class EfAccountRepository(
         CancellationToken cancellationToken)
     {
         var normalized = forwardingAddress.ToLowerInvariant();
+#pragma warning disable CA1862 // EF Core cannot translate String.Equals(string, StringComparison) into SQL.
         return dbContext.Users.CountAsync(
             user => user.Id != excludingUserId
                 && (user.ForwardingAddress ?? user.Email).ToLower() == normalized,
             cancellationToken);
+#pragma warning restore CA1862
     }
 
     public Task<PosternUser?> FindByIdAsync(

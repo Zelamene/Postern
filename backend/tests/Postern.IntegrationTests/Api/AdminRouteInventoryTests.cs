@@ -13,7 +13,7 @@ namespace Postern.IntegrationTests.Api;
 /// QR1.1: every administrative route must reject callers without an admin session.
 /// </summary>
 [Collection(IntegrationCollection.Name)]
-public sealed class AdminRouteInventoryTests(PosternFixture fixture) : IAsyncLifetime
+public sealed partial class AdminRouteInventoryTests(PosternFixture fixture) : IAsyncLifetime
 {
 
     private static readonly HashSet<string> ExemptFromOpenApi = new(StringComparer.OrdinalIgnoreCase)
@@ -156,20 +156,25 @@ public sealed class AdminRouteInventoryTests(PosternFixture fixture) : IAsyncLif
             .ToList();
 
 
+    [GeneratedRegex(@"\{[^}]+\}")]
+    private static partial Regex CanonicalPlaceholder();
+
     private static string CanonicalPath(string? rawText)
     {
         var path = "/" + (rawText ?? string.Empty).TrimStart('/');
-        path = Regex.Replace(path, @"\{[^}]+\}", "*");
+        path = CanonicalPlaceholder().Replace(path, "*");
         return path.Length > 1 ? path.TrimEnd('/') : path;
     }
+
+    [GeneratedRegex(@"\{([^}]+)\}")]
+    private static partial Regex RequestPlaceholder();
 
     /// <summary>
     /// A requestable form of a route, used only by the rejection sweeps.
     /// </summary>
     private static string RequestPath(string? rawText) =>
-        Regex.Replace(
+        RequestPlaceholder().Replace(
             "/" + (rawText ?? string.Empty).TrimStart('/'),
-            @"\{([^}]+)\}",
             match => match.Groups[1].Value.Contains("domain", StringComparison.OrdinalIgnoreCase)
                 ? "example.test"
                 : Guid.NewGuid().ToString());

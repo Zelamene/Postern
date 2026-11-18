@@ -54,8 +54,8 @@ public static class EmailAddressNormalizer
         }
 
         string normalizedDomain;
-        if (domain.StartsWith("[", StringComparison.Ordinal)
-            && domain.EndsWith("]", StringComparison.Ordinal))
+        if (domain.StartsWith('[')
+            && domain.EndsWith(']'))
         {
             if (!IsValidAddressLiteral(domain))
             {
@@ -69,7 +69,7 @@ public static class EmailAddressNormalizer
             return false;
         }
 
-        var asciiDomain = normalizedDomain.StartsWith("[", StringComparison.Ordinal)
+        var asciiDomain = normalizedDomain.StartsWith('[')
             ? normalizedDomain
             : GetAsciiDomain(normalizedDomain);
         if (asciiDomain is null
@@ -94,7 +94,7 @@ public static class EmailAddressNormalizer
         var separator = normalizedEmail.LastIndexOf('@');
         var localPart = normalizedEmail[..separator].Normalize(NormalizationForm.FormC);
         var domain = normalizedEmail[(separator + 1)..];
-        var asciiDomain = domain.StartsWith("[", StringComparison.Ordinal)
+        var asciiDomain = domain.StartsWith('[')
             ? domain
             : GetAsciiDomain(domain)
                 ?? throw new ArgumentException("The email domain is invalid.", nameof(email));
@@ -133,7 +133,7 @@ public static class EmailAddressNormalizer
             return false;
         }
 
-        if (localPart.StartsWith("\"", StringComparison.Ordinal))
+        if (localPart.StartsWith('"'))
         {
             return IsValidQuotedLocalPart(localPart);
         }

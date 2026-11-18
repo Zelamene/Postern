@@ -5,6 +5,8 @@ namespace Postern.UnitTests;
 
 public class AliasKvRecordTests
 {
+    private static readonly string[] ExpectedNormalizedBlockedSenders = new[] { "Abuse.Example", "spam.example" };
+
     [Fact]
     public void Serialize_WritesAnEmptyBlockedSenderListByDefault()
     {
@@ -30,7 +32,7 @@ public class AliasKvRecordTests
             .RootElement;
 
         Assert.Equal(
-            new[] { "Abuse.Example", "spam.example" },
+            ExpectedNormalizedBlockedSenders,
             payload.GetProperty("blockedSenders").EnumerateArray().Select(item => item.GetString()));
     }
 }

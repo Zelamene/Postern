@@ -5,6 +5,8 @@ namespace Postern.UnitTests;
 
 public class Etld1ParityTests
 {
+    private static readonly JsonSerializerOptions FixtureJsonOptions = new(JsonSerializerDefaults.Web);
+
     [Fact]
     public void Normalize_MatchesTheSharedCrossRuntimeCases()
     {
@@ -13,7 +15,7 @@ public class Etld1ParityTests
 
         var fixture = JsonSerializer.Deserialize<Fixture>(
             File.ReadAllText(path),
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            FixtureJsonOptions);
 
         Assert.NotNull(fixture);
         Assert.NotEmpty(fixture!.Cases);
