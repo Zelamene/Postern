@@ -2,6 +2,11 @@ name: Sonar gate diagnostics
 
 on:
   workflow_dispatch:
+    inputs:
+      metric_keys:
+        description: Comma-separated Sonar metric keys to print
+        required: false
+        default: "new_coverage,new_lines_to_cover,new_uncovered_lines,new_conditions_to_cover,new_uncovered_conditions,new_lines,new_duplicated_lines_density"
 
 permissions:
   contents: read
@@ -12,8 +17,9 @@ jobs:
     timeout-minutes: 10
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      METRIC_KEYS: ${{ inputs.metric_keys }}
     steps:
-      - name: Report main-branch quality gate conditions
+      - name: Report main-branch quality gate and new-code metrics
         run: |
           set -euo pipefail
           : "${SONAR_TOKEN:?SONAR_TOKEN is required}"
@@ -24,5 +30,24 @@ jobs:
             | python3 -m json.tool
           echo "=== measures ==="
           curl -sS -u "${SONAR_TOKEN}:" \
-            "https://sonarcloud.io/api/measures/component?component=${project_key}&branch=main&metricKeys=new_coverage,new_duplicated_lines_density,new_cognitive_complexity,new_violations,new_blocker_violations,new_critical_violations,new_major_violations,new_code_smells,new_lines" \
+            "https://sonarcloud.io/api/measures/component?component=${project_key}&branch=main&metricKeys=${METRIC_KEYS}" \
             | python3 -m json.tool
+          echo "=== file-level new coverage (top 40 by uncovered new lines) ==="
+          curl -sS -u "${SONAR_TOKEN}:" \
+            "https://sonarcloud.io/api/measures/component_tree?component=${project_key}&branch=main&qualifiers=FIL&metricKeys=new_lines_to_cover,new_uncovered_lines,new_coverage&ps=500" \
+            | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          rows = []
+          for c in data.get("components", []):
+              vals = {m["metric"]: m.get("value", "0") for m in c.get("measures", [])}
+              try:
+                  tot = int(float(vals.get("new_lines_to_cover", 0)))
+                  unc = int(float(vals.get("new_uncovered_lines", 0)))
+              except ValueError:
+                  continue
+              if tot:
+                  rows.append((unc, tot, c.get("path", "")))
+          for unc, tot, path in sorted(rows, reverse=True)[:40]:
+              print(f"{unc:5d}/{tot:5d} uncovered  {path}")
+          '
