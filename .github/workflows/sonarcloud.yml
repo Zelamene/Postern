@@ -68,6 +68,7 @@ jobs:
           set -euo pipefail
 
           backend_report=$(find . -type f -name Cobertura.xml -not -path './node_modules/*' -print -quit)
+          backend_report=${backend_report#./}
           if [ -z "$backend_report" ]; then
             echo "::error::No backend Cobertura.xml was found in the backend-test-reports artifact."
             exit 1
