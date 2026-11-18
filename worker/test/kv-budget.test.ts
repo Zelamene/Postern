@@ -131,9 +131,7 @@ describe('Postern KV budget per message', () => {
     expect(kv.deleteKey).not.toHaveBeenCalled()
   })
 
-  // The four drop paths run after the global-map reads, so they must keep the same
-  // budget as the forward path. A regression that writes KV while blocking a message
-  // would otherwise only show up on the paths nobody watches.
+
   const blockCases: { name: string; records: Record<string, unknown> }[] = [
     {
       name: 'global blocklist',
