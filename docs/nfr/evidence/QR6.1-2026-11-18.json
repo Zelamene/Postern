@@ -1,0 +1,53 @@
+{
+  "requirement": "QR6.1",
+  "requirement_text": "0 serious/critical violations; WCAG 2.1 AA; keyboard-only operation of all actions",
+  "record_type": "automated axe scans and a keyboard-only browser journey",
+  "recorded_at": "2026-11-18",
+  "recorded_by": "shazi",
+  "status": "PASS",
+  "axe": {
+    "rules": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"],
+    "helper": "web/test/e2e/support/a11y.ts",
+    "scans": [
+      {
+        "spec": "web/test/e2e/public/brand-guide.spec.ts",
+        "route": "/brand/",
+        "contexts": ["light", "dark"]
+      },
+      {
+        "spec": "web/test/e2e/user/accessibility.spec.ts",
+        "route": "/app",
+        "context": "signed-in user storageState"
+      },
+      {
+        "spec": "web/test/e2e/admin/accessibility.spec.ts",
+        "route": "/admin",
+        "context": "signed-in admin storageState (MFA enrolled)"
+      }
+    ],
+    "violations": 0,
+    "serious_or_critical": 0
+  },
+  "keyboard_journey": {
+    "spec": "web/test/e2e/user/accessibility.spec.ts",
+    "name": "a core alias journey is operable by keyboard alone",
+    "method": "Tab from document start to the Label input, type the label, Tab to Create alias, press Enter, assert the alias row appears. No pointer input is used.",
+    "passed": true
+  },
+  "runs": {
+    "harness": "web/scripts/run-e2e.mjs (disposable PostgreSQL 17 + API + Vite + Chromium stack)",
+    "count": 5,
+    "passed": 5,
+    "tests_per_run": 28,
+    "command": "npm run test:e2e"
+  },
+  "verdict": "PASS - zero axe violations across public, signed-in user and signed-in admin pages at WCAG 2.1/2.2 A/AA, and the keyboard-only core alias journey passed in five fresh-stack runs.",
+  "reproduction": [
+    "cd web && npm run test:e2e",
+    "cd web && npm run test:a11y"
+  ],
+  "caveats": [
+    "The automated keyboard check covers the core alias-creation journey, not literally every action in the product; the 'all actions' clause still relies on the per-release manual keyboard checklist.",
+    "axe findings are a point-in-time scan of the listed routes and themes; the brand guide's dark-mode scan uses emulated media rather than a persisted preference in a separate browser context."
+  ]
+}

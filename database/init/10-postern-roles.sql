@@ -76,10 +76,14 @@ SELECT format(
 )
 \gexec
 
+-- The audit table is created by a later migration, and the append-only trigger
+-- in that migration is the authoritative guard. Re-apply this REVOKE when the
+-- table exists (for example when roles are re-initialized after migrations).
 SELECT format(
     'REVOKE UPDATE, DELETE ON postern.admin_audit_log FROM %I',
     :'app_role'
 )
+WHERE to_regclass('postern.admin_audit_log') IS NOT NULL
 \gexec
 
 SELECT format('GRANT %I TO %I', :'migrator_role', current_user) \gexec

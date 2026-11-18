@@ -1,0 +1,45 @@
+{
+  "requirement": "QR6.3",
+  "requirement_text": "100% of stale-data surfaces state the propagation delay and best-effort logging",
+  "record_type": "automated presence assertions on every stale-data surface",
+  "recorded_at": "2026-11-18",
+  "recorded_by": "shazi",
+  "status": "PASS",
+  "statements": [
+    "Routing changes can take up to 24 hours to propagate everywhere, usually within 3 minutes.",
+    "Activity and delivery records are logged on a best-effort basis and are not guaranteed."
+  ],
+  "implementation": {
+    "copy": "web/src/services/productCopy.ts",
+    "component": "web/src/components/common/StaleDataNotice.tsx",
+    "surfaces": [
+      "web/src/pages/AppPage.tsx (shared by aliases, activity, blocked mail and account views)",
+      "web/src/pages/AdminPage.tsx (shared by invite dashboard, analytics, blocklist and KV sync)"
+    ]
+  },
+  "assertions": [
+    {
+      "spec": "web/test/e2e/user/data-freshness.spec.ts",
+      "routes": ["/app", "/app/blocked", "/app/aliases/<alias-id>"],
+      "both_statements_present": true
+    },
+    {
+      "spec": "web/test/e2e/admin/accessibility.spec.ts",
+      "routes": ["/admin"],
+      "both_statements_present": true
+    }
+  ],
+  "runs": {
+    "count": 5,
+    "passed": 5,
+    "tests_per_run": 28
+  },
+  "verdict": "PASS - both statements are asserted on every stale-data surface in five fresh-stack runs, covering 100% of the identified surfaces.",
+  "reproduction": [
+    "cd web && npm run test:e2e"
+  ],
+  "caveats": [
+    "The automated check proves the statements are rendered, not that their wording remains accurate for every release; the per-release manual copy review checklist is still part of the control.",
+    "The notice is rendered once per page shell rather than duplicated inside each individual list or panel; assertions navigate to each surface to confirm it is present there."
+  ]
+}

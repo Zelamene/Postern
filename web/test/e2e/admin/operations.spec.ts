@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test } from '@playwright/test'
+import { timedTask } from '../support/timing'
 
 test('reviews analytics, manages the global blocklist, syncs operations, and reads alerts', async ({
   page,
@@ -51,13 +52,15 @@ test('reviews analytics, manages the global blocklist, syncs operations, and rea
   await expect(blocklist.getByRole('cell', { name: domain })).toHaveCount(0)
 
   const syncPanel = page.getByRole('region', { name: 'Key-value sync' })
-  await syncPanel.getByRole('button', { name: 'Sync now' }).click()
-  await expect(syncPanel.getByText(/Synced \d+ aliases\./)).toBeVisible()
-  await expect(syncPanel).toContainText('Global blocklist rebuilt.')
-  await expect(syncPanel).toContainText('Suspended-user map rebuilt.')
-  await expect(
-    page.getByRole('region', { name: 'Recent administrator activity' }).getByText('kv.sync'),
-  ).toBeVisible()
+  await timedTask('sync KV', async () => {
+    await syncPanel.getByRole('button', { name: 'Sync now' }).click()
+    await expect(syncPanel.getByText(/Synced \d+ aliases\./)).toBeVisible()
+    await expect(syncPanel).toContainText('Global blocklist rebuilt.')
+    await expect(syncPanel).toContainText('Suspended-user map rebuilt.')
+    await expect(
+      page.getByRole('region', { name: 'Recent administrator activity' }).getByText('kv.sync'),
+    ).toBeVisible()
+  })
 
   await page.getByRole('button', { name: /Notifications/ }).click()
   const menu = page.getByRole('dialog', { name: 'Notifications' })

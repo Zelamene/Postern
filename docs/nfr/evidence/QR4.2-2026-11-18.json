@@ -1,0 +1,35 @@
+{
+  "requirement": "QR4.2",
+  "requirement_text": "First request after idle p95 ≤ 30 s; waking state displayed",
+  "record_type": "delayed-response browser test for the waking-state half of the requirement",
+  "recorded_at": "2026-11-18",
+  "recorded_by": "shazi",
+  "status": "PASS (in-repo waking-state half)",
+  "implementation": {
+    "trigger": "web/src/hooks/useAccountSession.ts SLOW_AFTER_MS = 3000",
+    "render": "web/src/pages/AppPage.tsx",
+    "text": "Getting things ready. This can take a moment."
+  },
+  "test": {
+    "spec": "web/test/e2e/user/waking-state.spec.ts",
+    "method": "Intercept GET /api/auth/me and delay it by 6000 ms, load /app with an authenticated storageState, assert the waking message becomes visible within 5000 ms, then assert the loaded dashboard renders once the response completes.",
+    "delayed_response_ms": 6000,
+    "waking_assertion_timeout_ms": 5000,
+    "passed": true
+  },
+  "runs": {
+    "harness": "web/scripts/run-e2e.mjs (disposable full stack)",
+    "count": 5,
+    "passed": 5,
+    "tests_per_run": 28
+  },
+  "verdict": "PASS - the waking state renders while a delayed first account request is pending in five fresh-stack runs; the delayed-response UI half of QR4.2 is closed in-repo.",
+  "reproduction": [
+    "cd web && npm run test:e2e"
+  ],
+  "caveats": [
+    "The ≤ 30 s cold-start p95 is an external Better Stack monitor sample on /health/ready and the web origin; this record does not replace that measurement and is not a substitute for a production cold-start sample.",
+    "The test simulates a slow response by delaying /api/auth/me in the browser. It proves the UI state machine and copy, not the duration of a real cold start.",
+    "The Better Stack check records status codes only (keyword matching is a paid tier), so the external monitor cannot itself assert the waking copy."
+  ]
+}

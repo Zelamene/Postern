@@ -7,3 +7,9 @@ export const RECOVERY_KEY_WARNING =
 
 export const ALIAS_DELETE_RETENTION =
   'Mail to this address stops forwarding and the address is retired permanently. This cannot be undone.'
+
+export const PROPAGATION_DELAY_NOTICE =
+  'Routing changes can take up to 24 hours to propagate everywhere, usually within 3 minutes.'
+
+export const BEST_EFFORT_LOGGING_NOTICE =
+  'Activity and delivery records are logged on a best-effort basis and are not guaranteed.'

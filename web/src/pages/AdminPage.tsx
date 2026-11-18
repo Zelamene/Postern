@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { InviteDashboard, InviteRequest, ThemeMode } from '../types'
 import { AdminAnalyticsBoard } from '../components/admin/AdminAnalyticsBoard'
 import { AdminAuthPanel } from '../components/admin/AdminAuthPanel'
+import { StaleDataNotice } from '../components/common/StaleDataNotice'
 import { AdminBlocklistPanel } from '../components/admin/AdminBlocklistPanel'
 import { AdminHeader } from '../components/admin/AdminHeader'
 import { AdminInviteDashboard } from '../components/admin/AdminInviteDashboard'
@@ -248,6 +249,8 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
 
         {access === 'dashboard' && dashboard && (
           <div className="space-y-10">
+            <StaleDataNotice />
+
             <AdminInviteDashboard
               dashboard={dashboard}
               requests={requests}

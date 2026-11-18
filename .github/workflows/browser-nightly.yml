@@ -1,0 +1,56 @@
+name: Browser NFR Nightly
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-journeys:
+    name: E2E, a11y, timing and waking state
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: web
+        run: npm run test:e2e:install
+
+      - name: Run five fresh-stack browser journeys
+        working-directory: web
+        env:
+          POSTERN_E2E_TIMING_OUT: ${{ runner.temp }}/qr6.2-timings.jsonl
+        run: |
+          for i in 1 2 3 4 5; do
+            POSTERN_E2E_TIMING_RUN="run-$i" npm run test:e2e
+          done
+
+      - name: Upload QR6.2 timing sample
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qr6.2-timings
+          path: ${{ runner.temp }}/qr6.2-timings.jsonl
+          if-no-files-found: warn
