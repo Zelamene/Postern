@@ -1,0 +1,71 @@
+import { randomUUID } from 'node:crypto'
+import { expect, test } from '@playwright/test'
+import { createAliasViaUi } from '../support/aliases'
+import { ingestMessage } from '../support/mail'
+import { createServerTimingCollector, timedCoreTask, timedStep } from '../support/serverTiming'
+
+test('QR2.3 core tasks (user): create alias and review activity stay within step/task budgets with server timing', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  const serverTiming = createServerTimingCollector(page)
+
+  await timedCoreTask('create alias', async () => {
+    const label = `timing-${randomUUID().slice(0, 8)}`
+    await timedStep('open aliases page', async () => {
+      await page.goto('/app')
+      await expect(page.getByRole('heading', { name: 'My aliases' })).toBeVisible()
+    })
+
+    const alias = await timedStep('create alias via form', async () => {
+      return createAliasViaUi(page, label, { category: 'shopping' })
+    }, {
+      serverTiming: () => serverTiming.latestMatching((url) => url.endsWith('/api/aliases')),
+    })
+
+    await timedStep('alias appears in list', async () => {
+      const row = page.getByRole('listitem').filter({ has: page.getByText(label, { exact: true }) })
+      await expect(row).toContainText('Active')
+      await expect(row.locator('code')).toHaveText(alias.result.fullAddress)
+    })
+
+    expect(alias.measurement.serverTiming, 'create alias response should include Server-Timing').toBeTruthy()
+  })
+
+  await timedCoreTask('review activity', async () => {
+    const label = `review-${randomUUID().slice(0, 8)}`
+    const alias = await createAliasViaUi(page, label, { expectedSender: 'mail.example' })
+
+    for (let index = 0; index < 26; index += 1) {
+      const response = await ingestMessage(page, alias.fullAddress, {
+        sender: `sender-${index}@mail.example`,
+        subject: `Timing activity ${index}`,
+      })
+      expect(response.status(), `Message ${index} should be persisted`).toBe(202)
+    }
+
+    await timedStep('open alias activity feed', async () => {
+      await page.goto(`/app/aliases/${alias.id}`)
+      const feed = page.getByRole('region', { name: `Messages received by ${label}` })
+      await expect(feed.getByText('Timing activity 25')).toBeVisible()
+    }, {
+      serverTiming: () => serverTiming.latestMatching((url) => url.includes(`/api/aliases/${alias.id}/messages`)),
+    })
+
+    const feed = page.getByRole('region', { name: `Messages received by ${label}` })
+    await timedStep('load older messages', async () => {
+      await expect(feed.getByRole('listitem')).toHaveCount(25)
+      await feed.getByRole('button', { name: 'Load older messages' }).click()
+      await expect(feed.getByRole('listitem')).toHaveCount(26)
+    }, {
+      serverTiming: () => serverTiming.latestMatching((url) => url.includes(`/api/aliases/${alias.id}/messages?`)),
+    })
+
+    await timedStep('export activity CSV', async () => {
+      const downloadPromise = page.waitForEvent('download')
+      await page.getByRole('button', { name: 'Export CSV' }).click()
+      const download = await downloadPromise
+      expect(download.suggestedFilename()).toMatch(/^postern-activity-/)
+    })
+  })
+})

@@ -94,6 +94,14 @@ jobs:
         working-directory: web
         run: npm run test:integration -- --no-file-parallelism
 
+      - name: Install Playwright Chromium
+        working-directory: web
+        run: ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Public accessibility scan (QR6.1)
+        working-directory: web
+        run: ./node_modules/.bin/playwright test --config playwright.public-ci.config.ts
+
       - name: Summarise coverage
         if: always()
         working-directory: web

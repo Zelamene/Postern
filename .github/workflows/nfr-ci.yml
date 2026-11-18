@@ -70,7 +70,7 @@ jobs:
       - name: Run administrative route, throttle, and critical-path checks
         run: |
           dotnet test backend/tests/Postern.IntegrationTests \
-            --filter "FullyQualifiedName~AdminRouteInventoryTests|FullyQualifiedName~RateLimitPolicyTests|FullyQualifiedName~CapacityEnvelopeTests|FullyQualifiedName~Ingest_WithConcurrentDuplicate|FullyQualifiedName~RateLimitProjectionWorkerTests|FullyQualifiedName~CriticalPathInventoryTests|FullyQualifiedName~AuthenticationEndpointsTests|FullyQualifiedName~InviteDeliveryEndpointsTests|FullyQualifiedName~AliasEndpointsTests|FullyQualifiedName~IngestFlowTests|FullyQualifiedName~ActivityEndpointsTests|FullyQualifiedName~DatabaseSchemaTests|FullyQualifiedName~DataProtectionRestartTests|FullyQualifiedName~ProjectionRebuildTests|FullyQualifiedName~AdminAuditTests" \
+            --filter "FullyQualifiedName~AdminRouteInventoryTests|FullyQualifiedName~RateLimitPolicyTests|FullyQualifiedName~CapacityEnvelopeTests|FullyQualifiedName~Ingest_WithConcurrentDuplicate|FullyQualifiedName~RateLimitProjectionWorkerTests|FullyQualifiedName~CriticalPathInventoryTests|FullyQualifiedName~AuthenticationEndpointsTests|FullyQualifiedName~InviteDeliveryEndpointsTests|FullyQualifiedName~AliasEndpointsTests|FullyQualifiedName~IngestFlowTests|FullyQualifiedName~ActivityEndpointsTests|FullyQualifiedName~ReadPerformanceGuardTests|FullyQualifiedName~DatabaseSchemaTests|FullyQualifiedName~DataProtectionRestartTests|FullyQualifiedName~ProjectionRebuildTests|FullyQualifiedName~AdminAuditTests" \
             --logger "trx;LogFileName=nfr.trx" \
             --results-directory artifacts/nfr
 
