@@ -39,7 +39,7 @@
     "scheduled_aggregation_cron": "0 4 1 * *",
     "summary_kv_key": "mail_path_last_month",
     "implementation_date": "2026-11-18",
-    "secret_provisioning": "GitHub Actions cd.yml deploy-worker job writes Worker secrets CF_ACCOUNT_ID and CF_API_TOKEN from GitHub secrets CF_ANALYTICS_ACCOUNT_ID and CF_ANALYTICS_API_TOKEN before wrangler deploy",
+    "secret_provisioning": "GitHub Actions cd.yml deploy-worker job writes Worker secrets CF_ACCOUNT_ID and CF_API_TOKEN before wrangler deploy; the account ID comes from GitHub secret CF_ANALYTICS_ACCOUNT_ID when set, otherwise from CLOUDFLARE_ACCOUNT_ID (the same Cloudflare account), and the token from CF_ANALYTICS_API_TOKEN",
     "production_clock_status": "pending deployment of the Worker bundle that contains the counters",
     "formula": "forwarded / (forwarded + errored); intentional policy drops and unknown-recipient drops are excluded",
     "first_full_calendar_window_after_deployment_in_november_2026": {
