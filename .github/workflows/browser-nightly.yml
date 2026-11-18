@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: browser-nightly-${{ github.ref }}
@@ -60,6 +59,9 @@ jobs:
     name: Seeded ZAP full scan
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: read
+      issues: write
     env:
       POSTERN_ZAP_IMAGE: ghcr.io/zaproxy/zaproxy:stable@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af
     steps:

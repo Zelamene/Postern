@@ -35,7 +35,7 @@
       }
     ],
     "rules": ["traditional spider", "Ajax spider", "passive scan", "active scan"],
-    "crawled_urls_per_scan": 7,
+    "crawled_urls_per_scan": 5,
     "passing_rules_per_scan": 142,
     "high_findings": 0,
     "medium_findings": 0,
