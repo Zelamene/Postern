@@ -1,0 +1,64 @@
+{
+  "requirement": "QR2.1",
+  "requirement_text": "Ingest p95 ≤ 300 ms at 20 rps for 5 min; 0 unexpected 5xx",
+  "record_type": "load test result",
+  "recorded_at": "2026-11-18",
+  "recorded_by": "shazi",
+  "status": "PASS",
+  "harness": {
+    "script": "load/scripts/k6-ingest.js",
+    "seed_script": "load/scripts/seed.mjs",
+    "dataset_module": "load/scripts/nfr-dataset.mjs",
+    "k6_version": "2.4.0",
+    "executor": "constant-arrival-rate",
+    "arrival_rate_rps": 20,
+    "duration": "5m",
+    "pre_allocated_vus": 20,
+    "max_vus": 20,
+    "run_id": "qr21-full-20261118",
+    "target": "local Docker Compose stack (http://127.0.0.1:8080, Development)"
+  },
+  "dataset": {
+    "accounts": 199,
+    "deterministic_aliases": 199,
+    "alias_format": "nfr-<NNN>-n<NNN>@postern.local",
+    "message_id_uniqueness": "run_id + VU + iteration; one ingest per iteration",
+    "verification_sql": "199 users / 199 deterministic aliases / 199 total users"
+  },
+  "thresholds_declared_in_script": {
+    "http_req_duration": "p(95) <= 300 ms",
+    "http_req_failed": "rate == 0",
+    "unexpected_5xx": "count == 0",
+    "unknown_alias": "count == 0"
+  },
+  "measured": {
+    "requests": 6001,
+    "achieved_rate_rps": 20.0021,
+    "http_req_duration_ms": {
+      "avg": 16.196,
+      "med": 15.295,
+      "p95": 23.756,
+      "p99": 35.744,
+      "max": 100.75
+    },
+    "http_req_failed_percent": 0.0,
+    "unexpected_5xx": 0,
+    "unknown_alias": 0,
+    "checks_passed": "6001 / 6001 (100.00%)",
+    "k6_exit_code": 0
+  },
+  "reproduction": [
+    "docker compose up -d --build --wait",
+    "dotnet ef database update --project backend/src/Postern.Infrastructure --startup-project backend/src/Postern.Api",
+    "node load/scripts/seed.mjs",
+    "$env:POSTERN_INGEST_SECRET = (Get-Content env/api.env | ConvertFrom-StringData).Ingest__SharedSecret",
+    "$env:RUN_ID = 'qr21-full-20261118'; $env:POSTERN_DURATION = '5m'; $env:POSTERN_RATE = '20'",
+    "k6 run --summary-export <path> load/scripts/k6-ingest.js"
+  ],
+  "raw_summary": "docs/nfr/evidence/QR2.1-2026-11-18.k6-summary.json",
+  "caveats": [
+    "Measured against the local Docker Compose Development stack, not production; QR2.3 CPU evidence remains a separate Cloudflare-sourced record.",
+    "Ingest is best-effort async with a 202/200 response; the scenario asserts the HTTP path latency and success rate, not downstream forwarding throughput.",
+    "The k6 --summary-export JSON serialises threshold booleans as false even on a passing run; PASS is determined from the console threshold report (all ✓) and k6 exit code 0. The metric values above are taken from the exported summary."
+  ]
+}

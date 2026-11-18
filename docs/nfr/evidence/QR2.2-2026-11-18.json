@@ -1,0 +1,72 @@
+{
+  "requirement": "QR2.2",
+  "requirement_text": "Dashboard reads p95 ≤ 500 ms on 50-item pages",
+  "record_type": "load test result",
+  "recorded_at": "2026-11-18",
+  "recorded_by": "shazi",
+  "status": "PASS",
+  "harness": {
+    "script": "load/scripts/k6-read.js",
+    "message_seed_script": "load/scripts/seed-messages.mjs",
+    "k6_version": "2.4.0",
+    "executor": "constant-arrival-rate",
+    "arrival_rate_rps": 25,
+    "duration": "5m",
+    "pre_allocated_vus": 25,
+    "max_vus": 25,
+    "run_id": "qr22-full-20261118",
+    "target": "local Docker Compose stack (http://127.0.0.1:8080, Development)"
+  },
+  "authentication": {
+    "method": "locally minted HS256 JWT in Postern.Auth cookie",
+    "issuer": "Postern",
+    "audience": "Postern.Web",
+    "claims": ["sub", "email", "jti", "nbf", "iat", "exp", "iss", "aud"],
+    "signing_key_source": "env/api.env Authentication__SigningKey",
+    "reason_local_mint": "Login endpoint is rate-limited to 10 per 15 min per source IP; no login calls are made by the scenario"
+  },
+  "dataset": {
+    "accounts": 199,
+    "activity_rows": 9950,
+    "blocked_rows": 9950,
+    "activity_per_alias_range": "70-100",
+    "blocked_per_alias": 50,
+    "page_size_asserted": "items.length === 50 on every response"
+  },
+  "endpoints": [
+    "GET /api/aliases/{aliasId}/messages?limit=50",
+    "GET /api/messages/blocked?limit=50"
+  ],
+  "thresholds_declared_in_script": {
+    "http_req_duration{endpoint:activity}": "p(95) <= 500 ms",
+    "http_req_duration{endpoint:blocked}": "p(95) <= 500 ms",
+    "auth_failures": "count == 0",
+    "short_pages": "count == 0",
+    "read_errors": "count == 0"
+  },
+  "measured": {
+    "requests": 7501,
+    "achieved_rate_rps": 25.0025,
+    "http_req_failed_percent": 0.0,
+    "checks_passed": "7501 / 7501 (100.00%)",
+    "activity_ms": { "avg": 8.506, "p95": 13.401, "p99": 23.197, "max": 54.039 },
+    "blocked_ms": { "avg": 7.474, "p95": 12.019, "p99": 22.761, "max": 50.471 },
+    "combined_ms": { "avg": 7.98, "p95": 12.9, "p99": 23.15, "max": 54.03 },
+    "auth_failures": 0,
+    "short_pages": 0,
+    "read_errors": 0,
+    "k6_exit_code": 0
+  },
+  "reproduction": [
+    "node load/scripts/seed-messages.mjs  # requires QR2.1 seed manifest first",
+    "$env:POSTERN_SIGNING_KEY = (Get-Content env/api.env | ConvertFrom-StringData).Authentication__SigningKey",
+    "$env:RUN_ID = 'qr22-full-20261118'; $env:POSTERN_DURATION = '5m'; $env:POSTERN_READ_RATE = '25'",
+    "k6 run --summary-export <path> load/scripts/k6-read.js"
+  ],
+  "raw_summary": "docs/nfr/evidence/QR2.2-2026-11-18.k6-summary.json",
+  "caveats": [
+    "Measured against the local Docker Compose Development stack, not production.",
+    "The k6 --summary-export JSON serialises threshold booleans as false even on a passing run; PASS is determined from the console threshold report (all ✓) and k6 exit code 0. The metric values above are taken from the exported summary.",
+    "Pages were pre-seeded to a full 50 items so the reported latency reflects genuine 50-item responses rather than short pages."
+  ]
+}

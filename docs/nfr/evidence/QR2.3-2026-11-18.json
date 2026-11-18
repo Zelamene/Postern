@@ -1,0 +1,39 @@
+{
+  "requirement": "QR2.3",
+  "requirement_text": "Core-task steps p95 ≤ 2 s; task p95 ≤ 5 s; effect in mail path p95 ≤ 60 s",
+  "scope": "mail-path time-to-effect (60 s bound) via publish-then-poll against Miniflare KV",
+  "record_type": "time-to-effect harness result",
+  "recorded_at": "2026-11-18",
+  "status": "PASS",
+  "harness": {
+    "script": "load/scripts/time-to-effect.mjs",
+    "miniflare": "3.20250718.3",
+    "iterations": 200,
+    "poll_interval_ms": 50,
+    "timeout_ms": 60000,
+    "run_id": "qr23-tte-20261118",
+    "publish": "POST /publish -> POSTERN_KV.put",
+    "mail_decision_read": "GET /effect -> POSTERN_KV.get(key, { type: 'json', cacheTtl: 60 })"
+  },
+  "worker_ttl_contract": {
+    "source": "worker/src/index.ts",
+    "cacheTtl_60_reads_found": 4,
+    "expected_minimum": 4,
+    "note": "alias record plus __global_blocklist, suspended_users and rate_limited_users; this TTL is what bounds production staleness to 60 s"
+  },
+  "measured": {
+    "successful_cycles": 200,
+    "timeouts": 0,
+    "total_polls": 200,
+    "p50Ms": 13.729,
+    "p95Ms": 23.982,
+    "p99Ms": 47.38,
+    "maxMs": 258.866,
+    "threshold_p95_ms": 60000
+  },
+  "caveats": [
+    "Miniflare 3 does not emulate Cloudflare KV cacheTtl staleness; the measured publish-to-observe values are the propagation floor, not the worst-case cached read.",
+    "The 60 s production bound is enforced by the cacheTtl:60 reads in worker/src/index.ts (verified above), not measured through an emulated edge cache.",
+    "This harness covers only the mail-path effect leg of QR2.3. The 2 s step and 5 s task targets belong to instrumented Playwright journeys and are not measured here."
+  ]
+}
