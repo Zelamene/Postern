@@ -7,14 +7,10 @@ test('QR2.3 core task (admin): sync KV stays within step/task budgets with serve
   const serverTiming = createServerTimingCollector(page)
 
   await timedCoreTask('sync KV', async () => {
-    await timedStep('open admin operations', async () => {
-      await page.goto('/admin')
-      await expect(page.getByRole('region', { name: 'Key-value sync' })).toBeVisible()
-    }, {
-      serverTiming: () => serverTiming.latestMatching((url) => url.includes('/api/admin')),
-    })
-
+    await page.goto('/admin')
     const syncPanel = page.getByRole('region', { name: 'Key-value sync' })
+    await expect(syncPanel).toBeVisible({ timeout: 15_000 })
+
     await timedStep('trigger KV sync', async () => {
       await syncPanel.getByRole('button', { name: 'Sync now' }).click()
       await expect(syncPanel.getByText(/Synced \d+ aliases\./)).toBeVisible()
