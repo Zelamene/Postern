@@ -96,11 +96,11 @@ jobs:
 
       - name: Install Playwright Chromium
         working-directory: web
-        run: npx playwright install --with-deps chromium
+        run: ./node_modules/.bin/playwright install --with-deps chromium
 
       - name: Public accessibility scan (QR6.1)
         working-directory: web
-        run: npx playwright test --config playwright.public-ci.config.ts
+        run: ./node_modules/.bin/playwright test --config playwright.public-ci.config.ts
 
       - name: Summarise coverage
         if: always()
