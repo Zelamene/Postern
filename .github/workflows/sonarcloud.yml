@@ -161,3 +161,47 @@ jobs:
             --disable-build-servers
 
           "$SCANNER" end "/d:sonar.token=$SONAR_TOKEN"
+
+      - name: Report quality gate conditions
+        env:
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+        run: |
+          set -uo pipefail
+          project_key="${SONAR_PROJECT_KEY:-${GITHUB_REPOSITORY//\//_}}"
+          branch="$GITHUB_REF_NAME"
+          gate_file="$RUNNER_TEMP/sonar-gate.json"
+          complexity_file="$RUNNER_TEMP/sonar-complexity.json"
+
+          curl -sS -u "${SONAR_TOKEN}:" -o "$gate_file" \
+            "https://sonarcloud.io/api/qualitygates/project_status?projectKey=${project_key}&branch=${branch}" || true
+          curl -sS -u "${SONAR_TOKEN}:" -o "$complexity_file" \
+            "https://sonarcloud.io/api/issues/search?projects=${project_key}&branch=${branch}&rules=S3776&statuses=OPEN,CONFIRMED,REOPENED&ps=500" || true
+
+          python3 - "$gate_file" "$complexity_file" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          gate_path, complexity_path = sys.argv[1:3]
+
+          try:
+              status = json.loads(pathlib.Path(gate_path).read_text(encoding="utf-8"))["projectStatus"]
+              print(f"=== Quality gate: {status['status']} ===")
+              for condition in status.get("conditions", []):
+                  print(
+                      f"  {condition['metricKey']}: actual={condition.get('actualValue')} "
+                      f"threshold={condition.get('errorThreshold')} {condition['status']}"
+                  )
+              for period in status.get("periods", []):
+                  print(f"  new-code period: {period.get('mode')} since {period.get('date')}")
+          except Exception as error:
+              print(f"Quality-gate report unavailable: {error}")
+
+          try:
+              complexity = json.loads(pathlib.Path(complexity_path).read_text(encoding="utf-8"))
+              print(f"=== Open S3776 cognitive-complexity issues: {complexity.get('total')} ===")
+              for issue in complexity.get("issues", []):
+                  print(f"  {issue.get('component')}:{issue.get('line')} {issue.get('message')}")
+          except Exception as error:
+              print(f"Cognitive-complexity report unavailable: {error}")
+          PY
