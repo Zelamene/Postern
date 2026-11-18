@@ -21,7 +21,7 @@ export const OUTCOMES = {
   errored: "errored"
 } as const;
 
-export const OUTCOMES_DATASET = "postern_outcomes";
+export const OUTCOMES_DATASET = "Postern_NFR_TESTS";
 export const MONTHLY_OUTCOMES_CRON = "0 4 1 * *";
 export const MAIL_PATH_SUMMARY_KEY = "mail_path_last_month";
 

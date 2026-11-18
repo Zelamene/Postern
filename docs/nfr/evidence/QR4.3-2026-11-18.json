@@ -31,7 +31,7 @@
   },
   "mail_path": {
     "counter_sink": "Cloudflare Workers Analytics Engine",
-    "dataset": "postern_outcomes",
+    "dataset": "Postern_NFR_TESTS",
     "binding": "POSTERN_OUTCOMES",
     "index1": "forwarded | dropped | errored",
     "blob1": "drop reason, empty for forwarded and errored",
