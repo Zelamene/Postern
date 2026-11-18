@@ -146,6 +146,9 @@ export class DisposableStack {
         `Username=postern_migrator;Password=${this.secrets.migratorPassword};Search Path=postern`,
     }
     await run('dotnet', ['tool', 'restore'], { env: migrationEnvironment })
+    await run('dotnet', ['restore', path.join(repositoryRoot, 'backend', 'Postern.slnx')], {
+      env: migrationEnvironment,
+    })
     await run(
       'dotnet',
       [
