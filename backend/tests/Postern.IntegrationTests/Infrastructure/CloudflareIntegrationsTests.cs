@@ -200,6 +200,59 @@ public sealed class CloudflareIntegrationsTests
         Assert.Single(handler.Requests);
     }
 
+    [Fact]
+    public async Task DestinationService_RemoveAsync_TreatsNotFoundAsSuccess()
+    {
+        var handler = new StubHandler(request => request.Method == HttpMethod.Get
+            ? Json(HttpStatusCode.OK, new
+            {
+                success = true,
+                result = new[] { new { id = "destination-id", email = "inbox@example.test", verified = (string?)null } }
+            })
+            : new HttpResponseMessage(HttpStatusCode.NotFound));
+        var service = CreateDestinationService(handler);
+
+        await service.RemoveAsync("inbox@example.test", CancellationToken.None);
+
+        Assert.Equal(2, handler.Requests.Count);
+    }
+
+    [Fact]
+    public async Task DestinationService_FindAsync_StopsAtTheLastPage()
+    {
+        var handler = new StubHandler(request => request.Method == HttpMethod.Get
+            ? Json(HttpStatusCode.OK, new
+            {
+                success = true,
+                result = Enumerable.Range(0, 50).Select(index => new
+                {
+                    id = $"id-{index}",
+                    email = $"other-{index}@example.test",
+                    verified = (string?)null
+                }).ToArray(),
+                result_info = new { total_pages = 1 }
+            })
+            : new HttpResponseMessage(HttpStatusCode.OK));
+        var service = CreateDestinationService(handler);
+
+        await service.AddAsync("inbox@example.test", CancellationToken.None);
+
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.Equal(HttpMethod.Post, handler.Requests[1].Method);
+    }
+
+    [Fact]
+    public async Task DestinationService_ThrowsWhenCloudflareReturnsAnError()
+    {
+        var handler = new StubHandler(_ => Json(
+            HttpStatusCode.InternalServerError,
+            new { success = false, errors = new[] { new { code = 10000 } } }));
+        var service = CreateDestinationService(handler);
+
+        await Assert.ThrowsAsync<HttpRequestException>(
+            () => service.AddAsync("inbox@example.test", CancellationToken.None));
+    }
+
     private static HttpClient CreateClient(StubHandler handler) =>
         new(handler)
         {
