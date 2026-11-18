@@ -41,7 +41,7 @@ named here fails the pipeline; it is the evidence.
 | Row | Guard | Where |
 | --- | --- | --- |
 | QR7.1 | Coverage thresholds (worker, web merged, backend line) plus the five named critical paths | `worker/vitest.config.ts`, `web/vitest.coverage.config.ts`, `backend-ci.yml` (85% merged line coverage), `shared/critical-paths.json`, `Postern.IntegrationTests/CriticalPathInventoryTests.cs` |
-| QR1.6 | Runtime dependency advisories (web, worker, NuGet) | `nfr-ci.yml` `dependency-audit` job |
+| QR1.6 | Runtime dependency advisories (web, worker, NuGet) | `nfr-ci.yml` `dependency-audit` job; `web-ci.yml` `build-and-test` job |
 | QR1.1 | Every `/api/admin` route rejects anonymous and non-admin callers, and is either documented in OpenAPI or explicitly exempt | `Postern.IntegrationTests/Api/AdminRouteInventoryTests.cs` |
 | QR5.3 | Rate-limit projection refreshes at least every five minutes and survives a failed refresh | `Postern.IntegrationTests/Workers/RateLimitProjectionWorkerTests.cs` |
 | QR1.5 | Boundary + 1 for every throttle policy, an inventory of anonymous credential endpoints, and exactly one trusted proxy hop | `Postern.IntegrationTests/Api/RateLimitPolicyTests.cs` |
@@ -64,6 +64,11 @@ without a build failure.
 
 ## Decisions recorded with the evidence
 
+- **QR1.6 SCA audit is runtime-scoped.** Both web gates use
+  `npm audit --omit=dev --audit-level=high`, matching the worker and NuGet gates. The
+  remaining `picomatch` advisory is confined to the dev build toolchain; upstream has no
+  patched release, and the available forced downgrade replaces it with high and critical
+  Vite/Vitest advisories. The runtime dependency audit reports 0 high advisories.
 - **QR1.3 counts audit events, not mutations.** Approving an invite request writes
   `invite_request.approved`, `invite.created` and `invite.approved` in one transaction.
   The requirement is enforced as "each route emits exactly its declared events", with the
