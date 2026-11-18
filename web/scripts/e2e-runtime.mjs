@@ -68,12 +68,30 @@ export function run(command, args, options = {}) {
       stdio: 'inherit',
       shell: process.platform === 'win32' && /\.(cmd|bat)$/i.test(command),
     })
-    child.once('error', reject)
+    let settled = false
+    let timer
+
+    const settle = (error) => {
+      if (settled) return
+      settled = true
+      if (timer) clearTimeout(timer)
+      if (error) reject(error)
+      else resolve()
+    }
+
+    if (options.timeoutMs) {
+      timer = setTimeout(() => {
+        child.kill('SIGTERM')
+        settle(new Error(`${command} exceeded the ${options.timeoutMs} ms timeout.`))
+      }, options.timeoutMs)
+    }
+
+    child.once('error', settle)
     child.once('close', (code, signal) => {
       if (code === 0) {
-        resolve()
+        settle()
       } else {
-        reject(new Error(`${command} exited with ${signal ?? `code ${code}`}.`))
+        settle(new Error(`${command} exited with ${signal ?? `code ${code}`}.`))
       }
     })
   })
@@ -200,22 +218,28 @@ export class DisposableStack {
     )
   }
 
-  async startWebServer(port, environment) {
+  async startWebServer(port, environment, mode = 'development', configFile) {
     const viteEntry = path.join(webDirectory, 'node_modules', 'vite', 'bin', 'vite.js')
-    this.webProcess = spawn(
-      process.execPath,
-      [viteEntry, '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-      { cwd: webDirectory, env: environment, stdio: 'inherit' },
-    )
+    const viteArgs =
+      mode === 'preview'
+        ? [viteEntry, 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort']
+        : [viteEntry, '--host', '127.0.0.1', '--port', String(port), '--strictPort']
+    if (configFile) viteArgs.push('--config', configFile)
+    const label = mode === 'preview' ? 'Vite preview' : 'Vite'
+    this.webProcess = spawn(process.execPath, viteArgs, {
+      cwd: webDirectory,
+      env: environment,
+      stdio: 'inherit',
+    })
     const unexpectedExit = new Promise((_, reject) => {
       this.webProcess.once('exit', (code, signal) => {
         if (!this.stoppingWeb) {
-          reject(new Error(`Vite exited before ${this.name} completed (${signal ?? code}).`))
+          reject(new Error(`${label} exited before ${this.name} completed (${signal ?? code}).`))
         }
       })
     })
     await Promise.race([
-      waitForHttp(`http://127.0.0.1:${port}`, 30_000, 'Vite'),
+      waitForHttp(`http://127.0.0.1:${port}`, 30_000, label),
       unexpectedExit,
     ])
   }

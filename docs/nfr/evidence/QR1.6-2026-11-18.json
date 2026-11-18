@@ -16,7 +16,7 @@
   "dast": {
     "entry_point": "zap-full-scan.py",
     "image": "ghcr.io/zaproxy/zaproxy:stable@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af",
-    "harness": "web/scripts/run-dast.mjs (disposable PostgreSQL 17 + API + Vite stack, seeded from the E2E global setup)",
+    "harness": "web/scripts/run-dast.mjs (disposable PostgreSQL 17 + API + built Vite preview stack, seeded from the E2E global setup)",
     "hook": "web/scripts/zap-auth-hook.py",
     "sessions": [
       {
@@ -36,7 +36,7 @@
     ],
     "rules": ["traditional spider", "Ajax spider", "passive scan", "active scan"],
     "crawled_urls_per_scan": 5,
-    "passing_rules_per_scan": 142,
+    "passing_rules_per_scan": 113,
     "high_findings": 0,
     "medium_findings": 0,
     "documented_environment_exclusions": [
@@ -61,7 +61,8 @@
   ],
   "caveats": [
     "The ZAP target is an ephemeral HTTP-only compose stack; TLS remains a separate per-environment manual control, and rule 10106 is excluded with that rationale in web/zap/finding-exclusions.json.",
-    "The admin JWT is deliberately limited to 15 minutes, so the admin scan runs first; a future change that lengthens scans beyond that window must re-seed the admin session or add ZAP re-authentication.",
+    "The admin JWT is deliberately limited to 15 minutes, so the admin scan runs first under a 15-minute role timeout; a future change that lengthens scans beyond that window must re-seed the admin session or add ZAP re-authentication.",
+    "ZAP starts with -silent so add-ons cannot auto-update at scan time; the pinned image digest defines the DAST rule set.",
     "ZAP is a point-in-time dynamic scan of crawled routes; it does not replace manual security review of flows the spider and Ajax spider cannot reach."
   ]
 }

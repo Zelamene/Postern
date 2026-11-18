@@ -58,7 +58,7 @@ jobs:
   dast:
     name: Seeded ZAP full scan
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 45
     permissions:
       contents: read
       issues: write
