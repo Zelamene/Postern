@@ -67,7 +67,7 @@ test('QR2.3 core tasks (user): create alias and review activity stay within step
       const downloadPromise = page.waitForEvent('download')
       await page.getByRole('button', { name: 'Export CSV' }).click()
       const download = await downloadPromise
-      expect(download.suggestedFilename()).toMatch(/^postern-activity-/)
+      expect(download.suggestedFilename()).toMatch(/^postern-.+\.csv$/)
     })
   })
 })
