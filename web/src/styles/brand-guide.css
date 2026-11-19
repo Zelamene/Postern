@@ -888,6 +888,10 @@
     .progress-item {
       flex-basis: 100%;
     }
+
+    .demo__stage .tip::after {
+      display: none;
+    }
   }
 
   pre {
@@ -952,7 +956,7 @@
 
   .state-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(13.125rem, 100%), 1fr));
     gap: var(--space-4);
     margin-block: var(--space-4) var(--space-3);
   }

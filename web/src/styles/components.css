@@ -1121,9 +1121,14 @@
     font-size: 0.875em;
   }
 
+  .legal-table-wrap {
+    max-width: 100%;
+    margin-block-start: var(--space-4);
+    overflow-x: auto;
+  }
+
   .legal-prose table {
     width: 100%;
-    margin-block-start: var(--space-4);
     border-collapse: collapse;
     font-size: var(--fs-caption);
     line-height: 1.5;
