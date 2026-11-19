@@ -28,7 +28,7 @@ test('updates and reloads the forwarding destination after verification', async 
 })
 
 test('signs out and loses access to authenticated API routes', async ({ page }) => {
-  await page.goto('/app')
+  await page.goto('/app/account')
   await page.getByRole('button', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/login$/)
   await expect(page.getByRole('heading', { name: 'Sign in to Postern' })).toBeVisible()

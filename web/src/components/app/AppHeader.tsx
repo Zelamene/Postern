@@ -5,13 +5,10 @@ import type { AppView, NotificationsController, ThemeMode } from '../../types'
 import { AppLink } from './AppLink'
 
 interface AppHeaderProps {
-  email: string
   view: AppView
   theme: ThemeMode
   notifications: NotificationsController
-  isSigningOut: boolean
   onThemeChange: (theme: ThemeMode) => void
-  onSignOut: () => void
 }
 
 const NAV_ITEMS: ReadonlyArray<{ view: AppView; label: string; to: string }> = [
@@ -20,15 +17,7 @@ const NAV_ITEMS: ReadonlyArray<{ view: AppView; label: string; to: string }> = [
   { view: 'account', label: 'Account', to: '/app/account' },
 ]
 
-export function AppHeader({
-  email,
-  view,
-  theme,
-  notifications,
-  isSigningOut,
-  onThemeChange,
-  onSignOut,
-}: Readonly<AppHeaderProps>) {
+export function AppHeader({ view, theme, notifications, onThemeChange }: Readonly<AppHeaderProps>) {
   const isDark = theme === 'dark'
   const activeView = view === 'messages' ? 'aliases' : view
 
@@ -37,7 +26,7 @@ export function AppHeader({
       <div className="ea-header__inner">
         <div className="ea-header__left">
           <AppLink to="/app" className="ea-brand">
-            <EditorialLogo size={28} />
+            <EditorialLogo size={22} />
             <span className="ea-brand__name">Postern</span>
           </AppLink>
 
@@ -58,12 +47,7 @@ export function AppHeader({
           </nav>
         </div>
 
-        <div className="ea-header__right">
-          <div className="ea-header__dest">
-            <span>Forwarding to</span>
-            <code title={email}>{email}</code>
-          </div>
-
+        <div className="ea-header__controls">
           <button
             type="button"
             onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
@@ -74,15 +58,6 @@ export function AppHeader({
           </button>
 
           <NotificationMenu controller={notifications} />
-
-          <button
-            type="button"
-            className="ea-signout"
-            onClick={onSignOut}
-            disabled={isSigningOut}
-          >
-            {isSigningOut ? 'Signing out…' : 'Sign out'}
-          </button>
         </div>
 
         <nav aria-label="Compact app navigation" className="ea-nav ea-nav--mobile">
@@ -100,30 +75,6 @@ export function AppHeader({
             )
           })}
         </nav>
-
-        <div className="ea-mobile-controls">
-          <NotificationMenu controller={notifications} />
-          <button
-            type="button"
-            onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
-            className="ea-icon-btn"
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDark ? <IconSun size={16} /> : <IconMoon size={16} />}
-          </button>
-        </div>
-
-        <div className="ea-mobile-session">
-          <span title={email}>{email}</span>
-          <button
-            type="button"
-            className="ea-signout"
-            onClick={onSignOut}
-            disabled={isSigningOut}
-          >
-            {isSigningOut ? 'Signing out…' : 'Sign out'}
-          </button>
-        </div>
       </div>
     </header>
   )

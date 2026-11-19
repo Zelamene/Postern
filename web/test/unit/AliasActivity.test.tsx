@@ -373,7 +373,7 @@ describe('AliasActivity feed states', () => {
     })
 
     expect(screen.getByText('No subject')).toBeInTheDocument()
-    expect(screen.getByText('unknown authentication')).toBeInTheDocument()
+    expect(screen.getByText('unknown')).toBeInTheDocument()
     expect(screen.getByText(/Low severity/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /as expected/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Block / })).toBeNull()
@@ -383,7 +383,7 @@ describe('AliasActivity feed states', () => {
   it('uses warning styling for authentication results it does not recognise', () => {
     renderActivity({ ...FLAGGED, authenticationResult: 'softfail' })
 
-    expect(screen.getByText('softfail authentication')).toBeInTheDocument()
+    expect(screen.getByText('softfail')).toBeInTheDocument()
   })
 })
 
