@@ -1,6 +1,7 @@
 import { IconEyeOff } from '../common/Icons'
 import type { ActivityFeed, Alias, BlockedMessage } from '../../types'
 import { formatDateTime } from '../../services/formatters'
+import { blockedReasonLabel } from '../../services/blockedReasons'
 
 interface BlockedActivityProps {
   aliases: Alias[]
@@ -22,16 +23,6 @@ export function BlockedActivity({ aliases, feed }: Readonly<BlockedActivityProps
             forwarding rules for the alias.
           </p>
         </div>
-        {feed.items.length > 0 && (
-          <div className="ea-stats" aria-label="Blocked summary">
-            <span className="ea-stats__item">
-              <span className="ea-dot ea-dot--accent" aria-hidden="true" />
-              <span>
-                {feed.items.length} loaded {feed.items.length === 1 ? 'entry' : 'entries'}
-              </span>
-            </span>
-          </div>
-        )}
       </div>
 
       <section className="ea-stack" aria-label="Blocked messages">
@@ -68,46 +59,48 @@ export function BlockedActivity({ aliases, feed }: Readonly<BlockedActivityProps
 
         {feed.items.length > 0 && (
           <>
-            <div className="ea-section-head">
-              <h2 className="ea-section-title">Incident register</h2>
-              <span className="ea-section-note">Loaded entries only</span>
-            </div>
-
-            <ul className="ea-timeline">
+            <ul className="ea-activity-list">
               {feed.items.map((message) => (
-                <li key={message.id} className="ea-event">
-                  <span className="ea-marker ea-marker--accent" aria-hidden="true">
-                    <IconEyeOff size={16} />
-                  </span>
-                  <article className="ea-event__card">
-                    <div className="ea-event__head">
-                      <span className="ea-chip ea-chip--danger">{message.reason}</span>
-                      <time className="ea-event__time" dateTime={message.receivedAt}>
-                        {formatDateTime(message.receivedAt)}
-                      </time>
-                    </div>
+                <li key={message.id} className="ea-activity-row">
+                  <div className="ea-activity-row__main">
+                    <span className="ea-activity-row__avatar" aria-hidden="true">
+                      <IconEyeOff size={16} />
+                    </span>
 
-                    <p className="ea-section-note">Subject abstract</p>
-                    <p className="ea-event__subject">
-                      {message.subject?.trim() || 'No subject'}
-                    </p>
-                    <p className="ea-hint">This message was not forwarded to your destination.</p>
+                    <div className="ea-activity-row__body">
+                      <div className="ea-activity-row__head">
+                        <div className="ea-activity-row__identity">
+                          <span className="ea-activity-row__sender">
+                            {message.fromHeader || 'Unknown sender'}
+                          </span>
+                        </div>
+                        <time className="ea-activity-row__time" dateTime={message.receivedAt}>
+                          {formatDateTime(message.receivedAt)}
+                        </time>
+                      </div>
 
-                    <div className="ea-register-grid">
-                      <div>
-                        <span className="ea-spec__label">Sender</span>
-                        <span className="ea-spec__value ea-spec__value--sm">
-                          {message.fromHeader || 'Unknown sender'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="ea-spec__label">Alias affected</span>
-                        <span className="ea-spec__value ea-spec__value--sm">
-                          {labels.get(message.aliasId) ?? 'Unknown alias'}
-                        </span>
-                      </div>
+                      <p className="ea-activity-row__subject">
+                        {message.subject?.trim() || 'No subject'}
+                      </p>
+
+                      <dl className="ea-activity-row__meta">
+                        <div className="ea-activity-row__meta-group">
+                          <dt className="ea-activity-row__meta-label">Reason</dt>
+                          <dd className="ea-activity-row__meta-value">
+                            <span className="ea-chip ea-chip--danger">
+                              {blockedReasonLabel(message.reason)}
+                            </span>
+                          </dd>
+                        </div>
+                        <div className="ea-activity-row__meta-group">
+                          <dt className="ea-activity-row__meta-label">Alias</dt>
+                          <dd className="ea-activity-row__meta-value">
+                            {labels.get(message.aliasId) ?? 'Unknown alias'}
+                          </dd>
+                        </div>
+                      </dl>
                     </div>
-                  </article>
+                  </div>
                 </li>
               ))}
             </ul>
