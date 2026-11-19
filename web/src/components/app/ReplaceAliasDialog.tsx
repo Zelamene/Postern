@@ -259,9 +259,21 @@ export function ReplaceAliasDialog({
             label="Reserve a new address for this service."
           >
             {!hasReservedAddress ? (
-              <p>
-                Get the real address first so you can save it before the old one is retired.
-              </p>
+              <>
+                <p>
+                  Click <strong>Reserve new address</strong> here to create the replacement before
+                  the old one is retired.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn--primary btn--sm ea-checklist__action"
+                  onClick={() => void reserveAddress()}
+                  disabled={isBusy}
+                  aria-busy={isReserving || undefined}
+                >
+                  {isReserving ? 'Reserving…' : 'Reserve new address'}
+                </button>
+              </>
             ) : (
               <p>A fresh address is ready to copy below.</p>
             )}
@@ -342,15 +354,7 @@ export function ReplaceAliasDialog({
           Cancel
         </button>
         {step === 'reserve' ? (
-          <button
-            type="button"
-            className="btn btn--primary"
-            onClick={() => void reserveAddress()}
-            disabled={isBusy}
-            aria-busy={isReserving || undefined}
-          >
-            {isReserving ? 'Reserving…' : 'Reserve new address'}
-          </button>
+          <p className="ea-dialog__footnote">Complete step 1 above to continue.</p>
         ) : (
           <button
             type="button"
