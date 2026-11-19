@@ -26,7 +26,12 @@ export function CookiePolicyPage({ theme, onThemeChange }: Readonly<LegalPagePro
         Postern uses only storage that is strictly necessary to operate the service. We do not use
         analytics, advertising, personalisation, or third-party tracking cookies.
       </p>
-      <div className="legal-table-wrap" role="region" aria-label="Cookies and browser storage" tabIndex={0}>
+      <div
+        className="legal-table-wrap"
+        role="region"
+        aria-label="Cookies and browser storage"
+        tabIndex={0 /* NOSONAR S6845: WCAG 2.1.1 requires focusable overflow regions for keyboard scrolling */}
+      >
         <table>
           <thead>
             <tr>

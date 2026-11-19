@@ -6,6 +6,7 @@ using Postern.UnitTests.Fakes;
 
 namespace Postern.UnitTests;
 
+[Collection("RateLimitService")]
 public class RateLimitMapRebuildTests
 {
     private static readonly DateTimeOffset Now = new(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
