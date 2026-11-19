@@ -104,7 +104,7 @@ describe('AliasActivity sender actions', () => {
     )
 
     renderActivity(FLAGGED)
-    await user.click(screen.getByRole('button', { name: 'Mark shop.example as expected' }))
+    await user.click(screen.getByRole('button', { name: 'Mark info@shop.example as expected' }))
 
     await waitFor(() =>
       expect(marked).toEqual([`/api/aliases/${ALIAS.id}/mark-expected`]),
@@ -158,6 +158,24 @@ describe('AliasActivity sender actions', () => {
     await waitFor(() =>
       expect(blocked).toEqual([`/api/aliases/${ALIAS.id}/block-sender`]),
     )
+  })
+
+  it('explains and labels the explicit approval for a public provider sender', () => {
+    renderActivity({
+      ...FLAGGED,
+      fromHeader: 'Person <person@gmail.com>',
+      envelopeSender: 'person@gmail.com',
+      flagReason: 'unexpected_pass',
+    })
+
+    expect(screen.getByText(/public mailbox providers need explicit approval/i)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Mark person@gmail.com as expected' })).toBeVisible()
+  })
+
+  it('does not show the public provider hint for a corporate sender', () => {
+    renderActivity(FLAGGED)
+
+    expect(screen.queryByText(/public mailbox providers need explicit approval/i)).toBeNull()
   })
 
   it('reports a sender the API rejects', async () => {
@@ -219,7 +237,7 @@ describe('AliasActivity leak detection', () => {
     const user = userEvent.setup()
     renderActivity(FLAGGED)
 
-    expect(screen.getByRole('button', { name: 'Mark shop.example as expected' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Mark info@shop.example as expected' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Replace this alias' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Block shop.example' })).toBeVisible()
 
@@ -430,7 +448,7 @@ describe('AliasActivity sender failures', () => {
     )
 
     renderActivity(FLAGGED)
-    await user.click(screen.getByRole('button', { name: 'Mark shop.example as expected' }))
+    await user.click(screen.getByRole('button', { name: 'Mark info@shop.example as expected' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Your session has ended. Sign in again to manage aliases.',

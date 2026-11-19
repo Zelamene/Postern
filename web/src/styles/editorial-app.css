@@ -758,10 +758,49 @@
   gap: 0.5rem;
   padding: 0.875rem 0;
   border-bottom: 1px solid color-mix(in srgb, var(--outline-variant) 24%, transparent);
+  transition: background-color 150ms ease-out;
+}
+
+.ea-alias-row:hover {
+  background: var(--surface-container-low);
 }
 
 .ea-alias-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
   min-width: 0;
+}
+
+.ea-alias-avatar {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 35%, transparent);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface-variant);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+}
+
+.ea-alias-identity__text {
+  min-width: 0;
+}
+
+.ea-alias-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3125rem;
+}
+
+.ea-alias-status__note {
+  color: var(--outline);
+  font-size: 0.6875rem;
+  white-space: nowrap;
 }
 
 .ea-alias-label {
@@ -828,7 +867,8 @@
 }
 
 .ea-alias-row--retired .ea-alias-label,
-.ea-alias-row--retired .ea-alias-address code {
+.ea-alias-row--retired .ea-alias-address code,
+.ea-alias-row--retired .ea-alias-avatar {
   color: var(--outline);
 }
 
@@ -845,7 +885,7 @@
     grid-row: 1;
   }
 
-  .ea-alias-row > .ea-chip {
+  .ea-alias-status {
     grid-column: 2;
     grid-row: 1;
     justify-self: end;
@@ -879,7 +919,7 @@
 
   .ea-alias-identity,
   .ea-alias-address,
-  .ea-alias-row > .ea-chip,
+  .ea-alias-status,
   .ea-alias-created,
   .ea-alias-actions {
     grid-column: auto;
@@ -1178,6 +1218,14 @@
   margin: 0;
   color: var(--outline);
   font-size: 0.75rem;
+}
+
+.ea-activity-row__provider {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--outline);
+  font-size: 0.6875rem;
+  font-style: italic;
 }
 
 .ea-activity-row__actions {
@@ -1726,6 +1774,12 @@
   line-height: 1.7;
 }
 
+.ea-dialog__footnote {
+  margin: 0 auto 0 0;
+  color: var(--outline);
+  font-size: 0.75rem;
+}
+
 .ea-transition {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1899,6 +1953,10 @@
 .ea-checklist__confirm input {
   margin-top: 0.15rem;
   accent-color: var(--accent);
+}
+
+.ea-checklist__action {
+  margin-top: 0.875rem;
 }
 
 /* - admin */

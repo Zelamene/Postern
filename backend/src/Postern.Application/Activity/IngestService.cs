@@ -175,7 +175,15 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
             };
         }
 
-        if (authResult == "pass" && senderAddress is not null && senderEtld1 is not null)
+        // A passing DMARC check only proves the sender is a genuine Gmail/Yahoo/etc.
+        // user, not that it is the service this alias was issued for. Never turn a
+        // public mailbox into an expected sender without an explicit user decision.
+        var isPublicProvider = PublicEmailDomains.Contains(senderEtld1);
+
+        if (!isPublicProvider
+            && authResult == "pass"
+            && senderAddress is not null
+            && senderEtld1 is not null)
         {
             await activityRepository.AddExpectedAddressSenderAsync(
                 alias.Id,
@@ -183,10 +191,16 @@ public sealed class IngestService(IActivityRepository activityRepository, TimePr
                 senderEtld1,
                 timeProvider.GetUtcNow(),
                 cancellationToken);
+            return (false, null);
         }
 
-        var isFlagged = authResult != "pass";
-        return (isFlagged, isFlagged ? authResult : null);
+        var isFlagged = authResult != "pass" || isPublicProvider;
+        if (!isFlagged)
+        {
+            return (false, null);
+        }
+
+        return (true, authResult == "pass" ? "unexpected_pass" : authResult);
     }
 
     private static string HashAddress(string value) =>

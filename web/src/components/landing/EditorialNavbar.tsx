@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type AnchorHTMLAttributes } from 'react'
 import { useIsSignedIn } from '../../hooks/useIsSignedIn'
 import type { ThemeMode } from '../../types'
 import { IconMoon, IconSun } from '../common/Icons'
@@ -14,9 +14,36 @@ const LINKS = [
 interface EditorialNavbarProps {
   theme: ThemeMode
   onThemeChange: (theme: ThemeMode) => void
+  /** Standalone pages link back to home sections instead of scrolling in place. */
+  useHomeLinks?: boolean
 }
 
-export function EditorialNavbar({ theme, onThemeChange }: Readonly<EditorialNavbarProps>) {
+interface HomeLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
+  sectionId: string
+  useHomeLinks: boolean
+}
+
+function HomeLink({ sectionId, useHomeLinks, children, ...props }: Readonly<HomeLinkProps>) {
+  if (useHomeLinks) {
+    return (
+      <a href={`/#${sectionId}`} {...props}>
+        {children}
+      </a>
+    )
+  }
+
+  return (
+    <SectionLink sectionId={sectionId} {...props}>
+      {children}
+    </SectionLink>
+  )
+}
+
+export function EditorialNavbar({
+  theme,
+  onThemeChange,
+  useHomeLinks = false,
+}: Readonly<EditorialNavbarProps>) {
   const [isOpen, setIsOpen] = useState(false)
   const isSignedIn = useIsSignedIn()
   const isDark = theme === 'dark'
@@ -40,13 +67,14 @@ export function EditorialNavbar({ theme, onThemeChange }: Readonly<EditorialNavb
 
         <nav aria-label="Primary navigation" className="hidden items-center gap-6 lg:flex lg:gap-8">
           {LINKS.map((link) => (
-            <SectionLink
+            <HomeLink
               key={link.sectionId}
               sectionId={link.sectionId}
+              useHomeLinks={useHomeLinks}
               className="text-[13px] font-semibold leading-[18px] tracking-[0.02em] text-on-surface no-underline transition-colors duration-150 hover:text-primary"
             >
               {link.label}
-            </SectionLink>
+            </HomeLink>
           ))}
 
           <div className="flex items-center gap-4 border-l border-outline-variant/30 pl-2">
@@ -66,12 +94,13 @@ export function EditorialNavbar({ theme, onThemeChange }: Readonly<EditorialNavb
               {signInLabel}
             </a>
 
-            <SectionLink
+            <HomeLink
               sectionId="request-invite"
+              useHomeLinks={useHomeLinks}
               className="editorial-button editorial-button--primary !min-h-0 !px-5 !py-2.5 !text-[13px]"
             >
               Request an invite
-            </SectionLink>
+            </HomeLink>
           </div>
         </nav>
 
@@ -111,14 +140,15 @@ export function EditorialNavbar({ theme, onThemeChange }: Readonly<EditorialNavb
         >
           <div className="flex flex-col border-t border-outline-variant/20 pt-3">
             {LINKS.map((link) => (
-              <SectionLink
+              <HomeLink
                 key={link.sectionId}
                 sectionId={link.sectionId}
+                useHomeLinks={useHomeLinks}
                 onClick={closeMenu}
                 className="py-3 text-[13px] font-semibold text-on-surface no-underline hover:text-primary"
               >
                 {link.label}
-              </SectionLink>
+              </HomeLink>
             ))}
             <a
               href={signInHref}
@@ -127,13 +157,14 @@ export function EditorialNavbar({ theme, onThemeChange }: Readonly<EditorialNavb
             >
               {signInLabel}
             </a>
-            <SectionLink
+            <HomeLink
               sectionId="request-invite"
+              useHomeLinks={useHomeLinks}
               onClick={closeMenu}
               className="editorial-button editorial-button--primary mt-2 w-full"
             >
               Request an invite
-            </SectionLink>
+            </HomeLink>
           </div>
         </nav>
       ) : null}

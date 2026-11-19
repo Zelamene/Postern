@@ -21,6 +21,8 @@
   <ItemGroup>
     <None Include="../../../shared/etld1-cases.json" Link="etld1-cases.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../../shared/blocked-reasons.json" Link="blocked-reasons.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../../shared/public-email-domains.json" Link="public-email-domains.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Postern.Application/Activity/public-email-domains.json" Link="application-public-email-domains.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

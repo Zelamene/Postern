@@ -48,6 +48,13 @@ function renderList(overrides: Partial<Parameters<typeof AliasList>[0]> = {}) {
 }
 
 describe('AliasList', () => {
+  it('shows the alias initial and a plain-language status note', () => {
+    renderList()
+
+    expect(screen.getByText('S')).toBeVisible()
+    expect(screen.getByText('Forwarding on')).toBeVisible()
+  })
+
   it('requires a typed match before deleting an alias', async () => {
     const user = userEvent.setup()
     const { onDelete } = renderList()

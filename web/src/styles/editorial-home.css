@@ -26,6 +26,25 @@
     stroke: var(--on-accent);
   }
 
+  /* In dark mode the lockup is monochrome: white tile, black mark. */
+  [data-theme='dark'] .editorial-logo__tile {
+    fill: var(--primary);
+  }
+
+  [data-theme='dark'] .editorial-logo__mark {
+    stroke: var(--on-primary);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .editorial-logo__tile {
+      fill: var(--primary);
+    }
+
+    :root:not([data-theme]) .editorial-logo__mark {
+      stroke: var(--on-primary);
+    }
+  }
+
   .editorial-hero-title {
     font-size: clamp(3rem, 2.1rem + 3vw, 4.5rem);
     line-height: 1.06;

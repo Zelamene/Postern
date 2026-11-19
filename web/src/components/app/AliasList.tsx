@@ -15,6 +15,13 @@ const STATUS_CHIP_CLASSES: Record<AliasStatus, string> = {
   Deleted: 'ea-chip ea-chip--muted',
 }
 
+const STATUS_NOTES: Record<AliasStatus, string> = {
+  Active: 'Forwarding on',
+  Disabled: 'Paused',
+  Replaced: 'Retired',
+  Deleted: 'Retired',
+}
+
 interface AliasListProps {
   aliases: Alias[]
   status: 'loading' | 'ready' | 'error'
@@ -192,10 +199,15 @@ export function AliasList({
                     className={`ea-alias-row${isRetired ? ' ea-alias-row--retired' : ''}`}
                   >
                     <div className="ea-alias-identity">
-                      <h3 className="ea-alias-label capitalize">{label}</h3>
-                      {alias.category && (
-                        <span className="ea-alias-category">Category: {alias.category}</span>
-                      )}
+                      <span className="ea-alias-avatar" aria-hidden="true">
+                        {label.charAt(0).toUpperCase() || '@'}
+                      </span>
+                      <div className="ea-alias-identity__text">
+                        <h3 className="ea-alias-label capitalize">{label}</h3>
+                        {alias.category && (
+                          <span className="ea-alias-category">Category: {alias.category}</span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="ea-alias-address">
@@ -220,7 +232,10 @@ export function AliasList({
                       )}
                     </div>
 
-                    <span className={STATUS_CHIP_CLASSES[alias.status]}>{alias.status}</span>
+                    <div className="ea-alias-status">
+                      <span className={STATUS_CHIP_CLASSES[alias.status]}>{alias.status}</span>
+                      <span className="ea-alias-status__note">{STATUS_NOTES[alias.status]}</span>
+                    </div>
 
                     <span className="ea-alias-created">
                       <span className="ea-alias-meta-label">Created</span>

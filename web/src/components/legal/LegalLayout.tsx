@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import type { ThemeMode } from '../../types'
 import { LEGAL_CONTACT_EMAIL, LEGAL_LAST_UPDATED } from '../../content/legal'
 import { Footer } from '../common/Footer'
-import { Navbar } from '../common/Navbar'
+import { EditorialNavbar } from '../landing/EditorialNavbar'
 
 const LEGAL_LINKS = [
   { href: '/privacy', label: 'Privacy Policy' },
@@ -45,7 +45,7 @@ export function LegalLayout({
         Skip to main content
       </a>
 
-      <Navbar theme={theme} onThemeChange={onThemeChange} />
+      <EditorialNavbar theme={theme} onThemeChange={onThemeChange} useHomeLinks />
 
       <main id="main-content" className="shell py-12 sm:py-16">
         <div className="mx-auto max-w-[var(--container-prose)]">

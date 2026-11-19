@@ -116,7 +116,7 @@ describe('AppPage', () => {
     const user = userEvent.setup()
     signedIn()
     const created: { label: string; category: string }[] = []
-    const senders: { senderEtld1: string }[] = []
+    const senders: { senderEtld1: string; senderAddress: string }[] = []
     server.use(
       http.get('*/api/aliases', () => HttpResponse.json([])),
       http.post('*/api/aliases', async ({ request }) => {
@@ -141,7 +141,7 @@ describe('AppPage', () => {
         )
       }),
       http.post('*/api/aliases/:aliasId/expected-senders', async ({ request }) => {
-        senders.push((await request.json()) as { senderEtld1: string })
+        senders.push((await request.json()) as { senderEtld1: string; senderAddress: string })
         return new HttpResponse(null, { status: 201 })
       }),
     )
@@ -155,7 +155,9 @@ describe('AppPage', () => {
     await user.click(screen.getByRole('button', { name: 'Create alias' }))
 
     await waitFor(() =>
-      expect(senders).toEqual([{ senderEtld1: 'alerts@bank.example' }]),
+      expect(senders).toEqual([
+        { senderEtld1: 'bank.example', senderAddress: 'alerts@bank.example' },
+      ]),
     )
     expect(created).toEqual([{ label: 'bank', category: 'finance' }])
     expect(await screen.findByText('bank.p9x1@postern.local')).toBeVisible()
