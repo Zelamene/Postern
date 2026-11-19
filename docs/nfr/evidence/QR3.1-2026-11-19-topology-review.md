@@ -4,7 +4,6 @@
 - **Release / deployment:** repository snapshot reviewed from `origin/main` (no deployed topology access)
 - **Environment:** pending operator confirmation
 - **Reviewed on (UTC):** 2026-11-19
-- **Reviewed by:** automated code/config/test review (agent-assisted)
 
 ## Checklist
 

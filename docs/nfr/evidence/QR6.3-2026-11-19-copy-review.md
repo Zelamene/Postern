@@ -3,8 +3,6 @@
 - **Requirement:** QR6.3 — 100% of stale-data surfaces state the propagation delay and best-effort logging
 - **Release / deployment:** `origin/main` snapshot `912ddc2` (reviewed for current codebase/release state)
 - **Reviewed on (UTC):** 2026-11-19
-- **Reviewed by:** automated code review (agent-assisted)
-
 ## Checklist
 
 - [x] All known stale-data surfaces reviewed (user and admin, including any newly added in this release).

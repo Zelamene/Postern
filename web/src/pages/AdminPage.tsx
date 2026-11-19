@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { InviteDashboard, InviteRequest, ThemeMode } from '../types'
 import { AdminAnalyticsBoard } from '../components/admin/AdminAnalyticsBoard'
 import { AdminAuthPanel } from '../components/admin/AdminAuthPanel'
-import { StaleDataNotice } from '../components/common/StaleDataNotice'
 import { AdminBlocklistPanel } from '../components/admin/AdminBlocklistPanel'
 import { AdminHeader } from '../components/admin/AdminHeader'
 import { AdminInviteDashboard } from '../components/admin/AdminInviteDashboard'
+import { AppFooter } from '../components/app/AppFooter'
 import { AdminKvSyncPanel } from '../components/admin/AdminKvSyncPanel'
 import { useAdminOperations } from '../hooks/useAdminOperations'
 import { useAdminRealtime } from '../hooks/useAdminRealtime'
@@ -212,7 +212,14 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
   }, [refreshDashboard, reloadOperations])
 
   return (
-    <div className="min-h-screen bg-bg text-text">
+    <div className="ea-root">
+      <a
+        href="#admin-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[var(--z-toast)] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-on-inverse focus:shadow-md"
+      >
+        Skip to main content
+      </a>
+
       <AdminHeader
         theme={theme}
         isSignedIn={access === 'dashboard'}
@@ -221,36 +228,29 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
         onSignOut={() => void handleLogout()}
       />
 
-      <main className="shell py-10 md:py-14">
+      <main id="admin-main" className="ea-main ea-main--admin">
         {access === 'checking' && (
-          <div className="flex min-h-64 items-center justify-center gap-3 text-text-muted" role="status">
-            <span className="spinner" aria-hidden="true" />
-            Checking admin session
+          <div className="ea-state-main" role="status" aria-live="polite">
+            <div className="ea-card ea-card__pad flex w-full max-w-sm flex-col items-center gap-3 text-center">
+              <span className="spinner" aria-hidden="true" />
+              <p className="ea-hint">Checking admin session</p>
+            </div>
           </div>
         )}
 
-        {(access === 'signedOut' || access === 'unavailable') && (
-          <AdminAuthPanel
-            mode={access}
-            sessionError={loadError}
-            onAuthenticated={handleAuthenticated}
-            onSignOut={() => void handleLogout()}
-          />
-        )}
-
-        {access === 'forbidden' && (
-          <AdminAuthPanel
-            mode="forbidden"
-            sessionError={null}
-            onAuthenticated={handleAuthenticated}
-            onSignOut={() => void handleLogout()}
-          />
+        {(access === 'signedOut' || access === 'unavailable' || access === 'forbidden') && (
+          <div className="ea-state-main">
+            <AdminAuthPanel
+              mode={access === 'forbidden' ? 'forbidden' : access}
+              sessionError={access === 'forbidden' ? null : loadError}
+              onAuthenticated={handleAuthenticated}
+              onSignOut={() => void handleLogout()}
+            />
+          </div>
         )}
 
         {access === 'dashboard' && dashboard && (
-          <div className="space-y-10">
-            <StaleDataNotice />
-
+          <div className="ea-admin-stack">
             <AdminInviteDashboard
               dashboard={dashboard}
               requests={requests}
@@ -284,7 +284,7 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
               onReload={() => void reloadOperations()}
             />
 
-            <div className="grid gap-5 xl:grid-cols-2">
+            <div className="ea-admin-split">
               <AdminBlocklistPanel
                 entries={blocklist?.entries ?? []}
                 isLoading={isBlocklistLoading}
@@ -305,6 +305,8 @@ export function AdminPage({ theme, onThemeChange }: Readonly<AdminPageProps>) {
           </div>
         )}
       </main>
+
+      <AppFooter />
     </div>
   )
 }

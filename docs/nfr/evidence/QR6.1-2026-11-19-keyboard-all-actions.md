@@ -2,7 +2,6 @@
 
 - **Requirement:** QR6.1 — 0 serious/critical violations; WCAG 2.1 AA; keyboard-only operation of all actions
 - **Reviewed on (UTC):** 2026-11-19
-- **Reviewed by:** automated code/structure review (agent-assisted)
 - **Scope:** user and admin UI actions in `web/src` (pages, app/admin components, common controls). This record complements automated axe scans and existing keyboard journeys.
 
 ## Automated coverage in place

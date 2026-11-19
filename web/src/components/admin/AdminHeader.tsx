@@ -1,4 +1,5 @@
-import { IconMoon, IconPosternLogo, IconSun } from '../common/Icons'
+import { IconMoon, IconSun } from '../common/Icons'
+import { EditorialLogo } from '../landing/EditorialLogo'
 import { NotificationMenu } from '../common/NotificationMenu'
 import type { NotificationsController, ThemeMode } from '../../types'
 
@@ -20,20 +21,19 @@ export function AdminHeader({
   const isDark = theme === 'dark'
 
   return (
-    <header className="bg-bg">
-      <div className="shell flex min-h-16 items-center justify-between gap-4 py-4">
-        <a href="/" className="flex items-center gap-3 text-text no-underline">
-          <span className="flex size-9 items-center justify-center bg-surface-container-lowest text-primary">
-            <IconPosternLogo size={20} />
-          </span>
-          <span className="font-[family-name:var(--font-display)] text-xl tracking-tight">Postern</span>
-          <span className="hidden border-l border-hairline pl-3 text-xs font-medium uppercase tracking-[0.08em] text-text-muted sm:inline">
-            Admin
-          </span>
-        </a>
-        <div className="flex items-center gap-2">
+    <header className="ea-header ea-admin-header">
+      <div className="ea-header__inner">
+        <div className="ea-header__left">
+          <a href="/" className="ea-brand">
+            <EditorialLogo size={28} />
+            <span className="ea-brand__name">Postern</span>
+          </a>
+          <span className="ea-admin-tag">Admin</span>
+        </div>
+
+        <div className="ea-header__right">
           {isSignedIn && (
-            <button type="button" className="btn btn--ghost btn--sm" onClick={onSignOut}>
+            <button type="button" className="ea-signout" onClick={onSignOut}>
               Sign out
             </button>
           )}
@@ -41,7 +41,7 @@ export function AdminHeader({
           <button
             type="button"
             onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
-            className="flex size-9 items-center justify-center bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-sunken hover:text-text"
+            className="ea-icon-btn"
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDark ? <IconSun size={16} /> : <IconMoon size={16} />}

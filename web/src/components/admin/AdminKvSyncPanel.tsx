@@ -22,22 +22,21 @@ export function AdminKvSyncPanel({
       : dirtyAliases === 0
         ? 'All aliases in sync'
         : `${dirtyAliases.toLocaleString()} ${dirtyAliases === 1 ? 'alias' : 'aliases'} queued`
+  const queueTone = dirtyAliases === 0 ? 'ea-chip--success' : 'ea-chip--accent'
 
   return (
-    <section aria-labelledby="kv-sync-heading" className="panel">
-      <div className="panel__header">
+    <section aria-labelledby="kv-sync-heading" className="ea-admin-panel">
+      <div className="ea-admin-panel__head">
         <div>
-          <h2 id="kv-sync-heading" className="text-xl font-bold">Key-value sync</h2>
-          <p className="mt-1 text-sm text-text-muted">
+          <h2 id="kv-sync-heading" className="ea-admin-panel__title">Key-value sync</h2>
+          <p className="ea-admin-panel__hint">
             Push alias and policy changes to the edge key-value store.
           </p>
         </div>
-        <span className={dirtyAliases === 0 ? 'chip chip--success' : 'chip chip--warning'}>
-          {queueLabel}
-        </span>
+        <span className={`ea-chip ${queueTone}`}>{queueLabel}</span>
       </div>
-      <div className="panel__body space-y-4">
-        <p className="text-sm text-text-muted">
+      <div className="ea-admin-panel__body">
+        <p className="ea-admin-panel__note">
           The nightly job syncs dirty aliases automatically. Run a manual sync after bulk changes or
           when the queue needs to drain immediately.
         </p>
@@ -48,20 +47,18 @@ export function AdminKvSyncPanel({
         </button>
 
         {error && (
-          <p role="alert" className="rounded-lg bg-danger-surface px-4 py-3 text-sm text-danger-on-surface">
-            {error}
-          </p>
+          <p role="alert" className="ea-notice ea-notice--error">{error}</p>
         )}
 
-        <div aria-live="polite">
+        <div aria-live="polite" className="ea-admin-stack ea-admin-stack--tight">
           {result && result.aliasesFailed > 0 && (
-            <div className="rounded-lg bg-warning-surface px-4 py-3 text-sm text-warning-on-surface">
-              <p className="font-semibold">
+            <div className="ea-notice ea-notice--error">
+              <p className="ea-admin-result__title">
                 Synced {result.aliasesSynced.toLocaleString()}{' '}
                 {result.aliasesSynced === 1 ? 'alias' : 'aliases'}; {result.aliasesFailed.toLocaleString()}{' '}
                 failed.
               </p>
-              <p className="mt-1">
+              <p>
                 {result.remainingDirtyAliases.toLocaleString()}{' '}
                 {result.remainingDirtyAliases === 1 ? 'alias remains' : 'aliases remain'} queued for
                 the next attempt.
@@ -70,17 +67,17 @@ export function AdminKvSyncPanel({
           )}
 
           {result && result.aliasesFailed === 0 && (
-            <div className="rounded-lg bg-success-surface px-4 py-3 text-sm text-success-on-surface">
-              <p className="font-semibold">
+            <div className="ea-notice">
+              <p className="ea-admin-result__title">
                 Synced {result.aliasesSynced.toLocaleString()}{' '}
                 {result.aliasesSynced === 1 ? 'alias' : 'aliases'}.
               </p>
-              <p className="mt-1">
+              <p>
                 {result.remainingDirtyAliases === 0
                   ? 'Every alias is in sync.'
                   : `${result.remainingDirtyAliases.toLocaleString()} remain queued.`}
               </p>
-              <p className="mt-1 text-xs">
+              <p className="ea-hint">
                 {result.globalBlocklistRebuilt ? 'Global blocklist rebuilt.' : 'Global blocklist unchanged.'}{' '}
                 {result.suspendedUsersRebuilt ? 'Suspended-user map rebuilt.' : 'Suspended-user map unchanged.'}
               </p>

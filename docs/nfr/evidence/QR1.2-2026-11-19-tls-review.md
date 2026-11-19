@@ -3,7 +3,6 @@
 - **Requirement:** QR1.2 — 100% of passwords hashed, recovery keys hashed and rotated, protected values decryptable after restart; 0 secrets in artifacts
 - **Environment:** repository / CI controls reviewed from `origin/main` snapshot (no deployed environment access)
 - **Reviewed on (UTC):** 2026-11-19
-- **Reviewed by:** automated code/CI review (agent-assisted)
 - **Scope:** repo-verifiable controls (hashing, recovery keys, Data Protection persistence/restart, secret scanning) and per-environment TLS posture
 
 ## Checklist

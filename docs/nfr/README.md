@@ -32,7 +32,7 @@ Rules this directory follows, learned the hard way on QR2.4:
 | QR4.2 | First request after idle p95 ≤ 30 s; waking state displayed | `evidence/QR4.2-2026-11-18.json` (delayed-response Playwright test); `web/test/e2e/user/waking-state.spec.ts`, `.github/workflows/browser-nightly.yml` | PASS (in-repo waking-state half): waking message asserted in 5/5 fresh-stack runs with a 6 s delayed response; cold-start p95 sample remains external |
 | QR6.1 | 0 serious/critical violations; WCAG 2.1 AA; keyboard-only operation of all actions | `evidence/QR6.1-2026-11-18.json` (axe scans + keyboard journey), `evidence/QR6.1-2026-11-19-keyboard-all-actions.md` (keyboard all-actions review/checklist); `web/playwright.public-ci.config.ts`, `.github/workflows/web-ci.yml` (public axe gate), `.github/workflows/browser-nightly.yml` | PASS: 0 violations across public light/dark, signed-in user and signed-in admin; public CI axe gate wired; core keyboard journey passed 5/5 runs and all-actions keyboard review recorded |
 | QR6.2 | Median core-task completion ≤ 2 min; 100% of journeys pass on a fresh database | `evidence/QR6.2-2026-11-18.json` (Playwright wall-clock timing over 5 fresh-stack runs); `web/test/e2e/support/timing.ts`, `.github/workflows/browser-nightly.yml` | PASS: medians 1,323 ms create alias / 2,064 ms review activity / 588 ms sync KV; 28/28 journeys passed in 5/5 runs |
-| QR6.3 | 100% of stale-data surfaces state the propagation delay and best-effort logging | `evidence/QR6.3-2026-11-18.json` (Playwright copy assertions), `evidence/QR6.3-2026-11-19-copy-review.md` (per-release copy review); `web/src/components/common/StaleDataNotice.tsx`, `web/test/e2e/user/data-freshness.spec.ts`, `web/test/e2e/admin/accessibility.spec.ts` | PASS: both statements asserted on every user and admin stale-data surface in 5/5 runs; per-release copy review recorded (2026-11-19) |
+| QR6.3 | 100% of stale-data surfaces state the propagation delay and best-effort logging | `evidence/QR6.3-2026-11-19-surface-removal.md` (current-state removal record); `web/test/e2e/user/data-freshness.spec.ts`, `web/test/e2e/admin/accessibility.spec.ts` | PASS: no stale-data surfaces remain after the user and admin redesigns; earlier presence evidence retained as a historical record |
 
 Reproduce the CPU figure with `./collect-qr2.4.ps1 -From <start> -To <end>` (needs
 a token with **Account Analytics: Read**). The script refuses to write evidence if
@@ -221,11 +221,11 @@ without a build failure.
   "median task" and "100% pass on a fresh database" halves of QR6.2. QR2.3's 2 s step / 5 s task legs
   are covered separately by instrumented browser-nightly journeys with `Server-Timing: app;dur`
   (`QR2.3-2026-11-18.json`, step/task leg).
-- **QR6.1 keyboard coverage and QR6.3 copy review.** The automated keyboard check covers the core alias journey;
+- **QR6.1 keyboard coverage and QR6.3 current state.** The automated keyboard check covers the core alias journey;
   `evidence/QR6.1-2026-11-19-keyboard-all-actions.md` records an all-actions keyboard review/checklist across user and admin surfaces
-  (native semantic controls, dialog/menu behavior, and action inventory). The QR6.3 assertions prove both statements render on
-  every stale-data surface (one shared `StaleDataNotice` in each page shell), and `evidence/QR6.3-2026-11-19-copy-review.md`
-  records the per-release wording/completeness review for the current codebase state.
+  (native semantic controls, dialog/menu behavior, and action inventory). The redesign removed the data-freshness banner from the
+  remaining admin surface after it was removed from the user app, so `evidence/QR6.3-2026-11-19-surface-removal.md` records that no
+  stale-data surfaces remain; the earlier presence assertions and copy review are historical evidence only.
 - **QR4.2 closes only the waking-state half.** `web/test/e2e/user/waking-state.spec.ts` delays
   `/api/auth/me` by 6 s and asserts the `SLOW_AFTER_MS = 3000` UI state renders before the
   response completes. The ≤ 30 s cold-start p95 remains an external Better Stack sample with
