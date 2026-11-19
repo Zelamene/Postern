@@ -396,6 +396,7 @@
 
   .prose {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-4);
     max-width: 66ch;
     margin-block-end: var(--space-6);
@@ -534,7 +535,7 @@
     color: var(--color-link);
   }
 
-  .logo-stage__art.on-paper {
+  .logo-stage__art.on-surface {
     background-color: var(--color-bg);
   }
 
@@ -566,9 +567,9 @@
   }
 
   .logo-stage__art.tile {
-    background-color: var(--color-primary-hover);
-    color: var(--color-bg);
-    border-color: var(--color-primary-hover);
+    background-color: var(--accent);
+    color: var(--on-accent);
+    border-color: var(--accent);
   }
 
   .logo-stage__art.tile svg {
@@ -577,8 +578,8 @@
   }
 
   .logo-stage__art.tile--light {
-    background-color: var(--color-surface-sunken);
-    color: var(--color-primary-hover);
+    background-color: var(--color-surface-container-lowest);
+    color: var(--accent);
     border-color: var(--color-hairline);
   }
 
@@ -891,6 +892,11 @@
 
   pre {
     max-width: 100%;
+  }
+
+  pre code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   .tabs {
@@ -1792,7 +1798,7 @@
     }
 
     .guide {
-      background: #fff;
+      background: var(--color-bg);
     }
 
     .guide__body {
@@ -1821,7 +1827,7 @@
     a[href^="http"]::after {
       content: " (" attr(href) ")";
       font-size: 0.75em;
-      color: #555;
+      color: var(--color-text-muted);
     }
   }
 }

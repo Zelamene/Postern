@@ -103,9 +103,9 @@
             </div>
             <div class="hero__mark">
               <svg viewBox="0 0 32 32" aria-hidden="true"><use href="#arch-mark" /></svg>
-              <p class="hero__mark-word">Seal</p>
+              <p class="hero__mark-word">Accent</p>
               <p class="hero__mark-rule">
-                Maroon is wax, not decoration. It appears where something is decided or sent.
+                A rose accent marks the link and the action. It appears where you decide something.
               </p>
             </div>
             <div class="hero__mark">
@@ -118,10 +118,10 @@
           </div>
 
           <dl class="spec-strip">
-            <div><dt>Version</dt><dd>1.0</dd></div>
-            <div><dt>Updated</dt><dd>3 November 2026</dd></div>
+            <div><dt>Version</dt><dd>1.2</dd></div>
+            <div><dt>Updated</dt><dd>19 November 2026</dd></div>
             <div><dt>Conformance</dt><dd>WCAG 2.2 AA · body text AAA</dd></div>
-            <div><dt>Typeface</dt><dd>Manrope Variable</dd></div>
+            <div><dt>Type</dt><dd>Inter · Noto Serif · Source Code Pro</dd></div>
             <div><dt>Owner</dt><dd>Postern team</dd></div>
           </dl>
         </section>
@@ -143,19 +143,18 @@
               through — and you close that gate without changing your identity.
             </p>
             <p>
-              That moment is not exciting. It is administrative. The brand should feel the way a
-              good clerk feels: unhurried, precise, and completely unimpressed by you. So the
-              system is built from three materials — <strong>paper, ink and sealing wax</strong>
-              — and nothing else. Warm white paper, near-black ink, one deep maroon that behaves
-              like a stamp: rare, decisive, and impossible to miss when it appears.
+              That moment is not exciting. It is administrative. The interface should feel the way a
+              good clerk feels: unhurried, precise, and completely unimpressed by you. So the system
+              is built from quiet tonal surfaces, one black-and-white primary pair and a single rose
+              accent — and nothing else. Space, weight and alignment do the work decoration would
+              otherwise try to do.
             </p>
             <p>
-              The restraint is also an accessibility strategy. A palette of one accent and four
-              neutrals is a palette you can validate exhaustively: every foreground/background
-              pair in this document is measured, and the measured pairings are the only ones
-              allowed. Colour is never the only carrier of meaning, because maroon and rust sit
-              too close together on a screen for anyone to be asked to tell them apart without a
-              label.
+              The restraint is also an accessibility strategy. A small palette is a palette you can
+              validate exhaustively: every foreground/background pair in this document is measured,
+              and the measured pairings are the only ones allowed. Colour is never the only carrier
+              of meaning, because the accent and the error hue sit close together on a screen for
+              anyone to be asked to tell them apart without a label.
             </p>
           </div>
 
@@ -189,8 +188,9 @@
               <p class="principle__no">iv</p>
               <h3>One accent, earned</h3>
               <p>
-                Maroon marks the decision and the danger. If a screen has two maroon buttons, it
-                has no primary action. Signal hues appear only as tinted status surfaces.
+                The rose accent marks links, focus and the one action you are meant to take. If a
+                screen has two accented buttons, it has no primary action. Signal hues appear only
+                as tinted status surfaces.
               </p>
             </article>
             <article class="principle">
@@ -221,7 +221,7 @@
           </header>
 
           <div class="logo-stage">
-            <div class="logo-stage__art on-paper">
+            <div class="logo-stage__art on-surface">
               <svg viewBox="0 0 32 32" aria-label="Postern mark" class="logo-mark">
                 <use href="#arch-mark" />
               </svg>
@@ -232,7 +232,7 @@
               </svg>
               <span>Postern</span>
             </div>
-            <div class="logo-stage__art tile on-maroon">
+            <div class="logo-stage__art tile">
               <svg viewBox="0 0 32 32" aria-hidden="true">
                 <use href="#arch-mark" />
               </svg>
@@ -244,10 +244,11 @@
             </div>
           </div>
           <p class="caption">
-            Primary mark · horizontal lockup · app tile (maroon) · inverse tile (paper).
-            The mark is drawn on a 32&nbsp;unit grid with a 3&nbsp;unit stroke; the inner
-            door is 2&nbsp;units and sits right of centre, because a postern is never the
-            main gate.
+            Primary mark · horizontal lockup · app tile · inverse tile. The mark is drawn on a
+            32&nbsp;unit grid with a 3&nbsp;unit stroke; the inner door is 2&nbsp;units and sits
+            right of centre, because a postern is never the main gate. The tile uses the accent
+            fill with its own readable foreground; the inverse places the accent mark on a light
+            surface.
           </p>
 
           <div class="split">
@@ -324,8 +325,8 @@
           <aside class="ledger-note">
             <p class="ledger-note__label">Ledger note</p>
             <p>
-              The wordmark is <strong>live text</strong>, not an image: Manrope 700 at
-              −0.03em, sentence case. Setting it as text keeps it selectable, translatable
+              The wordmark is <strong>live text</strong>, not an image: Inter at weight 600 with
+              tight tracking, sentence case. Setting it as text keeps it selectable, translatable
               and crisp at any density. Export an outlined SVG only when a printer demands one.
             </p>
           </aside>
@@ -339,211 +340,151 @@
 
           <div class="prose">
             <p>
-              Maroon is the colour of dried sealing wax and of the ledger's leather spine. It is
-              not a brand red chosen to feel energetic; it is a <em>mark</em> — the thing pressed
-              onto a document to say this is finished. That is why it is used at 11:1 against
-              white and why it is allowed to appear on only one control per screen.
+              The primary pair is black and white in light mode, white and black in dark. It is the
+              quietest possible answer to "what is the main action?" and it leaves the rose accent
+              free to mean something specific: a link, a focus ring, the one accented button.
             </p>
             <p>
-              Everything else is paper or ink. Neutrals are warmed toward the maroon (every ink
-              has a red undertone, every paper a cream one) so a purely neutral grey never appears
-              — a cold grey next to this maroon looks like a rendering error.
+              Everything else is a neutral surface. Tonal greys carry depth without borders or
+              heavy shadows, and every ink has a measured relationship to its surface. No warm
+              cast, no cold cast, no decorative gradient — just enough separation to read the
+              structure at a glance.
             </p>
           </div>
 
-          <h3 class="group-label">Paper</h3>
+          <h3 class="group-label">Surfaces</h3>
           <ul class="swatches">
-            <li class="swatch" data-token="--paper-0" data-hex="#ffffff">
-              <span class="swatch__chip" style="background: var(--paper-0)"></span>
-              <span class="swatch__name">--paper-0</span>
-              <span class="swatch__hex">#FFFFFF</span>
-              <span class="swatch__meta">rgb(255 255 255)<br />hsl(0 0% 100%)</span>
+            <li class="swatch" data-token="--surface" data-hex-light="#f9f9f9" data-hex-dark="#121212">
+              <span class="swatch__chip" style="background: var(--surface)"></span>
+              <span class="swatch__name">--surface</span><span class="swatch__hex">#F9F9F9</span>
+              <span class="swatch__meta">rgb(249 249 249)</span>
             </li>
-            <li class="swatch" data-token="--paper-50" data-hex="#fbf8f4">
-              <span class="swatch__chip" style="background: var(--paper-50)"></span>
-              <span class="swatch__name">--paper-50</span>
-              <span class="swatch__hex">#FBF8F4</span>
-              <span class="swatch__meta">rgb(251 248 244)<br />hsl(34 47% 97%)</span>
+            <li class="swatch" data-token="--surface-container-lowest" data-hex-light="#ffffff" data-hex-dark="#181818">
+              <span class="swatch__chip" style="background: var(--surface-container-lowest)"></span>
+              <span class="swatch__name">--surface-container-lowest</span><span class="swatch__hex">#FFFFFF</span>
+              <span class="swatch__meta">rgb(255 255 255)</span>
             </li>
-            <li class="swatch" data-token="--paper-100" data-hex="#f3ede6">
-              <span class="swatch__chip" style="background: var(--paper-100)"></span>
-              <span class="swatch__name">--paper-100</span>
-              <span class="swatch__hex">#F3EDE6</span>
-              <span class="swatch__meta">rgb(243 237 230)<br />hsl(32 35% 93%)</span>
+            <li class="swatch" data-token="--surface-container-low" data-hex-light="#f3f3f3" data-hex-dark="#1e1e1e">
+              <span class="swatch__chip" style="background: var(--surface-container-low)"></span>
+              <span class="swatch__name">--surface-container-low</span><span class="swatch__hex">#F3F3F3</span>
+              <span class="swatch__meta">rgb(243 243 243)</span>
             </li>
-            <li class="swatch" data-token="--paper-200" data-hex="#e4dad0">
-              <span class="swatch__chip" style="background: var(--paper-200)"></span>
-              <span class="swatch__name">--paper-200</span>
-              <span class="swatch__hex">#E4DAD0</span>
-              <span class="swatch__meta">rgb(228 218 208)<br />hsl(30 27% 85%)</span>
+            <li class="swatch" data-token="--surface-container" data-hex-light="#eeeeee" data-hex-dark="#242424">
+              <span class="swatch__chip" style="background: var(--surface-container)"></span>
+              <span class="swatch__name">--surface-container</span><span class="swatch__hex">#EEEEEE</span>
+              <span class="swatch__meta">rgb(238 238 238)</span>
             </li>
-            <li class="swatch" data-token="--paper-300" data-hex="#c4b3a2">
-              <span class="swatch__chip" style="background: var(--paper-300)"></span>
-              <span class="swatch__name">--paper-300</span>
-              <span class="swatch__hex">#C4B3A2</span>
-              <span class="swatch__meta">rgb(196 179 162)<br />hsl(30 22% 70%)</span>
+            <li class="swatch" data-token="--surface-container-high" data-hex-light="#e8e8e8" data-hex-dark="#2a2a2a">
+              <span class="swatch__chip" style="background: var(--surface-container-high)"></span>
+              <span class="swatch__name">--surface-container-high</span><span class="swatch__hex">#E8E8E8</span>
+              <span class="swatch__meta">rgb(232 232 232)</span>
+            </li>
+            <li class="swatch" data-token="--surface-dim" data-hex-light="#dadada" data-hex-dark="#222222">
+              <span class="swatch__chip" style="background: var(--surface-dim)"></span>
+              <span class="swatch__name">--surface-dim</span><span class="swatch__hex">#DADADA</span>
+              <span class="swatch__meta">rgb(218 218 218)</span>
             </li>
           </ul>
 
-          <h3 class="group-label">Ink</h3>
+          <h3 class="group-label">Ink and outlines</h3>
           <ul class="swatches">
-            <li class="swatch" data-token="--ink-900" data-hex="#211c1b">
-              <span class="swatch__chip" style="background: var(--ink-900)"></span>
-              <span class="swatch__name">--ink-900</span>
-              <span class="swatch__hex">#211C1B</span>
-              <span class="swatch__meta">rgb(33 28 27)<br />hsl(10 10% 12%)</span>
+            <li class="swatch" data-token="--on-surface" data-hex-light="#1b1b1b" data-hex-dark="#f5f5f5">
+              <span class="swatch__chip" style="background: var(--on-surface)"></span>
+              <span class="swatch__name">--on-surface</span><span class="swatch__hex">#1B1B1B</span>
+              <span class="swatch__meta">rgb(27 27 27)</span>
             </li>
-            <li class="swatch" data-token="--ink-800" data-hex="#3a3330">
-              <span class="swatch__chip" style="background: var(--ink-800)"></span>
-              <span class="swatch__name">--ink-800</span>
-              <span class="swatch__hex">#3A3330</span>
-              <span class="swatch__meta">rgb(58 51 48)<br />hsl(18 9% 21%)</span>
+            <li class="swatch" data-token="--on-surface-variant" data-hex-light="#555555" data-hex-dark="#a0a0a0">
+              <span class="swatch__chip" style="background: var(--on-surface-variant)"></span>
+              <span class="swatch__name">--on-surface-variant</span><span class="swatch__hex">#555555</span>
+              <span class="swatch__meta">rgb(85 85 85)</span>
             </li>
-            <li class="swatch" data-token="--ink-700" data-hex="#57504d">
-              <span class="swatch__chip" style="background: var(--ink-700)"></span>
-              <span class="swatch__name">--ink-700</span>
-              <span class="swatch__hex">#57504D</span>
-              <span class="swatch__meta">rgb(87 80 77)<br />hsl(18 6% 32%)</span>
+            <li class="swatch" data-token="--outline" data-hex-light="#767676" data-hex-dark="#8a8a8a">
+              <span class="swatch__chip" style="background: var(--outline)"></span>
+              <span class="swatch__name">--outline</span><span class="swatch__hex">#767676</span>
+              <span class="swatch__meta">rgb(118 118 118)</span>
             </li>
-            <li class="swatch" data-token="--ink-600" data-hex="#6b625e">
-              <span class="swatch__chip" style="background: var(--ink-600)"></span>
-              <span class="swatch__name">--ink-600</span>
-              <span class="swatch__hex">#6B625E</span>
-              <span class="swatch__meta">rgb(107 98 94)<br />hsl(18 6% 39%)</span>
-            </li>
-            <li class="swatch" data-token="--ink-500" data-hex="#756c68">
-              <span class="swatch__chip" style="background: var(--ink-500)"></span>
-              <span class="swatch__name">--ink-500</span>
-              <span class="swatch__hex">#756C68</span>
-              <span class="swatch__meta">rgb(117 108 104)<br />hsl(18 6% 43%)</span>
-            </li>
-            <li class="swatch" data-token="--ink-400" data-hex="#8f7a66">
-              <span class="swatch__chip" style="background: var(--ink-400)"></span>
-              <span class="swatch__name">--ink-400</span>
-              <span class="swatch__hex">#8F7A66</span>
-              <span class="swatch__meta">rgb(143 122 102)<br />hsl(29 17% 48%)</span>
-            </li>
-            <li class="swatch" data-token="--ink-300" data-hex="#a08c7c">
-              <span class="swatch__chip" style="background: var(--ink-300)"></span>
-              <span class="swatch__name">--ink-300</span>
-              <span class="swatch__hex">#A08C7C</span>
-              <span class="swatch__meta">rgb(160 140 124)<br />hsl(27 16% 56%)</span>
+            <li class="swatch" data-token="--outline-variant" data-hex-light="#c6c6c6" data-hex-dark="#3a3a3a">
+              <span class="swatch__chip" style="background: var(--outline-variant)"></span>
+              <span class="swatch__name">--outline-variant</span><span class="swatch__hex">#C6C6C6</span>
+              <span class="swatch__meta">rgb(198 198 198)</span>
             </li>
           </ul>
 
-          <h3 class="group-label">Maroon — the brand hue</h3>
+          <h3 class="group-label">Primary and accent</h3>
           <ul class="swatches">
-            <li class="swatch" data-token="--maroon-50" data-hex="#fdf7f6">
-              <span class="swatch__chip" style="background: var(--maroon-50)"></span>
-              <span class="swatch__name">--maroon-50</span>
-              <span class="swatch__hex">#FDF7F6</span>
-              <span class="swatch__meta">rgb(253 247 246)<br />hsl(9 64% 98%)</span>
+            <li class="swatch" data-token="--primary" data-hex-light="#000000" data-hex-dark="#ffffff">
+              <span class="swatch__chip" style="background: var(--primary)"></span>
+              <span class="swatch__name">--primary</span><span class="swatch__hex">#000000</span>
+              <span class="swatch__meta">rgb(0 0 0)</span>
             </li>
-            <li class="swatch" data-token="--maroon-100" data-hex="#fbf1f1">
-              <span class="swatch__chip" style="background: var(--maroon-100)"></span>
-              <span class="swatch__name">--maroon-100</span>
-              <span class="swatch__hex">#FBF1F1</span>
-              <span class="swatch__meta">rgb(251 241 241)<br />hsl(0 56% 96%)</span>
+            <li class="swatch" data-token="--on-primary" data-hex-light="#e2e2e2" data-hex-dark="#111111">
+              <span class="swatch__chip" style="background: var(--on-primary)"></span>
+              <span class="swatch__name">--on-primary</span><span class="swatch__hex">#E2E2E2</span>
+              <span class="swatch__meta">rgb(226 226 226)</span>
             </li>
-            <li class="swatch" data-token="--maroon-200" data-hex="#f8e7e7">
-              <span class="swatch__chip" style="background: var(--maroon-200)"></span>
-              <span class="swatch__name">--maroon-200</span>
-              <span class="swatch__hex">#F8E7E7</span>
-              <span class="swatch__meta">rgb(248 231 231)<br />hsl(0 55% 94%)</span>
+            <li class="swatch" data-token="--primary-container" data-hex-light="#3b3b3b" data-hex-dark="#2b2b2b">
+              <span class="swatch__chip" style="background: var(--primary-container)"></span>
+              <span class="swatch__name">--primary-container</span><span class="swatch__hex">#3B3B3B</span>
+              <span class="swatch__meta">rgb(59 59 59)</span>
             </li>
-            <li class="swatch" data-token="--maroon-300" data-hex="#f3dada">
-              <span class="swatch__chip" style="background: var(--maroon-300)"></span>
-              <span class="swatch__name">--maroon-300</span>
-              <span class="swatch__hex">#F3DADA</span>
-              <span class="swatch__meta">rgb(243 218 218)<br />hsl(0 51% 90%)</span>
+            <li class="swatch" data-token="--on-primary-container" data-hex-light="#ffffff" data-hex-dark="#f0f0f0">
+              <span class="swatch__chip" style="background: var(--on-primary-container)"></span>
+              <span class="swatch__name">--on-primary-container</span><span class="swatch__hex">#FFFFFF</span>
+              <span class="swatch__meta">rgb(255 255 255)</span>
             </li>
-            <li class="swatch" data-token="--maroon-400" data-hex="#c4646e">
-              <span class="swatch__chip" style="background: var(--maroon-400)"></span>
-              <span class="swatch__name">--maroon-400</span>
-              <span class="swatch__hex">#C4646E</span>
-              <span class="swatch__meta">rgb(196 100 110)<br />hsl(354 45% 58%)</span>
+            <li class="swatch" data-token="--accent" data-hex-light="#6b1d2f" data-hex-dark="#d7a3b0">
+              <span class="swatch__chip" style="background: var(--accent)"></span>
+              <span class="swatch__name">--accent</span><span class="swatch__hex">#6B1D2F</span>
+              <span class="swatch__meta">rgb(107 29 47)</span>
             </li>
-            <li class="swatch" data-token="--maroon-500" data-hex="#a63a47">
-              <span class="swatch__chip" style="background: var(--maroon-500)"></span>
-              <span class="swatch__name">--maroon-500</span>
-              <span class="swatch__hex">#A63A47</span>
-              <span class="swatch__meta">rgb(166 58 71)<br />hsl(353 48% 44%)</span>
+            <li class="swatch" data-token="--on-accent" data-hex-light="#ffffff" data-hex-dark="#2a1018">
+              <span class="swatch__chip" style="background: var(--on-accent)"></span>
+              <span class="swatch__name">--on-accent</span><span class="swatch__hex">#FFFFFF</span>
+              <span class="swatch__meta">rgb(255 255 255)</span>
             </li>
-            <li class="swatch" data-token="--maroon-600" data-hex="#8c2434">
-              <span class="swatch__chip" style="background: var(--maroon-600)"></span>
-              <span class="swatch__name">--maroon-600</span>
-              <span class="swatch__hex">#8C2434</span>
-              <span class="swatch__meta">rgb(140 36 52)<br />hsl(351 59% 35%)</span>
+            <li class="swatch" data-token="--accent-container" data-hex-light="#fbf3f4" data-hex-dark="#2a1a1e">
+              <span class="swatch__chip" style="background: var(--accent-container)"></span>
+              <span class="swatch__name">--accent-container</span><span class="swatch__hex">#FBF3F4</span>
+              <span class="swatch__meta">rgb(251 243 244)</span>
             </li>
-            <li class="swatch" data-token="--maroon-700" data-hex="#74172a">
-              <span class="swatch__chip" style="background: var(--maroon-700)"></span>
-              <span class="swatch__name">--maroon-700</span>
-              <span class="swatch__hex">#74172A</span>
-              <span class="swatch__meta">rgb(116 23 42)<br />hsl(348 67% 27%)</span>
-            </li>
-            <li class="swatch" data-token="--maroon-800" data-hex="#5c1022">
-              <span class="swatch__chip" style="background: var(--maroon-800)"></span>
-              <span class="swatch__name">--maroon-800</span>
-              <span class="swatch__hex">#5C1022</span>
-              <span class="swatch__meta">rgb(92 16 34)<br />hsl(346 70% 21%)</span>
-            </li>
-            <li class="swatch" data-token="--maroon-900" data-hex="#430b19">
-              <span class="swatch__chip" style="background: var(--maroon-900)"></span>
-              <span class="swatch__name">--maroon-900</span>
-              <span class="swatch__hex">#430B19</span>
-              <span class="swatch__meta">rgb(67 11 25)<br />hsl(345 72% 15%)</span>
+            <li class="swatch" data-token="--on-accent-container" data-hex-light="#4a101d" data-hex-dark="#f3dce2">
+              <span class="swatch__chip" style="background: var(--on-accent-container)"></span>
+              <span class="swatch__name">--on-accent-container</span><span class="swatch__hex">#4A101D</span>
+              <span class="swatch__meta">rgb(74 16 29)</span>
             </li>
           </ul>
 
           <h3 class="group-label">Signals</h3>
           <ul class="swatches swatches--signals">
-            <li class="swatch" data-token="--green-700" data-hex="#16603f">
-              <span class="swatch__chip" style="background: var(--green-700)"></span>
-              <span class="swatch__name">success · --green-700</span>
-              <span class="swatch__hex">#16603F</span>
-              <span class="swatch__meta">rgb(22 96 63)<br />hsl(153 63% 23%)</span>
+            <li class="swatch" data-token="--error" data-hex-light="#9e0000" data-hex-dark="#ffb4ab">
+              <span class="swatch__chip" style="background: var(--error)"></span>
+              <span class="swatch__name">error · --error</span><span class="swatch__hex">#9E0000</span>
+              <span class="swatch__meta">rgb(158 0 0)</span>
             </li>
-            <li class="swatch" data-token="--green-100" data-hex="#e9f2ec">
-              <span class="swatch__chip" style="background: var(--green-100)"></span>
-              <span class="swatch__name">success surface</span>
-              <span class="swatch__hex">#E9F2EC</span>
-              <span class="swatch__meta">rgb(233 242 236)<br />hsl(140 26% 93%)</span>
+            <li class="swatch" data-token="--success" data-hex-light="#1b5e20" data-hex-dark="#a9d8ba">
+              <span class="swatch__chip" style="background: var(--success)"></span>
+              <span class="swatch__name">success · --success</span><span class="swatch__hex">#1B5E20</span>
+              <span class="swatch__meta">rgb(27 94 32)</span>
             </li>
-            <li class="swatch" data-token="--amber-700" data-hex="#7a4e06">
-              <span class="swatch__chip" style="background: var(--amber-700)"></span>
-              <span class="swatch__name">warning · --amber-700</span>
-              <span class="swatch__hex">#7A4E06</span>
-              <span class="swatch__meta">rgb(122 78 6)<br />hsl(37 91% 25%)</span>
+            <li class="swatch" data-token="--color-success-surface" data-hex-light="#edf6ee" data-hex-dark="#16241b">
+              <span class="swatch__chip" style="background: var(--color-success-surface)"></span>
+              <span class="swatch__name">success surface</span><span class="swatch__hex">#EDF6EE</span>
+              <span class="swatch__meta">rgb(237 246 238)</span>
             </li>
-            <li class="swatch" data-token="--amber-100" data-hex="#faf0dc">
-              <span class="swatch__chip" style="background: var(--amber-100)"></span>
-              <span class="swatch__name">warning surface</span>
-              <span class="swatch__hex">#FAF0DC</span>
-              <span class="swatch__meta">rgb(250 240 220)<br />hsl(40 75% 92%)</span>
+            <li class="swatch" data-token="--color-warning" data-hex-light="#8a5a00" data-hex-dark="#eec888">
+              <span class="swatch__chip" style="background: var(--color-warning)"></span>
+              <span class="swatch__name">warning · --color-warning</span><span class="swatch__hex">#8A5A00</span>
+              <span class="swatch__meta">rgb(138 90 0)</span>
             </li>
-            <li class="swatch" data-token="--rust-700" data-hex="#8f2c1e">
-              <span class="swatch__chip" style="background: var(--rust-700)"></span>
-              <span class="swatch__name">danger · --rust-700</span>
-              <span class="swatch__hex">#8F2C1E</span>
-              <span class="swatch__meta">rgb(143 44 30)<br />hsl(7 65% 34%)</span>
+            <li class="swatch" data-token="--color-danger-surface" data-hex-light="#f8ecec" data-hex-dark="#2a1715">
+              <span class="swatch__chip" style="background: var(--color-danger-surface)"></span>
+              <span class="swatch__name">danger surface</span><span class="swatch__hex">#F8ECEC</span>
+              <span class="swatch__meta">rgb(248 236 236)</span>
             </li>
-            <li class="swatch" data-token="--rust-100" data-hex="#fbe9e5">
-              <span class="swatch__chip" style="background: var(--rust-100)"></span>
-              <span class="swatch__name">danger surface</span>
-              <span class="swatch__hex">#FBE9E5</span>
-              <span class="swatch__meta">rgb(251 233 229)<br />hsl(11 73% 94%)</span>
-            </li>
-            <li class="swatch" data-token="--slate-700" data-hex="#2e5668">
-              <span class="swatch__chip" style="background: var(--slate-700)"></span>
-              <span class="swatch__name">info · --slate-700</span>
-              <span class="swatch__hex">#2E5668</span>
-              <span class="swatch__meta">rgb(46 86 104)<br />hsl(199 39% 29%)</span>
-            </li>
-            <li class="swatch" data-token="--slate-100" data-hex="#e7eef1">
-              <span class="swatch__chip" style="background: var(--slate-100)"></span>
-              <span class="swatch__name">info surface</span>
-              <span class="swatch__hex">#E7EEF1</span>
-              <span class="swatch__meta">rgb(231 238 241)<br />hsl(198 26% 93%)</span>
+            <li class="swatch" data-token="--color-info" data-hex-light="#555555" data-hex-dark="#b0b0b0">
+              <span class="swatch__chip" style="background: var(--color-info)"></span>
+              <span class="swatch__name">info · --color-info</span><span class="swatch__hex">#555555</span>
+              <span class="swatch__meta">rgb(85 85 85)</span>
             </li>
           </ul>
 
@@ -555,56 +496,47 @@
                 <tr><th scope="col">Role</th><th scope="col">Token</th><th scope="col">Used for</th></tr>
               </thead>
               <tbody>
-                <tr><td>Primary action</td><td><code>--color-primary</code></td><td>One filled button per view; active tab; link colour; focus ring</td></tr>
-                <tr><td>Destructive action</td><td><code>--color-destructive</code></td><td>Only inside a confirmation dialog, filled. Never in a toolbar.</td></tr>
-                <tr><td>Success</td><td><code>--color-success</code></td><td>Alias forwarded, destination verified, copy confirmed</td></tr>
-                <tr><td>Warning</td><td><code>--color-warning</code></td><td>Unexpected sender that passed auth, KV propagating, approaching the 500/day cap</td></tr>
-                <tr><td>Error</td><td><code>--color-danger</code></td><td>Validation messages, failed authentication, blocked-message reasons</td></tr>
+                <tr><td>Primary action</td><td><code>--color-primary</code></td><td>The neutral filled button and active tab. One per view.</td></tr>
+                <tr><td>Accent</td><td><code>--color-link</code> / <code>--color-focus</code></td><td>Links, focus ring, selected text and the one accented control</td></tr>
+                <tr><td>Destructive action</td><td><code>--color-destructive</code></td><td>Only inside a confirmation dialog. Never in a toolbar.</td></tr>
+                <tr><td>Success</td><td><code>--color-success</code></td><td>Alias created, destination verified, copy confirmed</td></tr>
+                <tr><td>Warning</td><td><code>--color-warning</code></td><td>Unexpected sender, KV propagating, approaching a cap</td></tr>
+                <tr><td>Error</td><td><code>--color-danger</code></td><td>Validation messages, failed authentication, blocked reasons</td></tr>
                 <tr><td>Informational</td><td><code>--color-info</code></td><td>Retention notices, onboarding, cold-start explanation</td></tr>
-                <tr><td>Text selection</td><td><code>--color-primary</code> / <code>--color-text-on-primary</code></td><td>Selected text uses the primary fill with a high-contrast light foreground</td></tr>
-                <tr><td>Surfaces</td><td><code>--color-surface</code> <code>--color-surface-sunken</code></td><td>Cards and dialogs on white; wells, zebra rows and code on sunken paper</td></tr>
+                <tr><td>Text selection</td><td><code>--accent</code> / <code>--on-accent</code></td><td>Selected text uses the accent with its own readable foreground</td></tr>
+                <tr><td>Surfaces</td><td><code>--color-surface</code> <code>--color-surface-sunken</code></td><td>Cards and dialogs on the lowest container; wells and bands on the low container</td></tr>
               </tbody>
             </table>
           </div>
 
           <h3>Contrast ratios</h3>
           <p class="lede-sm">
-            Every pairing the interface is allowed to use. Measured with the WCAG 2.x relative
-            luminance formula; ratios are computed from the token values at page load and
-            re-checked by the audit badge in the header.
+            Measured with the WCAG 2.x relative luminance formula against the live tokens. The same
+            pairs are enforced in both themes by <code>scripts/contrast-audit.mjs</code>, which fails
+            the build on a regression. Light → dark below.
           </p>
           <div class="table-wrap">
             <table class="table table--doc">
-              <caption class="sr-only">Contrast ratios for every permitted colour pairing</caption>
+              <caption class="sr-only">Contrast ratios for every permitted pairing in both themes</caption>
               <thead>
-                <tr><th scope="col">Use</th><th scope="col">Pairing</th><th scope="col">Ratio</th><th scope="col">Level</th></tr>
+                <tr><th scope="col">Use</th><th scope="col">Pairing</th><th scope="col">Light</th><th scope="col">Dark</th><th scope="col">Level</th></tr>
               </thead>
               <tbody>
-                <tr><td>Body text</td><td><code>--ink-900</code> on <code>--paper-50</code></td><td class="tnum">15.91:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Body text on card</td><td><code>--ink-900</code> on <code>--paper-0</code></td><td class="tnum">16.85:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Secondary text</td><td><code>--ink-800</code> on <code>--paper-50</code></td><td class="tnum">11.69:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Muted text</td><td><code>--ink-700</code> on <code>--paper-50</code></td><td class="tnum">7.46:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Captions, hints</td><td><code>--ink-600</code> on <code>--paper-50</code></td><td class="tnum">5.61:1</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
-                <tr><td>Placeholder, disabled</td><td><code>--ink-500</code> on <code>--paper-50</code></td><td class="tnum">4.84:1</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
-                <tr><td>Primary label</td><td>white on <code>--maroon-700</code></td><td class="tnum">11.06:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Primary label, hover</td><td>white on <code>--maroon-800</code></td><td class="tnum">13.53:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Destructive label</td><td><code>--paper-50</code> on <code>--maroon-800</code></td><td class="tnum">12.78:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Link</td><td><code>--maroon-700</code> on <code>--paper-50</code></td><td class="tnum">10.45:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Focus ring</td><td><code>--maroon-700</code> on <code>--paper-50</code></td><td class="tnum">10.45:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Focus ring on primary</td><td><code>--paper-50</code> on <code>--maroon-700</code></td><td class="tnum">10.45:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Selected text</td><td><code>--color-text-on-primary</code> on <code>--color-primary</code></td><td class="tnum">11.06:1 light · 5.49:1 dark</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
-                <tr><td>Control border</td><td><code>--ink-300</code> on <code>--paper-50</code></td><td class="tnum">3.03:1</td><td><span class="chip chip--info chip--sm">AA non-text</span></td></tr>
-                <tr><td>Control border on card</td><td><code>--ink-300</code> on <code>--paper-0</code></td><td class="tnum">3.21:1</td><td><span class="chip chip--info chip--sm">AA non-text</span></td></tr>
-                <tr><td>Success text</td><td><code>--green-700</code> on <code>--paper-50</code></td><td class="tnum">7.14:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Warning text</td><td><code>--amber-700</code> on <code>--paper-50</code></td><td class="tnum">6.79:1</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
-                <tr><td>Error text</td><td><code>--rust-700</code> on <code>--paper-50</code></td><td class="tnum">7.79:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Info text</td><td><code>--slate-700</code> on <code>--paper-50</code></td><td class="tnum">7.49:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Chip · success</td><td><code>--green-800</code> on <code>--green-100</code></td><td class="tnum">8.18:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Chip · warning</td><td><code>--amber-800</code> on <code>--amber-100</code></td><td class="tnum">8.74:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Chip · danger</td><td><code>--rust-800</code> on <code>--rust-100</code></td><td class="tnum">8.74:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Chip · info</td><td><code>--slate-800</code> on <code>--slate-100</code></td><td class="tnum">9.01:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Chip · primary</td><td><code>--maroon-700</code> on <code>--maroon-100</code></td><td class="tnum">9.98:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
-                <tr><td>Toast text</td><td><code>--paper-50</code> on <code>--ink-900</code></td><td class="tnum">15.91:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Body text</td><td><code>--color-text</code> on <code>--color-bg</code></td><td class="tnum">16.36:1</td><td class="tnum">17.18:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Body on card</td><td><code>--color-text</code> on <code>--color-surface</code></td><td class="tnum">17.22:1</td><td class="tnum">16.29:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Secondary text</td><td><code>--color-text-secondary</code> on <code>--color-bg</code></td><td class="tnum">12.72:1</td><td class="tnum">14.06:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Muted text</td><td><code>--color-text-muted</code> on <code>--color-bg</code></td><td class="tnum">7.08:1</td><td class="tnum">7.16:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Subtle text</td><td><code>--color-text-subtle</code> on <code>--color-bg</code></td><td class="tnum">4.77:1</td><td class="tnum">5.43:1</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
+                <tr><td>Disabled text</td><td><code>--color-text-disabled</code> on <code>--color-bg</code></td><td class="tnum">4.50:1</td><td class="tnum">5.43:1</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
+                <tr><td>Link</td><td><code>--color-link</code> on <code>--color-bg</code></td><td class="tnum">10.83:1</td><td class="tnum">8.70:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Primary label</td><td><code>--color-text-on-primary</code> on <code>--color-primary</code></td><td class="tnum">16.21:1</td><td class="tnum">18.88:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Control border</td><td><code>--color-border</code> on <code>--color-surface</code></td><td class="tnum">4.54:1</td><td class="tnum">5.14:1</td><td><span class="chip chip--info chip--sm">AA non-text</span></td></tr>
+                <tr><td>Focus ring</td><td><code>--color-focus</code> on <code>--color-bg</code></td><td class="tnum">10.83:1</td><td class="tnum">16.44:1</td><td><span class="chip chip--info chip--sm">AA non-text</span></td></tr>
+                <tr><td>Success text</td><td><code>--color-success</code> on <code>--color-bg</code></td><td class="tnum">7.47:1</td><td class="tnum">11.79:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Warning text</td><td><code>--color-warning</code> on <code>--color-bg</code></td><td class="tnum">5.63:1</td><td class="tnum">11.82:1</td><td><span class="chip chip--success chip--sm">AA</span></td></tr>
+                <tr><td>Danger text</td><td><code>--color-danger</code> on <code>--color-bg</code></td><td class="tnum">8.13:1</td><td class="tnum">11.03:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Info text</td><td><code>--color-info</code> on <code>--color-bg</code></td><td class="tnum">7.08:1</td><td class="tnum">8.64:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
+                <tr><td>Selected text</td><td><code>--on-accent</code> on <code>--accent</code></td><td class="tnum">11.40:1</td><td class="tnum">8.23:1</td><td><span class="chip chip--success chip--sm">AAA</span></td></tr>
               </tbody>
             </table>
           </div>
@@ -612,29 +544,28 @@
           <div class="callout callout--warn">
             <h4>The rule that keeps this honest</h4>
             <p>
-              <strong>Maroon and rust are not interchangeable.</strong> Maroon is intent — an
-              action you are taking. Rust is failure — something that happened to you. They
-              measure at 10.45:1 and 7.79:1 respectively against paper, which means they are both
-              dark enough to look similar at a glance. Every use of either must be accompanied by
-              an icon or a word, never carried by hue alone.
+              <strong>The accent and the error hue are not interchangeable.</strong> The accent is
+              intent — a link, a focus ring, an action you are taking. The error hue is failure —
+              something that happened to you. Both are dark reds in light mode, so every use of
+              either must be accompanied by a word or an icon, never carried by hue alone.
             </p>
           </div>
 
           <ul class="rules rules--split">
-            <li><strong>Proportion:</strong> 60% paper, 30% ink, 10% maroon. Never invert this.</li>
-            <li><strong>One accent per view:</strong> a maroon primary plus one signal tint, maximum.</li>
-            <li><strong>No pure black, no pure grey:</strong> every neutral carries the warm tint.</li>
-            <li><strong>No gradients or glows:</strong> elevation is a shadow token, not a colour.</li>
-            <li><strong>Dark theme:</strong> the same roles at the other end of the day, with its own measured pairs — see <a href="#dark">04 · Dark mode</a>. Maroon on paper remains the default; nothing new is invented for it.</li>
+            <li><strong>Proportion:</strong> mostly neutral surfaces, one black-and-white primary, one rose accent. Never more than one accented action per view.</li>
+            <li><strong>Elevation is tonal:</strong> surface steps and hairlines carry depth. Shadows are soft and never carry the meaning.</li>
+            <li><strong>Square geometry:</strong> every radius token is 0px. No pills, no bubbles, no softened corners.</li>
+            <li><strong>No gradients or glows:</strong> if a surface needs to stand out, move it one step on the tonal scale.</li>
+            <li><strong>Dark theme:</strong> the same roles with their own measured values — see <a href="#dark">04 · Dark mode</a>. Nothing new is invented for it.</li>
           </ul>
 
           <aside class="ledger-note">
             <p class="ledger-note__label">Ledger note</p>
             <p>
-              The maroon is a single hue at ten stops. Two stops are load-bearing:
-              <code>--maroon-700</code> for anything interactive, <code>--maroon-800</code> for
-              anything irreversible. If you reach for <code>--maroon-500</code> to make something
-              "pop", you are decorating. Use size, weight or space instead.
+              The accent is one hue at four stops. Two are load-bearing: <code>--accent</code> for
+              links, focus and selection, and <code>--on-accent</code> for the text that sits on it.
+              If you reach for a lighter tint to make something "pop", you are decorating. Use size,
+              weight or space instead.
             </p>
           </aside>
         </section>
@@ -643,30 +574,28 @@
           <header class="plate__head">
             <p class="plate__no">04</p>
             <h2 id="dark-title">Dark mode</h2>
-            <p class="plate__deck">
-              The same roles at the other end of the day: one hue, two polarities, no second
-              stylesheet.
-            </p>
-          </header>
+          <p class="plate__deck">
+            The same roles at the other end of the day: two polarities, one token file, no second
+            stylesheet.
+          </p>
+        </header>
 
-          <div class="prose">
-            <p>
-              A mailbox is read at 23:40 as often as at 09:00, and a wall of white at that hour is
-              a flashbang. Dark mode here is not a theme layered on top of the brand — it is the
-              same design with paper and ink exchanged and the wax allowed to catch the light.
-              Nothing appears in dark that does not already exist as a role in
-              <code>tokens.css</code>.
-            </p>
-            <p>
-              Mechanically there is one definition per role, not two stylesheets:
-              <code>--color-bg</code> is <code>light-dark(#fbf8f4, #151110)</code>. One
-              <code>color-scheme</code> declaration — set by <code>data-theme</code> on
-              <code>&lt;html&gt;</code>, or by the operating system when that attribute is absent —
-              switches every role at once, including native controls, scrollbars and the
-              <code>&lt;dialog&gt;</code> backdrop. Because a role can only be declared once, the
-              two polarities cannot drift apart.
-            </p>
-          </div>
+        <div class="prose">
+          <p>
+            A mailbox is read at 23:40 as often as at 09:00, and a wall of white at that hour is a
+            flashbang. Dark mode here is not a theme layered on top of the brand — it is the same
+            design with the tonal steps reversed and the accent lightened to hold its contrast.
+            Nothing appears in dark that does not already exist as a role in
+            <code>tokens.css</code>.
+          </p>
+          <p>
+            Mechanically there are three explicit blocks in <code>tokens.css</code>: the light
+            defaults on <code>:root</code>, <code>[data-theme="dark"]</code> for an explicit choice,
+            and <code>@media (prefers-color-scheme: dark)</code> for the system preference when no
+            attribute is set. One <code>color-scheme</code> declaration per block switches native
+            controls, scrollbars and the <code>&lt;dialog&gt;</code> backdrop along with the roles.
+            A component never picks its own colours, so the two polarities cannot drift apart.
+          </p>
 
           <h3 class="group-label">The same screen, both polarities</h3>
           <p class="demo__caption">
@@ -719,14 +648,14 @@
             <code>scripts/contrast-audit.mjs</code>, not by memory.
           </p>
           <ol class="invariants">
-            <li><div><strong>One brand hue.</strong> Maroon is the only accent in either polarity. Dark mode does not buy you a second accent, a glow, or a gradient.</div></li>
-            <li><div><strong>The hue is constant; only its value moves.</strong> Wax in a dark room catches light, so the accent rises to a fill at <code>#B04554</code> and text/rings rise further to <code>#E7A0AA</code>. Both stops are measured; neither is derived by lightening until it looks right.</div></li>
-            <li><div><strong>Body text is AAA (7:1) in both themes.</strong> 15.91:1 on paper, 16.85:1 on ink. Nothing ships on a maybe, and no dark surface is allowed to sit so close to its text that AA is the ceiling.</div></li>
-            <li><div><strong>Control borders hold 3:1 non-text contrast</strong> against the surface they sit on — 3.03:1 on paper in light, 3.35:1 on card in dark. A border you can only see on a good monitor is decoration.</div></li>
-            <li><div><strong>Signals keep their hue family and their measured pair.</strong> Success is green-on-green-tint in both themes, not green-on-grey. A chip that changes family between themes stops being a signal.</div></li>
-            <li><div><strong>Elevation is surface plus hairline, never shadow alone.</strong> A dark shadow on dark ink is invisible long before the user notices the missing depth, so every raised thing also carries a 1px hairline.</div></li>
-            <li><div><strong>Dark is warm ink (#151110), never #000.</strong> Pure black kills the paper metaphor and makes maroon read as a cut-out sticker rather than a seal.</div></li>
-            <li><div><strong>Never invert by filter.</strong> No <code>filter: invert()</code>, no automatic recolouring of the mark, no reversed logo screenshots. The inverse mark is its own asset, drawn at the same stroke weights.</div></li>
+            <li><div><strong>One accent hue.</strong> Rose is the only accent in either polarity. Dark mode does not buy you a second accent, a glow or a gradient.</div></li>
+            <li><div><strong>The hue is constant; only its value moves.</strong> The accent rises from <code>#6b1d2f</code> to <code>#d7a3b0</code> so text and focus rings keep their measured contrast. Neither stop is derived by lightening until it looks right.</div></li>
+            <li><div><strong>Body text is AAA (7:1) in both themes.</strong> 16.36:1 on the light page and 17.18:1 on the dark page. Nothing ships on a maybe.</div></li>
+            <li><div><strong>Control borders hold 3:1 non-text contrast</strong> against the surface they sit on — 4.54:1 on a light card, 5.14:1 on a dark card.</div></li>
+            <li><div><strong>Signals keep their hue family and their measured pair.</strong> Success stays green-on-green-tint in both themes, not green-on-grey.</div></li>
+            <li><div><strong>Elevation is surface plus hairline, never shadow alone.</strong> A shadow on dark ink is invisible long before the user notices the missing depth.</div></li>
+            <li><div><strong>The primary pair inverts, it does not disappear.</strong> Black on white becomes white on black. The accent adapts with its own token pair.</div></li>
+            <li><div><strong>Never invert by filter.</strong> No <code>filter: invert()</code>, no automatic recolouring of the mark, no reversed logo screenshots. The inverse mark is drawn at the same stroke weights.</div></li>
           </ol>
 
           <h3 class="group-label">Role mapping</h3>
@@ -743,24 +672,23 @@
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Page</td><td><code>--color-bg</code></td><td class="tnum">#FBF8F4</td><td class="tnum">#151110</td><td class="tnum">15.91 → 16.85 <span class="tnum">(text)</span></td></tr>
-                <tr><td>Card</td><td><code>--color-surface</code></td><td class="tnum">#FFFFFF</td><td class="tnum">#1F1A19</td><td class="tnum">16.85 → 15.46</td></tr>
-                <tr><td>Sunken well</td><td><code>--color-surface-sunken</code></td><td class="tnum">#F3EDE6</td><td class="tnum">#0F0C0B</td><td>decorative depth</td></tr>
-                <tr><td>Band (panel header)</td><td><code>--color-surface-band</code></td><td class="tnum">#FBF8F4</td><td class="tnum">#262120</td><td>decorative depth</td></tr>
-                <tr><td>Body text</td><td><code>--color-text</code></td><td class="tnum">#211C1B</td><td class="tnum">#F7F2EC</td><td class="tnum">15.91 → 16.85</td></tr>
-                <tr><td>Secondary text</td><td><code>--color-text-secondary</code></td><td class="tnum">#3A3330</td><td class="tnum">#DED6CF</td><td class="tnum">11.69 → 13.06</td></tr>
-                <tr><td>Muted text</td><td><code>--color-text-muted</code></td><td class="tnum">#57504D</td><td class="tnum">#BDB3AB</td><td class="tnum">7.46 → 9.11</td></tr>
-                <tr><td>Subtle text</td><td><code>--color-text-subtle</code></td><td class="tnum">#6B625E</td><td class="tnum">#A79C93</td><td class="tnum">5.61 → 6.98</td></tr>
-                <tr><td>Primary fill</td><td><code>--color-primary</code></td><td class="tnum">#74172A</td><td class="tnum">#B04554</td><td class="tnum">label 11.06 → 5.19</td></tr>
-                <tr><td>Link text</td><td><code>--color-link</code></td><td class="tnum">#74172A</td><td class="tnum">#E7A0AA</td><td class="tnum">10.45 → 8.94</td></tr>
-                <tr><td>Focus ring</td><td><code>--color-focus</code></td><td class="tnum">#74172A</td><td class="tnum">#E7A0AA</td><td class="tnum">10.45 → 8.94</td></tr>
-                <tr><td>Control border</td><td><code>--color-border</code></td><td class="tnum">#A08C7C</td><td class="tnum">#786B63</td><td class="tnum">3.03 → 3.35 <span class="tnum">(on card)</span></td></tr>
-                <tr><td>Hairline</td><td><code>--color-hairline</code></td><td class="tnum">#E4DAD0</td><td class="tnum">#332C29</td><td>decorative only</td></tr>
-                <tr><td>Success</td><td><code>--color-success</code></td><td class="tnum">#16603F</td><td class="tnum">#8FCEAC</td><td class="tnum">7.14 → 10.35</td></tr>
-                <tr><td>Warning</td><td><code>--color-warning</code></td><td class="tnum">#7A4E06</td><td class="tnum">#EEC888</td><td class="tnum">6.79 → 11.84</td></tr>
-                <tr><td>Danger</td><td><code>--color-danger</code></td><td class="tnum">#8F2C1E</td><td class="tnum">#F0ACA2</td><td class="tnum">7.79 → 9.94</td></tr>
-                <tr><td>Info</td><td><code>--color-info</code></td><td class="tnum">#2E5668</td><td class="tnum">#A9CBD9</td><td class="tnum">7.49 → 10.93</td></tr>
-                <tr><td>Scrim</td><td><code>--color-overlay</code></td><td class="tnum">ink 44%</td><td class="tnum">black 66%</td><td>dims, never hides focus</td></tr>
+                <tr><td>Page</td><td><code>--color-bg</code></td><td class="tnum">#F9F9F9</td><td class="tnum">#121212</td><td class="tnum">16.36 → 17.18 <span class="tnum">(text)</span></td></tr>
+                <tr><td>Card</td><td><code>--color-surface</code></td><td class="tnum">#FFFFFF</td><td class="tnum">#181818</td><td class="tnum">17.22 → 16.29</td></tr>
+                <tr><td>Sunken well</td><td><code>--color-surface-sunken</code></td><td class="tnum">#F3F3F3</td><td class="tnum">#1E1E1E</td><td>decorative depth</td></tr>
+                <tr><td>Body text</td><td><code>--color-text</code></td><td class="tnum">#1B1B1B</td><td class="tnum">#F5F5F5</td><td class="tnum">16.36 → 17.18</td></tr>
+                <tr><td>Secondary text</td><td><code>--color-text-secondary</code></td><td class="tnum">#2F2F2F</td><td class="tnum">#DFDFDF</td><td class="tnum">12.72 → 14.06</td></tr>
+                <tr><td>Muted text</td><td><code>--color-text-muted</code></td><td class="tnum">#555555</td><td class="tnum">#A0A0A0</td><td class="tnum">7.08 → 7.16</td></tr>
+                <tr><td>Subtle text</td><td><code>--color-text-subtle</code></td><td class="tnum">#6F6F6F</td><td class="tnum">#8A8A8A</td><td class="tnum">4.77 → 5.43</td></tr>
+                <tr><td>Primary fill</td><td><code>--color-primary</code></td><td class="tnum">#000000</td><td class="tnum">#FFFFFF</td><td class="tnum">label 16.21 → 18.88</td></tr>
+                <tr><td>Accent / link</td><td><code>--color-link</code></td><td class="tnum">#6B1D2F</td><td class="tnum">#D7A3B0</td><td class="tnum">10.83 → 8.70</td></tr>
+                <tr><td>Focus ring</td><td><code>--color-focus</code></td><td class="tnum">#6B1D2F</td><td class="tnum">#F0F0F0</td><td class="tnum">10.83 → 16.44</td></tr>
+                <tr><td>Control border</td><td><code>--color-border</code></td><td class="tnum">#767676 / 22%</td><td class="tnum">#A0A0A0 / 18%</td><td class="tnum">4.54 → 5.14 <span class="tnum">(on card)</span></td></tr>
+                <tr><td>Hairline</td><td><code>--color-hairline</code></td><td class="tnum">#C6C6C6 / 35%</td><td class="tnum">#A0A0A0 / 12%</td><td>decorative only</td></tr>
+                <tr><td>Success</td><td><code>--color-success</code></td><td class="tnum">#1B5E20</td><td class="tnum">#A9D8BA</td><td class="tnum">7.47 → 11.79</td></tr>
+                <tr><td>Warning</td><td><code>--color-warning</code></td><td class="tnum">#8A5A00</td><td class="tnum">#EEC888</td><td class="tnum">5.63 → 11.82</td></tr>
+                <tr><td>Danger</td><td><code>--color-danger</code></td><td class="tnum">#9E0000</td><td class="tnum">#FFB4AB</td><td class="tnum">8.13 → 11.03</td></tr>
+                <tr><td>Info</td><td><code>--color-info</code></td><td class="tnum">#555555</td><td class="tnum">#B0B0B0</td><td class="tnum">7.08 → 8.64</td></tr>
+                <tr><td>Scrim</td><td><code>--color-overlay</code></td><td class="tnum">ink 42%</td><td class="tnum">black 66%</td><td>dims, never hides focus</td></tr>
               </tbody>
             </table>
           </div>
@@ -784,10 +712,12 @@ function choose(next) {
   syncThemeColor();
 }</code></pre>
             <p>
-              In the document head, before any stylesheet paints, run the two lines that read
-              <code>localStorage</code> and set <code>dataset.theme</code>. Keep
-              <code>&lt;meta name="theme-color"&gt;</code> in step from the same function, so the
-              mobile URL bar follows the page rather than fighting it.
+              In the document head, before any stylesheet paints, read <code>localStorage</code> and
+              set <code>dataset.theme</code>. Keep <code>&lt;meta name="theme-color"&gt;</code> in
+              step with the same function — <code>#f9f9f9</code> in light, <code>#121212</code> in
+              dark — so the mobile URL bar follows the page rather than fighting it. This page also
+              re-runs the token audit after every theme change, so the badge describes the polarity
+              you are looking at.
             </p>
           </div>
 
@@ -795,7 +725,7 @@ function choose(next) {
             <li><strong>Never branch a component on theme.</strong> If a component needs to know which polarity it is in, a role is missing from <code>tokens.css</code>.</li>
             <li><strong>The toggle is a segmented control, not a switch.</strong> A switch cannot express "follow system", and that is the state most people actually want.</li>
             <li><strong>No colour transition on the page.</strong> Do not animate <code>background-color</code> on <code>html</code>; the change is instant, like a light being switched.</li>
-            <li><strong>Images need a dark export.</strong> A diagram exported on white paper is a white rectangle at night. Ship a dark asset or place it on a deliberate light well.</li>
+            <li><strong>Images need a dark export.</strong> A diagram exported on a white background is a white rectangle at night. Ship a dark asset or place it on a deliberate light well.</li>
             <li><strong>Scoped polarity is legal.</strong> The two panes above are subtrees with <code>data-theme</code>, which is why this document can show both at once without a screenshot.</li>
           </ul>
 
@@ -803,8 +733,8 @@ function choose(next) {
             <p class="ledger-note__label">Ledger note</p>
             <p>
               The toast is the exception worth understanding. It stays inverse in both themes —
-              dark ink on paper, raised slab on ink — because a toast is not a page element, it is
-              an interruption. Same for tooltips. If you find yourself wanting a maroon toast,
+              a dark slab on light, a light slab on dark — because a toast is not a page element,
+              it is an interruption. The same goes for tooltips. If you want an accented toast,
               you want a banner.
             </p>
           </aside>
@@ -814,42 +744,42 @@ function choose(next) {
           <header class="plate__head">
             <p class="plate__no">05</p>
             <h2 id="type-title">Typography</h2>
-            <p class="plate__deck">One family, five stops, no italics. Restraint is the voice.</p>
+            <p class="plate__deck">Three families, each with one job. Restraint is the voice.</p>
           </header>
 
           <div class="typeface">
             <div class="typeface__specimen">
-              <p class="typeface__name">Manrope Variable</p>
+              <p class="typeface__name">Noto Serif Variable</p>
               <p class="typeface__glyphs">AaBbCcDdEeFfGg 0123456789 &amp; @ . , : ; — £ $ %</p>
               <p class="typeface__alpha">
                 ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />abcdefghijklmnopqrstuvwxyz<br />0123456789 !?&amp;@#%*()[]{}
               </p>
             </div>
             <dl class="typeface__facts">
-              <div><dt>Source</dt><dd>Self-hosted via <code>@fontsource-variable/manrope</code></dd></div>
-              <div><dt>Licence</dt><dd>SIL Open Font License 1.1 — free for commercial use, may be embedded</dd></div>
-              <div><dt>Axes</dt><dd>Weight 200–800, optical sizing on</dd></div>
-              <div><dt>Files</dt><dd>5 subsets emitted by the build (latin, latin-ext, cyrillic, greek, vietnamese), woff2 only</dd></div>
-              <div><dt>Loading</dt><dd><code>font-display: swap</code>; the browser fetches only the subset its <code>unicode-range</code> needs</dd></div>
-              <div><dt>Fallback</dt><dd><code>"Helvetica Neue", Arial, sans-serif</code></dd></div>
+              <div><dt>Display</dt><dd>Noto Serif Variable — headlines and section titles</dd></div>
+              <div><dt>UI</dt><dd>Inter Variable — body, controls, labels, tables</dd></div>
+              <div><dt>Data</dt><dd>Source Code Pro Variable — addresses, IDs, counts, code</dd></div>
+              <div><dt>Source</dt><dd>Self-hosted through <code>src/index.css</code>; no third-party font CDN</dd></div>
+              <div><dt>Licence</dt><dd>SIL Open Font License 1.1 for all three families</dd></div>
+              <div><dt>Fallback</dt><dd>Georgia for serif, Helvetica/Arial for sans, system mono for data</dd></div>
             </dl>
           </div>
 
           <p class="caption">
-            Why self-hosted: Postern asks users to trust it with the addresses they use
-            everywhere else. Loading a webfont from a third-party CDN tells that third party the
-            IP and page of every visitor. The font ships with the app instead. Manrope has no
-            italic cut, so <em>italic is never used in the product</em> — emphasis is weight,
-            colour or a rule.
+            Why self-hosted: Postern asks users to trust it with the addresses they use everywhere
+            else. Loading a webfont from a third-party CDN tells that third party the IP and page of
+            every visitor. The fonts ship with the app instead. Italic is used only where a family
+            has a real italic cut; emphasis is weight, colour or a rule.
           </p>
 
           <h3>The scale</h3>
           <div class="table-wrap">
             <table class="table table--doc">
-              <caption class="sr-only">Typographic scale with size, line height, tracking and weight</caption>
+              <caption class="sr-only">Typographic scale with family, size, leading, tracking and weight</caption>
               <thead>
                 <tr>
                   <th scope="col">Token</th>
+                  <th scope="col">Family</th>
                   <th scope="col">Size</th>
                   <th scope="col">Leading</th>
                   <th scope="col">Tracking</th>
@@ -858,17 +788,17 @@ function choose(next) {
                 </tr>
               </thead>
               <tbody>
-                <tr><td><code>--fs-display</code></td><td class="tnum">44 → 76</td><td class="tnum">0.98</td><td class="tnum">−0.038em</td><td class="tnum">800</td><td>Landing hero, one per site</td></tr>
-                <tr><td><code>--fs-h1</code></td><td class="tnum">32 → 52</td><td class="tnum">1.06</td><td class="tnum">−0.030em</td><td class="tnum">800</td><td>Page title, one per page</td></tr>
-                <tr><td><code>--fs-h2</code></td><td class="tnum">24 → 32</td><td class="tnum">1.16</td><td class="tnum">−0.022em</td><td class="tnum">700</td><td>Section headings</td></tr>
-                <tr><td><code>--fs-h3</code></td><td class="tnum">22</td><td class="tnum">1.28</td><td class="tnum">−0.015em</td><td class="tnum">620</td><td>Card and dialog titles</td></tr>
-                <tr><td><code>--fs-h4</code></td><td class="tnum">18</td><td class="tnum">1.35</td><td class="tnum">−0.010em</td><td class="tnum">620</td><td>Sub-headings, list titles</td></tr>
-                <tr><td><code>--fs-body-lg</code></td><td class="tnum">18</td><td class="tnum">1.65</td><td class="tnum">−0.002em</td><td class="tnum">450</td><td>Lede paragraphs, auth screens</td></tr>
-                <tr><td><code>--fs-body</code></td><td class="tnum">16</td><td class="tnum">1.65</td><td class="tnum">−0.002em</td><td class="tnum">450</td><td>Default body</td></tr>
-                <tr><td><code>--fs-sm</code></td><td class="tnum">15</td><td class="tnum">1.55</td><td class="tnum">0.002em</td><td class="tnum">450</td><td>Controls, table cells, hints</td></tr>
-                <tr><td><code>--fs-caption</code></td><td class="tnum">13</td><td class="tnum">1.45</td><td class="tnum">0.008em</td><td class="tnum">450–620</td><td>Metadata, error text, chips</td></tr>
-                <tr><td><code>--fs-overline</code></td><td class="tnum">12</td><td class="tnum">1.2</td><td class="tnum">0.140em</td><td class="tnum">700</td><td>Uppercase labels and eyebrows — the only caps in the system</td></tr>
-                <tr><td><code>--fs-mono</code></td><td class="tnum">14</td><td class="tnum">1.5</td><td class="tnum">−0.010em</td><td class="tnum">450</td><td>Alias addresses, IDs, counts</td></tr>
+                <tr><td><code>--fs-display</code></td><td>Serif</td><td class="tnum">44 → 72</td><td class="tnum">1.04</td><td class="tnum">−0.02em</td><td class="tnum">300</td><td>Landing hero</td></tr>
+                <tr><td><code>--fs-h1</code></td><td>Serif</td><td class="tnum">32 → 52</td><td class="tnum">1.08</td><td class="tnum">−0.015em</td><td class="tnum">300</td><td>Page title</td></tr>
+                <tr><td><code>--fs-h2</code></td><td>Serif</td><td class="tnum">24 → 32</td><td class="tnum">1.18</td><td class="tnum">−0.01em</td><td class="tnum">300</td><td>Section title</td></tr>
+                <tr><td><code>--fs-h3</code></td><td>Serif</td><td class="tnum">22</td><td class="tnum">1.28</td><td class="tnum">−0.005em</td><td class="tnum">500</td><td>Card and dialog title</td></tr>
+                <tr><td><code>--fs-h4</code></td><td>Sans</td><td class="tnum">18</td><td class="tnum">1.35</td><td class="tnum">0</td><td class="tnum">600</td><td>Sub-headings</td></tr>
+                <tr><td><code>--fs-body-lg</code></td><td>Sans</td><td class="tnum">18</td><td class="tnum">1.7</td><td class="tnum">0</td><td class="tnum">400</td><td>Ledes, auth screens</td></tr>
+                <tr><td><code>--fs-body</code></td><td>Sans</td><td class="tnum">16</td><td class="tnum">1.7</td><td class="tnum">0</td><td class="tnum">400</td><td>Default body</td></tr>
+                <tr><td><code>--fs-sm</code></td><td>Sans</td><td class="tnum">15</td><td class="tnum">1.55</td><td class="tnum">0</td><td class="tnum">400</td><td>Controls, table cells</td></tr>
+                <tr><td><code>--fs-caption</code></td><td>Sans</td><td class="tnum">13</td><td class="tnum">1.45</td><td class="tnum">0.01em</td><td class="tnum">500</td><td>Metadata, error text, chips</td></tr>
+                <tr><td><code>--fs-overline</code></td><td>Sans</td><td class="tnum">12</td><td class="tnum">1.2</td><td class="tnum">0.08em</td><td class="tnum">600</td><td>Uppercase labels only</td></tr>
+                <tr><td><code>--fs-mono</code></td><td>Mono</td><td class="tnum">14</td><td class="tnum">1.5</td><td class="tnum">0</td><td class="tnum">400</td><td>Alias addresses, IDs, counts</td></tr>
               </tbody>
             </table>
           </div>
@@ -905,30 +835,31 @@ function choose(next) {
           <header class="plate__head">
             <p class="plate__no">06</p>
             <h2 id="tokens-title">Tokens</h2>
-            <p class="plate__deck">
-              Nine groups, one file. If a value is not a token, it does not exist.
-            </p>
-          </header>
+          <p class="plate__deck">
+            One file, three explicit theme blocks. If a value is not a token, it does not exist.
+          </p>
+        </header>
 
-          <div class="token-intro">
-            <p>
-              Tokens are declared in <code>web/src/styles/tokens.css</code> inside Tailwind's
-              <code>@theme</code>, so every token is also a utility. There are two layers:
-              <strong>primitives</strong> named for what they are (<code>--maroon-700</code>),
-              and <strong>semantics</strong> named for what they do
-              (<code>--color-primary</code>). Components may only read the semantic layer — that
-              is what allows the palette to change without a component audit.
+        <div class="token-intro">
+          <p>
+            Tokens are declared in <code>web/src/styles/tokens.css</code> inside Tailwind's
+            <code>@theme</code>, so every token is also a utility. There are two layers:
+            <strong>primitives</strong> named for what they are (<code>--surface-container-low</code>),
+            and <strong>semantics</strong> named for what they do
+            (<code>--color-primary</code>). Components may only read the semantic layer — that is
+            what allows the palette to change without a component audit.
+          </p>
+          <div class="token-audit" id="token-audit-panel">
+            <p class="token-audit__label">Live token audit</p>
+            <p class="token-audit__count" id="token-audit-count">—</p>
+            <p class="token-audit__body">
+              Every swatch above carries the hex value it claims for each polarity. This page reads
+              each token back out of the live stylesheet, compares it, and re-checks after every
+              theme change. A mismatch is reported here, so this document cannot quietly drift
+              from the code.
             </p>
-            <div class="token-audit" id="token-audit-panel">
-              <p class="token-audit__label">Live token audit</p>
-              <p class="token-audit__count" id="token-audit-count">—</p>
-              <p class="token-audit__body">
-                Every swatch above carries the hex value it claims. This page reads each token
-                back out of the live stylesheet at load time and compares. A mismatch is
-                reported here, which means this document cannot quietly drift from the code.
-              </p>
-            </div>
           </div>
+        </div>
 
           <h3 class="group-label">Using the tokens in Tailwind</h3>
           <p class="lede-sm">
@@ -945,33 +876,33 @@ function choose(next) {
               <tbody>
                 <tr><td><code>--color-bg</code></td><td><code>bg-bg</code></td><td>Page ground</td></tr>
                 <tr><td><code>--color-surface</code></td><td><code>bg-surface</code></td><td>Cards, dialogs, inputs</td></tr>
-                <tr><td><code>--color-text</code></td><td><code>text-text</code></td><td>Body copy — the role name is the utility name</td></tr>
+                <tr><td><code>--color-text</code></td><td><code>text-text</code></td><td>Body copy</td></tr>
                 <tr><td><code>--color-text-muted</code></td><td><code>text-text-muted</code></td><td>Helper text, metadata</td></tr>
-                <tr><td><code>--color-primary</code></td><td><code>bg-primary</code> <code>border-primary</code></td><td>Fills only</td></tr>
-                <tr><td><code>--color-text-on-primary</code></td><td><code>text-text-on-primary</code></td><td>Text on primary fills and selected text</td></tr>
-                <tr><td><code>--color-link</code></td><td><code>text-link</code></td><td>Link and icon colour</td></tr>
+                <tr><td><code>--color-primary</code></td><td><code>bg-primary</code> <code>border-primary</code></td><td>The neutral fill and active tab</td></tr>
+                <tr><td><code>--color-link</code></td><td><code>text-link</code></td><td>Links and accented icons</td></tr>
+                <tr><td><code>--color-focus</code></td><td><code>ring-focus</code></td><td>Focus ring</td></tr>
                 <tr><td><code>--color-hairline</code></td><td><code>border-hairline</code></td><td>Dividers</td></tr>
-                <tr><td><code>--color-border</code></td><td><code>border-border</code></td><td>Control boundaries, 3:1</td></tr>
-                <tr><td><code>--radius-md</code></td><td><code>rounded-md</code></td><td>8px, controls</td></tr>
-                <tr><td><code>--shadow-md</code></td><td><code>shadow-md</code></td><td>Cards, popovers</td></tr>
+                <tr><td><code>--color-border</code></td><td><code>border-border</code></td><td>Control boundaries</td></tr>
+                <tr><td><code>--radius-md</code></td><td><code>rounded-md</code></td><td>0px — square corners everywhere</td></tr>
+                <tr><td><code>--shadow-md</code></td><td><code>shadow-md</code></td><td>Tonal lift for popovers and dialogs</td></tr>
                 <tr><td><code>--fs-h1</code> / <code>--lh-h1</code></td><td><code>text-h1</code></td><td>Size, leading and tracking in one class</td></tr>
                 <tr><td><code>--space-4</code></td><td><code>p-4</code> <code>gap-4</code></td><td>Same 4px base, same numbers</td></tr>
-                <tr><td><code>--container</code></td><td><code>max-w-page</code></td><td>72rem content limit</td></tr>
+                <tr><td><code>--container-page</code></td><td><code>max-w-page</code></td><td>72rem content limit</td></tr>
                 <tr><td><code>--ease-standard</code></td><td><code>ease-standard</code></td><td>Default easing</td></tr>
               </tbody>
             </table>
           </div>
 
-          <pre><code>&lt;output class="inline-flex items-center gap-2 rounded-full border border-hairline
+          <pre><code>&lt;output class="inline-flex items-center gap-2 rounded-md border border-hairline
               bg-success-surface px-3 py-1 text-caption text-success-on-surface"&gt;
-  &lt;span class="size-2 rounded-full bg-success" aria-hidden="true"&gt;&lt;/span&gt;
+  &lt;span class="size-2 bg-success" aria-hidden="true"&gt;&lt;/span&gt;
   Destination verified
 &lt;/output&gt;</code></pre>
 
           <ul class="rules rules--split">
             <li><strong>Utilities for layout, components for repetition.</strong> One-off spacing, flex, grid and colour go inline. Anything used twice becomes a class in <code>@layer components</code> — which is what this guide documents.</li>
-            <li><strong>Never a raw value in a class name.</strong> <code>bg-[#74172a]</code> is a bug: it opts out of dark mode and of the audit. Use the role.</li>
-            <li><strong>No <code>dark:</code> variants.</strong> Every colour is <code>light-dark()</code> already, so <code>dark:*</code> would double-handle the flip and ignore the user's toggle.</li>
+            <li><strong>Never a raw value in a class name.</strong> <code>bg-[#6b1d2f]</code> is a bug: it opts out of theming and of the audit. Use the role.</li>
+            <li><strong>No <code>dark:</code> variants.</strong> Roles are redefined in three explicit blocks in <code>tokens.css</code>; a <code>dark:*</code> utility would bypass the user's toggle.</li>
             <li><strong>Three layers, in order:</strong> <code>theme</code> (tokens), <code>base</code> (reset, elements), <code>components</code> (classes). Utilities sit above all three, so a one-off always wins.</li>
           </ul>
 
@@ -996,14 +927,14 @@ function choose(next) {
             <div>
               <h3>Radius</h3>
               <div class="radius-viz">
-                <div class="radius-viz__item"><span style="border-radius: var(--radius-xs)"></span><code>xs · 3</code></div>
-                <div class="radius-viz__item"><span style="border-radius: var(--radius-sm)"></span><code>sm · 5</code></div>
-                <div class="radius-viz__item"><span style="border-radius: var(--radius-md)"></span><code>md · 8</code></div>
-                <div class="radius-viz__item"><span style="border-radius: var(--radius-lg)"></span><code>lg · 12</code></div>
-                <div class="radius-viz__item"><span style="border-radius: var(--radius-xl)"></span><code>xl · 18</code></div>
-                <div class="radius-viz__item"><span style="border-radius: var(--radius-2xl)"></span><code>2xl · 26</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-xs)"></span><code>xs · 0</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-sm)"></span><code>sm · 0</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-md)"></span><code>md · 0</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-lg)"></span><code>lg · 0</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-xl)"></span><code>xl · 0</code></div>
+                <div class="radius-viz__item"><span style="border-radius: var(--radius-2xl)"></span><code>2xl · 0</code></div>
               </div>
-              <p class="caption caption--tight">Controls 8 · cards 12 · dialogs 18 · pills full. The mark is an arch, so nothing in the system is a bubble.</p>
+              <p class="caption caption--tight">Every radius token is 0px. The mark is an arch and the page is a ledger: nothing in the system is a bubble.</p>
             </div>
             <div>
               <h3>Elevation</h3>
@@ -1013,8 +944,9 @@ function choose(next) {
                 <div class="shadow-viz__item" style="box-shadow: var(--shadow-md)"><code>md</code></div>
                 <div class="shadow-viz__item" style="box-shadow: var(--shadow-lg)"><code>lg</code></div>
               </div>
-              <p class="caption caption--tight">Warm, ink-tinted, low-opacity. xs for resting cards, sm for controls, md for hover and popovers, lg for dialogs and toasts only.</p>
+              <p class="caption caption--tight">Tonal and low-opacity: <code>xs</code> is none, <code>sm</code> for controls, <code>md</code> for popovers, <code>lg</code> for dialogs and toasts only.</p>
             </div>
+          </div>
           </div>
 
           <h3>Motion</h3>
@@ -1023,14 +955,15 @@ function choose(next) {
               <caption class="sr-only">Motion tokens</caption>
               <thead><tr><th scope="col">Token</th><th scope="col">Value</th><th scope="col">Allowed for</th></tr></thead>
               <tbody>
-                <tr><td><code>--dur-instant</code></td><td class="tnum">80ms</td><td>Colour and border on hover and press. Nothing else.</td></tr>
-                <tr><td><code>--dur-fast</code></td><td class="tnum">140ms</td><td>Checkbox, switch, chip, tooltip, focus transition</td></tr>
-                <tr><td><code>--dur-base</code></td><td class="tnum">200ms</td><td>Dropdown, accordion, tab underline, toast entry</td></tr>
+                <tr><td><code>--dur-instant</code></td><td class="tnum">80ms</td><td>Colour and border on hover and press</td></tr>
+                <tr><td><code>--dur-fast</code></td><td class="tnum">150ms</td><td>Checkbox, switch, chip, tooltip, focus</td></tr>
+                <tr><td><code>--dur-base</code></td><td class="tnum">220ms</td><td>Dropdown, accordion, tab underline, toast entry</td></tr>
                 <tr><td><code>--dur-slow</code></td><td class="tnum">320ms</td><td>Dialog and sheet entrance, their backdrop</td></tr>
-                <tr><td><code>--dur-slower</code></td><td class="tnum">520ms</td><td>Page-level reveal. Once per page, never on a loop.</td></tr>
+                <tr><td><code>--dur-slower</code></td><td class="tnum">500ms</td><td>Page-level reveal. Once per page, never on a loop.</td></tr>
                 <tr><td><code>--ease-standard</code></td><td class="tnum">0.2, 0.6, 0.3, 1</td><td>Default: colour, size, sheets</td></tr>
                 <tr><td><code>--ease-out</code></td><td class="tnum">0.16, 1, 0.3, 1</td><td>Entrances — fast start, gentle stop</td></tr>
-                <tr><td><code>--ease-spring</code></td><td class="tnum">0.34, 1.4, 0.5, 1</td><td>Only for the wax seal and switch thumb</td></tr>
+                <tr><td><code>--ease-in</code></td><td class="tnum">0.4, 1, 1, 1</td><td>Exits and anything that leaves the screen</td></tr>
+                <tr><td><code>--ease-spring</code></td><td class="tnum">0.2, 0.8, 0.2, 1</td><td>Subtle settling, never a bounce</td></tr>
               </tbody>
             </table>
           </div>
@@ -1038,13 +971,14 @@ function choose(next) {
           <div class="code-pair">
             <div>
               <p class="code-pair__label">Primitive</p>
-              <pre><code>--maroon-700: #74172a;</code></pre>
+              <pre><code>--accent: #6b1d2f;
+--on-surface: #1b1b1b;</code></pre>
             </div>
             <div>
               <p class="code-pair__label">Semantic — the only layer components read</p>
-              <pre><code>--color-primary: var(--maroon-700);
---color-text:    var(--ink-900);
---color-border:  var(--ink-300);</code></pre>
+              <pre><code>--color-link: var(--accent);
+--color-text: var(--on-surface);
+--color-focus: var(--accent);</code></pre>
             </div>
           </div>
 
@@ -1557,10 +1491,10 @@ function choose(next) {
           <div class="motion-lab">
             <div class="motion-lab__controls" role="group" aria-label="Motion demonstrations">
               <button class="btn btn--secondary btn--sm" type="button" data-motion="instant">Instant · 80ms</button>
-              <button class="btn btn--secondary btn--sm" type="button" data-motion="fast">Fast · 140ms</button>
-              <button class="btn btn--secondary btn--sm" type="button" data-motion="base">Base · 200ms</button>
+              <button class="btn btn--secondary btn--sm" type="button" data-motion="fast">Fast · 150ms</button>
+              <button class="btn btn--secondary btn--sm" type="button" data-motion="base">Base · 220ms</button>
               <button class="btn btn--secondary btn--sm" type="button" data-motion="slow">Slow · 320ms</button>
-              <button class="btn btn--secondary btn--sm" type="button" data-motion="slower">Slower · 520ms</button>
+              <button class="btn btn--secondary btn--sm" type="button" data-motion="slower">Slower · 500ms</button>
             </div>
             <div class="motion-lab__track" aria-hidden="true"><span class="motion-lab__dot" id="motion-dot"></span></div>
             <p class="caption caption--tight">Only <code>opacity</code>, <code>transform</code> and colour are animated — never layout properties, never anything that triggers reflow.</p>
@@ -1572,9 +1506,9 @@ function choose(next) {
               <ul class="rules">
                 <li>Colour and border on hover and press (80ms)</li>
                 <li>Dialog scale-and-rise on open, backdrop fade (320ms)</li>
-                <li>Toast entering from the bottom edge (200ms)</li>
-                <li>Switch thumb travel with a light spring</li>
-                <li>Section reveal on first scroll into view (520ms, once)</li>
+                <li>Toast entering from the bottom edge (220ms)</li>
+                <li>Switch thumb travel with a restrained spring</li>
+                <li>Section reveal on first scroll into view (500ms, once)</li>
                 <li>One-time logo draw on the landing page</li>
               </ul>
             </div>
@@ -1582,7 +1516,7 @@ function choose(next) {
               <h3 class="group-label">Forbidden</h3>
               <ul class="rules">
                 <li>Parallax, autoplaying carousels, looping ambient motion</li>
-                <li>Anything over 520ms without a user-initiated trigger</li>
+                <li>Anything over 500ms without a user-initiated trigger</li>
                 <li>Animating height, width, top or left</li>
                 <li>Bouncing, wobbling or attention-seeking easing</li>
                 <li>Motion that carries meaning with no static equivalent</li>
@@ -1613,7 +1547,7 @@ function choose(next) {
           </header>
 
           <div class="a11y-grid">
-            <article class="a11y-fact"><p class="a11y-fact__value">AA</p><p>WCAG 2.2 Level AA, all 86 success criteria that apply</p></article>
+            <article class="a11y-fact"><p class="a11y-fact__value">AA</p><p>WCAG 2.2 Level AA, all applicable success criteria</p></article>
             <article class="a11y-fact"><p class="a11y-fact__value">AAA</p><p>Body and interface text at 7:1 or better</p></article>
             <article class="a11y-fact"><p class="a11y-fact__value">24px</p><p>Minimum target size (2.5.8); 44px on touch</p></article>
             <article class="a11y-fact"><p class="a11y-fact__value">0</p><p>Critical or serious axe violations on this page, in either theme</p></article>
@@ -1622,21 +1556,20 @@ function choose(next) {
           <h3>Contrast guarantees</h3>
           <p class="lede-sm">
             Every text pairing used in the product is listed in the colour plate with its measured
-            ratio. The summary: body 15.91:1, secondary 11.69:1, muted 7.46:1, captions 5.61:1,
-            disabled 4.84:1, primary button label 11.06:1, error text 7.79:1 — all at or above AA,
-            most at AAA. Non-text contrast (1.4.11) is met by the control border at 3.03:1 and by
-            the focus ring at 10.45:1. Dark mode holds the same floor with its own stops — 16.85:1
-            body, 3.35:1 border, 8.94:1 ring — rather than inheriting light ratios that no longer
-            apply.
+            ratio. In light the floor is 4.77:1 for subtle text, 10.83:1 for links and 16.36:1 for
+            body; in dark it is 5.43:1, 8.70:1 and 17.18:1. Disabled text still clears 4.5:1.
+            Non-text contrast is met by the control border at 4.54:1 light and 5.14:1 dark, and by
+            the focus ring at 10.83:1 and 16.44:1. The full table is enforced by
+            <code>scripts/contrast-audit.mjs</code> in both themes.
           </p>
 
           <div class="callout callout--warn">
             <h4>Colour is never the only signal</h4>
             <p>
               Every status chip carries a word. Every error carries an icon and a sentence. Every
-              link is underlined. The one place this matters most is flag severity, where maroon and
-              rust are 2.6:1 apart in hue but both dark reds — so "Unexpected sender" and "Failed
-              authentication" differ by label and icon, not by shade.
+              link is underlined. This matters most for flag severity: "Unexpected sender" and
+              "Failed authentication" are both reddish, so they differ by label and icon, not by
+              shade.
             </p>
           </div>
 
@@ -1658,15 +1591,15 @@ function choose(next) {
 
           <h3>Focus</h3>
           <div class="focus-demo">
-            <div class="focus-demo__cell"><p class="state-label">On paper</p><button class="btn btn--secondary" type="button">Tab to me</button></div>
-            <div class="focus-demo__cell on-maroon" style="background: var(--maroon-700); padding: var(--space-5); border-radius: var(--radius-lg)">
-              <p class="state-label" style="color: var(--maroon-300)">On maroon</p>
-              <button class="btn btn--primary" type="button" style="--btn-bg: var(--paper-50); --btn-fg: var(--maroon-800); --btn-border: var(--paper-50)">Tab to me</button>
+            <div class="focus-demo__cell"><p class="state-label">On a surface</p><button class="btn btn--secondary" type="button">Tab to me</button></div>
+            <div class="focus-demo__cell on-accent" style="background: var(--accent); padding: var(--space-5); border-radius: var(--radius-lg)">
+              <p class="state-label" style="color: var(--on-accent)">On accent</p>
+              <button class="btn btn--primary" type="button" style="--btn-bg: var(--on-accent); --btn-fg: var(--accent); --btn-border: var(--on-accent)">Tab to me</button>
             </div>
           </div>
           <ul class="rules rules--split">
-            <li><strong>Always visible:</strong> 2px solid maroon with a 2px offset. Never <code>outline: none</code>.</li>
-            <li><strong>On maroon:</strong> the ring flips to paper and keeps the offset gap, so it is visible against both the control and its background.</li>
+            <li><strong>Always visible:</strong> 2px solid <code>--color-focus</code> with a 2px offset. Never <code>outline: none</code>.</li>
+            <li><strong>On accented surfaces:</strong> the ring uses <code>--color-focus-inverse</code> and keeps the offset gap, so it stays visible against both the control and its background.</li>
             <li><strong>Never obscured:</strong> sticky headers carry <code>scroll-padding-top</code> so a focused field is never hidden behind them (2.4.11).</li>
             <li><strong>Order matches meaning:</strong> visual order and DOM order never disagree; no positive <code>tabindex</code> anywhere.</li>
           </ul>
@@ -1850,15 +1783,15 @@ function choose(next) {
                   <caption class="sr-only">Where the system lives</caption>
                   <thead><tr><th scope="col">File</th><th scope="col">Owns</th></tr></thead>
                   <tbody>
-                    <tr><td><code>src/styles/tokens.css</code></td><td>Colour, type, space, radius, shadow, motion, layout, z-index</td></tr>
+                    <tr><td><code>src/styles/tokens.css</code></td><td>Colour, type, space, radius, shadow, motion, layout and z-index</td></tr>
                     <tr><td><code>src/styles/base.css</code></td><td>Reset, headings, links, focus, reduced motion, skip link</td></tr>
                     <tr><td><code>src/styles/components.css</code></td><td>Every component class and its states</td></tr>
-                    <tr><td><code>src/index.css</code></td><td>Tailwind entry: layer order, theme and utilities imports, the <code>shell</code> utility</td></tr>
-                    <tr><td><code>src/styles/brand.css</code></td><td>This document's stylesheet entry — imports the app tokens, then the guide layout</td></tr>
+                    <tr><td><code>src/index.css</code></td><td>Tailwind entry: layer order, theme and utilities imports</td></tr>
+                    <tr><td><code>src/styles/brand.css</code></td><td>This document's stylesheet entry — app tokens, then guide layout</td></tr>
                     <tr><td><code>src/styles/brand-guide.css</code></td><td>This document's layout only — never product styles</td></tr>
                     <tr><td><code>brand/index.html</code></td><td>This page</td></tr>
                     <tr><td><code>scripts/contrast-audit.mjs</code></td><td>Every published pair, measured in both themes; exits non-zero on a regression</td></tr>
-                    <tr><td><code>public/brand/*.svg</code></td><td>Mark, inverse mark, app tile</td></tr>
+                    <tr><td><code>public/postern.svg</code></td><td>The favicon and the source of truth for the exported marks</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -1866,10 +1799,10 @@ function choose(next) {
             <div>
               <h3 class="group-label">Changing a token</h3>
               <ol class="steps steps--tight">
-                <li><span>1</span><div><strong>Propose the value with its measurement</strong><p>Any new colour arrives with its contrast ratio against paper and white.</p></div></li>
+                <li><span>1</span><div><strong>Propose the value with its measurement</strong><p>Any new colour arrives with its contrast ratio against both page and card.</p></div></li>
                 <li><span>2</span><div><strong>Add the primitive</strong><p>Only if an existing stop cannot do the job — the palette is intentionally finite.</p></div></li>
                 <li><span>3</span><div><strong>Map a semantic role</strong><p>Components read the semantic layer. If you must edit a component to use a new colour, the token design is wrong.</p></div></li>
-                <li><span>4</span><div><strong>Update this page in the same commit</strong><p>The swatch carries <code>data-hex</code>; the audit badge must still read 100%.</p></div></li>
+                <li><span>4</span><div><strong>Update this page in the same commit</strong><p>The swatch carries <code>data-hex-light</code> and <code>data-hex-dark</code>; the audit badge must still read in sync in both themes.</p></div></li>
               </ol>
             </div>
           </div>
@@ -1894,15 +1827,16 @@ function choose(next) {
               <caption class="sr-only">Version history</caption>
               <thead><tr><th scope="col">Version</th><th scope="col">Date</th><th scope="col">Change</th></tr></thead>
               <tbody>
-                <tr><td>1.1</td><td class="tnum">3 Nov 2026</td><td>Dark mode: the semantic layer mapped with <code>light-dark()</code> behind a <code>data-theme</code> toggle, eight invariants, role-mapping table, and a contrast audit that now measures both polarities.</td></tr>
-                <tr><td>1.0</td><td class="tnum">3 Nov 2026</td><td>First complete system: maroon-and-paper palette, Manrope scale, tokens, components, motion and loading rules, accessibility standard, voice.</td></tr>
+                <tr><td>1.2</td><td class="tnum">19 Nov 2026</td><td>Rebuilt around the shipped editorial system: Stitch tonal tokens, Inter / Noto Serif / Source Code Pro, square geometry, tonal elevation and polarity-aware token audit.</td></tr>
+                <tr><td>1.1</td><td class="tnum">3 Nov 2026</td><td>Dark mode role mapping, invariants and a contrast audit measured in both themes.</td></tr>
+                <tr><td>1.0</td><td class="tnum">3 Nov 2026</td><td>First complete system: tokens, components, motion, accessibility standard and voice.</td></tr>
               </tbody>
             </table>
           </div>
 
           <h3>Licensing</h3>
           <ul class="rules rules--split">
-            <li><strong>Manrope</strong> — SIL Open Font License 1.1. Free for commercial use and embedding; the reserved name clause applies to modified versions.</li>
+            <li><strong>Inter, Noto Serif and Source Code Pro</strong> — SIL Open Font License 1.1. Free for commercial use and embedding; notices live in <code>public/licenses/</code>.</li>
             <li><strong>Lucide icons</strong> — ISC licence. Paths may be inlined; the notice stays in the repository.</li>
           </ul>
 
@@ -1922,10 +1856,10 @@ function choose(next) {
             <span>Postern</span>
           </div>
           <p>
-            Brand &amp; Design System v1.1
+            Brand &amp; Design System v1.2
           </p>
           <p class="doc-footer__meta">
-            Set in Manrope Variable, self-hosted under the SIL Open Font License.
+            Set in Inter, Noto Serif and Source Code Pro, self-hosted under the SIL Open Font License.
           </p>
         </footer>
       </main>

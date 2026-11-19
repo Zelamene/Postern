@@ -175,9 +175,8 @@
     border-radius: var(--radius-xs);
   }
 
-  .on-maroon :focus-visible,
-  .on-maroon:focus-visible,
-  .on-dark :focus-visible {
+  .on-accent :focus-visible,
+  .on-accent:focus-visible {
     outline-color: var(--color-focus-inverse);
   }
 

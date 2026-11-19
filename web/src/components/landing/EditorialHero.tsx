@@ -50,17 +50,17 @@ export function EditorialHero() {
                 <div className="flex items-center gap-2.5">
                   <span className="size-2 bg-accent" aria-hidden="true" />
                   <span className="text-[11px] font-semibold uppercase tracking-widest text-primary">
-                    Live Alert
+                    New alert
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-[11px] tabular-nums text-on-surface-variant">
-                    Example view
+                    Example
                   </span>
                   <span className="text-outline-variant" aria-hidden="true">
                     •
                   </span>
-                  <span className="font-mono text-xs text-primary">Metadata only</span>
+                  <span className="font-mono text-xs text-primary">No message contents</span>
                 </div>
               </div>
 

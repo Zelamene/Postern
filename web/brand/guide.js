@@ -21,16 +21,36 @@ function toHex(value) {
   return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`;
 }
 
+function currentPolarity() {
+  if (root.dataset.theme === 'light' || root.dataset.theme === 'dark') {
+    return root.dataset.theme;
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function rgbFromHex(value) {
+  const hex = toHex(value);
+  const [r, g, b] = hex.slice(1).match(/../g).map((part) => Number.parseInt(part, 16));
+  return `rgb(${r} ${g} ${b})`;
+}
+
 function auditTokens() {
   const swatches = [...document.querySelectorAll('.swatch[data-token]')];
   const mismatches = [];
+  const polarity = currentPolarity();
+  const claimKey = polarity === 'dark' ? 'hexDark' : 'hexLight';
 
   for (const swatch of swatches) {
-    const claimed = toHex(swatch.dataset.hex ?? '');
+    const claimed = toHex(swatch.dataset[claimKey] ?? swatch.dataset.hex ?? '');
     const live = toHex(token(swatch.dataset.token));
     if (claimed !== live) {
       mismatches.push(`${swatch.dataset.token}: doc ${claimed} / code ${live}`);
     }
+
+    const hexLabel = swatch.querySelector('.swatch__hex');
+    if (hexLabel) hexLabel.textContent = live.toUpperCase();
+    const meta = swatch.querySelector('.swatch__meta');
+    if (meta) meta.textContent = rgbFromHex(live);
   }
 
   const badge = document.getElementById('token-audit');
@@ -340,7 +360,7 @@ function initThemeSwitch() {
       ? root.dataset.theme === 'dark'
       : media.matches;
     const meta = document.querySelector('meta[name="theme-color"]:not([media])');
-    if (meta) meta.content = dark ? '#151110' : '#fbf8f4';
+    if (meta) meta.content = dark ? '#121212' : '#f9f9f9';
   };
 
   const paint = () => {
@@ -350,6 +370,7 @@ function initThemeSwitch() {
       button.setAttribute('aria-pressed', String(on));
     }
     syncThemeColor();
+    auditTokens();
   };
 
   for (const button of buttons) {

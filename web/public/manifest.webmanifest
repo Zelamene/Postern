@@ -2,8 +2,8 @@
   "name": "Postern",
   "short_name": "Postern",
   "description": "A single-purpose, auditable email alias platform.",
-  "theme_color": "#74172a",
-  "background_color": "#fbf8f4",
+  "theme_color": "#f9f9f9",
+  "background_color": "#f9f9f9",
   "display": "standalone",
   "start_url": "/",
   "icons": [
