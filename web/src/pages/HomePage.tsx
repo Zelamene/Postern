@@ -1,12 +1,11 @@
-import { Hero } from '../components/landing/Hero'
-import { ProblemSection } from '../components/landing/ProblemSection'
-import { SolutionSection } from '../components/landing/SolutionSection'
-import { HowItWorksSection } from '../components/landing/HowItWorksSection'
-import { InteractiveDemo } from '../components/landing/InteractiveDemo'
-import { WhoItsForSection } from '../components/landing/WhoItsForSection'
-import { GuaranteesSection } from '../components/landing/GuaranteesSection'
-import { Footer } from '../components/common/Footer'
-import { Navbar } from '../components/common/Navbar'
+import { SectionLink } from '../components/common/SectionLink'
+import { ActivitySection } from '../components/landing/ActivitySection'
+import { ControlSection } from '../components/landing/ControlSection'
+import { EditorialFooter } from '../components/landing/EditorialFooter'
+import { EditorialHero } from '../components/landing/EditorialHero'
+import { EditorialNavbar } from '../components/landing/EditorialNavbar'
+import { InviteSection } from '../components/landing/InviteSection'
+import { WhyPosternSection } from '../components/landing/WhyPosternSection'
 import type { ThemeMode } from '../types'
 
 interface HomePageProps {
@@ -17,26 +16,24 @@ interface HomePageProps {
 export function HomePage({ theme, onThemeChange }: Readonly<HomePageProps>) {
   return (
     <div className="min-h-screen bg-bg text-text antialiased">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[var(--z-toast)] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-on-inverse focus:shadow-md"
+      <SectionLink
+        sectionId="main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[var(--z-toast)] focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-on-inverse"
       >
         Skip to main content
-      </a>
+      </SectionLink>
 
-      <Navbar theme={theme} onThemeChange={onThemeChange} />
+      <EditorialNavbar theme={theme} onThemeChange={onThemeChange} />
 
-      <main id="main-content">
-        <Hero />
-        <ProblemSection />
-        <SolutionSection />
-        <HowItWorksSection />
-        <InteractiveDemo />
-        <WhoItsForSection />
-        <GuaranteesSection />
+      <main id="main-content" tabIndex={-1} className="focus:outline-none">
+        <EditorialHero />
+        <WhyPosternSection />
+        <ActivitySection />
+        <ControlSection />
+        <InviteSection />
       </main>
 
-      <Footer />
+      <EditorialFooter />
     </div>
   )
 }

@@ -6,7 +6,7 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
-    <meta name="theme-color" content="#74172a" />
+    <meta name="theme-color" content="#f9f9f9" />
     <meta name="description" content="A single-purpose, auditable email alias platform." />
     <title>Postern</title>
     <script>
@@ -16,6 +16,10 @@
           ? stored === 'dark'
           : window.matchMedia('(prefers-color-scheme: dark)').matches
         document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        const themeColor = document.querySelector('meta[name="theme-color"]')
+        if (themeColor) {
+          themeColor.setAttribute('content', dark ? '#121212' : '#f9f9f9')
+        }
       })()
     </script>
   </head>

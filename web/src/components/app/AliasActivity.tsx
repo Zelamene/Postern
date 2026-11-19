@@ -9,7 +9,6 @@ import { REPLY_WARNING } from '../../services/productCopy'
 import { isPublicEmailProvider } from '../../services/publicEmailProviders'
 import { formatDateTime } from '../../services/formatters'
 import { AppLink } from './AppLink'
-import { ALIAS_STATUS_CLASSES } from './aliasStatus'
 import { ConfirmationDialog } from '../common/ConfirmationDialog'
 import { ReplaceAliasDialog } from './ReplaceAliasDialog'
 import { useToast } from '../common/toast'
@@ -28,17 +27,17 @@ type LeakSeverity = 'high' | 'medium' | 'low'
 const SEVERITY_DETAILS: Record<LeakSeverity, { label: string; tone: string; description: string }> = {
   high: {
     label: 'High severity',
-    tone: 'bg-danger-surface text-danger-on-surface',
+    tone: 'ea-chip--danger',
     description: 'Failed authentication',
   },
   medium: {
     label: 'Medium severity',
-    tone: 'bg-warning-surface text-warning-on-surface',
+    tone: 'ea-chip--accent',
     description: 'Unexpected sender',
   },
   low: {
     label: 'Low severity',
-    tone: 'bg-surface-sunken text-text-muted',
+    tone: 'ea-chip--muted',
     description: 'Unverified sender',
   },
 }
@@ -64,13 +63,13 @@ function leakSeverity(message: MailMessage): LeakSeverity | null {
 function authTone(result: string): string {
   switch (result.toLowerCase()) {
     case 'pass':
-      return 'bg-success-surface text-success-on-surface'
+      return 'ea-chip--success'
     case 'fail':
-      return 'bg-danger-surface text-danger-on-surface'
+      return 'ea-chip--danger'
     case 'none':
-      return 'bg-surface-sunken text-text-muted'
+      return 'ea-chip--muted'
     default:
-      return 'bg-warning-surface text-warning-on-surface'
+      return 'ea-chip--accent'
   }
 }
 
@@ -199,196 +198,257 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
     }
   }
 
+  const loadedMessages = feed.items
+  const flaggedCount = loadedMessages.filter((message) => message.isFlagged).length
+
   return (
-    <div className="space-y-6">
+    <div className="ea-stack">
       <div>
-        <AppLink to="/app" className="text-sm font-semibold no-underline">
-          ← All aliases
+        <AppLink to="/app" className="ea-back">
+          <span aria-hidden="true">←</span> All aliases
         </AppLink>
-        <p className="mt-4 text-xs font-bold tracking-[0.16em] text-primary uppercase">
-          Alias activity
-        </p>
-        <div className="mt-1 flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-extrabold tracking-tight capitalize">{title}</h1>
-          {alias && (
-            <span
-              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${ALIAS_STATUS_CLASSES[alias.status]}`}
-            >
-              {alias.status}
-            </span>
-          )}
+        <div className="ea-hero ea-hero--tight">
+          <div>
+            <div className="ea-hero__actions">
+              <h1 className="ea-title ea-title--md capitalize">{title}</h1>
+              {alias && (
+                <span className="ea-chip ea-chip--neutral">{alias.status}</span>
+              )}
+            </div>
+            {address && (
+              <div className="ea-address ea-address--hero">
+                <code>{address}</code>
+              </div>
+            )}
+            <p className="ea-lede">
+              Postern keeps message metadata for this address. Bodies are never stored.
+            </p>
+            <p className="ea-hint">{REPLY_WARNING}</p>
+          </div>
+          <div className="ea-hero__actions">
+            {alias && (
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={() => void handleExport()}
+                disabled={isExporting}
+                aria-busy={isExporting || undefined}
+              >
+                {isExporting ? 'Exporting…' : 'Export CSV'}
+              </button>
+            )}
+            {canReplace && (
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                onClick={() => setIsReplaceOpen(true)}
+              >
+                Replace address
+              </button>
+            )}
+          </div>
         </div>
-        {address && <code className="mt-2 block break-all text-sm text-text-muted">{address}</code>}
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <p className="max-w-prose text-sm text-text-muted">
-            Postern keeps message metadata for this address. Bodies are never stored.
-          </p>
-          {alias && (
-            <button
-              type="button"
-              className="btn btn--secondary btn--sm"
-              onClick={() => void handleExport()}
-              disabled={isExporting}
-              aria-busy={isExporting || undefined}
-            >
-              {isExporting ? 'Exporting…' : 'Export CSV'}
-            </button>
-          )}
-          {canReplace && (
-            <button
-              type="button"
-              className="btn btn--secondary btn--sm"
-              onClick={() => setIsReplaceOpen(true)}
-            >
-              Replace address
-            </button>
-          )}
-        </div>
-        <p className="mt-2 max-w-prose text-sm text-text-secondary">{REPLY_WARNING}</p>
       </div>
 
       {notice && (
-        <p role="status" className="alert alert--success">
-          <IconCheckCircle className="alert__icon" />
+        <p role="status" className="ea-notice">
+          <IconCheckCircle size={18} />
           <span>{notice}</span>
         </p>
       )}
 
       {actionError && (
-        <p role="alert" className="alert alert--danger">
-          <IconAlertTriangle className="alert__icon" />
+        <p role="alert" className="ea-notice ea-notice--error">
+          <IconAlertTriangle size={18} />
           <span>{actionError}</span>
         </p>
       )}
 
-      <section
-        className="overflow-hidden rounded-2xl border border-hairline bg-surface shadow-sm"
-        aria-label={`Messages received by ${title}`}
-      >
-        {feed.status === 'loading' && (
-          <output
-            className="space-y-3 p-5 sm:p-6"
-            aria-busy="true"
-            aria-label="Loading messages"
-          >
-            <div className="skeleton skeleton--line-lg" />
-            <div className="skeleton skeleton--line" />
-            <div className="skeleton skeleton--line" />
-          </output>
-        )}
-
-        {feed.status === 'error' && (
-          <p role="alert" className="p-5 text-sm text-danger sm:p-6">
-            {feed.error ?? 'This activity could not be loaded.'}
-          </p>
-        )}
-
-        {feed.status === 'ready' && feed.items.length === 0 && (
-          <div className="empty">
-            <span className="empty__art" aria-hidden="true">
-              <IconMail size={22} />
+      <section className="ea-stack" aria-label={`Messages received by ${title}`}>
+        {loadedMessages.length > 0 && (
+          <div className="ea-activity-summary" aria-label="Activity summary">
+            <span className="ea-activity-summary__item">
+              <span className="ea-activity-summary__label">Messages</span>
+              <strong>{loadedMessages.length}</strong>
             </span>
-            <p className="empty__title">No mail yet</p>
-            <p className="empty__body">
-              Once a sender writes to this alias, the message header appears here.
-            </p>
+            <span className="ea-activity-summary__item">
+              <span className="ea-activity-summary__label">Flagged</span>
+              <strong className="ea-activity-summary__value--accent">{flaggedCount}</strong>
+            </span>
+            <span className="ea-activity-summary__item">
+              <span className="ea-activity-summary__label">Status</span>
+              <strong>{alias?.status ?? '—'}</strong>
+            </span>
+            <span className="ea-activity-summary__item">
+              <span className="ea-activity-summary__label">Latest</span>
+              <strong>{formatDateTime(loadedMessages[0].receivedAt)}</strong>
+            </span>
           </div>
         )}
 
-        {feed.items.length > 0 && (
-          <>
-            <ul className="divide-y divide-hairline">
-              {feed.items.map((message) => {
-                const sender = senderOf(message)
-                const senderAddress = senderAddressOf(message)
-                const severity = leakSeverity(message)
-                const severityDetail = severity ? SEVERITY_DETAILS[severity] : null
-                const showLeakActions = message.isFlagged && alias?.status === 'Active'
+        <div>
+          <div className="ea-activity-head">
+            <h2 className="ea-activity-head__title">Messages</h2>
+            <span className="ea-activity-head__note">Metadata records in this view</span>
+          </div>
 
-                return (
-                  <li key={message.id} className="px-5 py-4 sm:px-6">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <p className="break-all text-sm font-semibold">
-                        {message.fromHeader || message.envelopeSender}
+          {feed.status === 'loading' && (
+            <output
+              className="ea-activity-loading"
+              aria-busy="true"
+              aria-label="Loading messages"
+            >
+              <div className="skeleton skeleton--line" />
+              <div className="skeleton skeleton--line" />
+              <div className="skeleton skeleton--line" />
+            </output>
+          )}
+
+          {feed.status === 'error' && (
+            <p role="alert" className="ea-notice ea-notice--error">
+              {feed.error ?? 'This activity could not be loaded.'}
+            </p>
+          )}
+
+          {feed.status === 'ready' && feed.items.length === 0 && (
+            <div className="ea-activity-empty">
+              <span className="ea-activity-empty__icon" aria-hidden="true">
+                <IconMail size={18} />
+              </span>
+              <div>
+                <p className="ea-activity-empty__title">No mail yet</p>
+                <p className="ea-activity-empty__body">
+                  Once a sender writes to this alias, the message header appears here.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {feed.items.length > 0 && (
+            <>
+              <ul className="ea-activity-list">
+                {feed.items.map((message) => {
+                  const sender = senderOf(message)
+                  const senderAddress = senderAddressOf(message)
+                  const severity = leakSeverity(message)
+                  const severityDetail = severity ? SEVERITY_DETAILS[severity] : null
+                  const showLeakActions = message.isFlagged && alias?.status === 'Active'
+
+                  return (
+                    <li
+                      key={message.id}
+                      className={`ea-activity-row${message.isFlagged ? ' ea-activity-row--flagged' : ''}`}
+                    >
+                      <div className="ea-activity-row__head">
+                        <div className="ea-activity-row__identity">
+                          <span className="ea-activity-row__sender">
+                            {message.fromHeader || message.envelopeSender || 'Unknown sender'}
+                          </span>
+                          {message.fromHeader && senderAddress && (
+                            <span className="ea-activity-row__address">
+                              &lt;{senderAddress}&gt;
+                            </span>
+                          )}
+                        </div>
+                        <time className="ea-activity-row__time" dateTime={message.receivedAt}>
+                          {formatDateTime(message.receivedAt)}
+                        </time>
+                      </div>
+
+                      <p className="ea-activity-row__subject">
+                        {message.subject?.trim() || 'No subject'}
                       </p>
-                      <p className="text-xs text-text-muted">
-                        {formatDateTime(message.receivedAt)}
-                      </p>
-                    </div>
-                    <p className="mt-1 break-words text-sm text-text-secondary">
-                      {message.subject?.trim() || 'No subject'}
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold ${authTone(message.authenticationResult)}`}
-                      >
-                        {message.authenticationResult || 'unknown'} authentication
-                      </span>
-                      {severityDetail && (
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold ${severityDetail.tone}`}
-                          title={message.flagReason ?? undefined}
-                        >
-                          {severityDetail.label} · {severityDetail.description}
+
+                      <div className="ea-activity-row__meta">
+                        <span className={`ea-chip ${authTone(message.authenticationResult)}`}>
+                          {message.authenticationResult || 'unknown'} authentication
                         </span>
-                      )}
+                        {severityDetail && (
+                          <span
+                            className={`ea-chip ${severityDetail.tone}`}
+                            title={message.flagReason ?? undefined}
+                          >
+                            {severityDetail.label} · {severityDetail.description}
+                          </span>
+                        )}
+                        <span className="ea-activity-row__domain">
+                          {sender ? (
+                            <>
+                              Domain <strong className="ea-mono">{sender}</strong>{' '}
+                              {message.isFlagged
+                                ? 'is not on the expected sender list.'
+                                : 'is recorded on this message.'}
+                            </>
+                          ) : (
+                            'Sender details were not recorded.'
+                          )}
+                        </span>
+                      </div>
+
                       {showLeakActions && (
-                        <span className="ml-auto flex flex-wrap gap-1">
+                        <div className="ea-activity-row__actions">
                           {sender !== null && (
                             <button
                               type="button"
-                              className="btn btn--ghost btn--sm"
+                              className="ea-activity-row__action"
                               disabled={pendingMessageId === message.id}
                               aria-label={`Mark ${sender} as expected`}
                               onClick={() =>
-                                void handleSenderAction(message.id, sender, 'expected', senderAddress)
+                                void handleSenderAction(
+                                  message.id,
+                                  sender,
+                                  'expected',
+                                  senderAddress,
+                                )
                               }
                             >
-                              Mark as expected
+                              Mark {sender} as expected
                             </button>
                           )}
                           <button
                             type="button"
-                            className="btn btn--ghost btn--sm"
+                            className="ea-activity-row__action"
                             disabled={pendingMessageId === message.id}
                             aria-label="Replace this alias"
                             onClick={() => setIsReplaceOpen(true)}
                           >
-                            Replace alias
+                            Replace this alias
                           </button>
                           {sender !== null && (
                             <button
                               type="button"
-                              className="btn btn--ghost btn--sm"
+                              className="ea-activity-row__action"
                               disabled={pendingMessageId === message.id}
                               aria-label={`Block ${sender}`}
-                              onClick={() => handleBlockRequest(message.id, sender, senderAddress)}
+                              onClick={() =>
+                                handleBlockRequest(message.id, sender, senderAddress)
+                              }
                             >
-                              Block sender
+                              Block {sender}
                             </button>
                           )}
-                        </span>
+                        </div>
                       )}
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
+                    </li>
+                  )
+                })}
+              </ul>
 
-            {feed.hasMore && (
-              <div className="border-t border-hairline px-5 py-3 sm:px-6">
-                <button
-                  type="button"
-                  className="btn btn--secondary btn--sm"
-                  onClick={() => void feed.loadMore()}
-                  disabled={feed.isLoadingMore}
-                >
-                  {feed.isLoadingMore ? 'Loading…' : 'Load older messages'}
-                </button>
-              </div>
-            )}
-          </>
-        )}
+              {feed.hasMore && (
+                <div className="ea-activity-more">
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={() => void feed.loadMore()}
+                    disabled={feed.isLoadingMore}
+                  >
+                    {feed.isLoadingMore ? 'Loading…' : 'Load older messages'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </section>
 
       <ConfirmationDialog

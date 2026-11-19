@@ -58,7 +58,10 @@ test('reviews analytics, manages the global blocklist, syncs operations, and rea
     await expect(syncPanel).toContainText('Global blocklist rebuilt.')
     await expect(syncPanel).toContainText('Suspended-user map rebuilt.')
     await expect(
-      page.getByRole('region', { name: 'Recent administrator activity' }).getByText('kv.sync'),
+      page
+        .getByRole('region', { name: 'Recent administrator activity' })
+        .getByText('kv.sync')
+        .first(),
     ).toBeVisible()
   })
 

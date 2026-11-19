@@ -128,24 +128,24 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg px-4 py-12 text-text">
       <section
-        className="w-full max-w-lg rounded-2xl border border-hairline bg-surface p-6 shadow-md sm:p-9"
+        className="w-full max-w-lg bg-surface p-6 sm:p-9"
         aria-labelledby="invite-title"
       >
-        <a href="/" className="text-sm font-extrabold tracking-tight text-primary no-underline">
+        <a href="/" className="text-lg tracking-tight text-text no-underline">
           Postern
         </a>
 
         {state.complete ? (
           <div className="mt-8 space-y-4">
             <p className="chip chip--success chip--sm">Invitation accepted</p>
-            <h1 id="invite-title" className="text-2xl font-bold text-text">
+            <h1 id="invite-title" className="text-h2 text-text">
               One last step.
             </h1>
             <p className="text-sm leading-relaxed text-text-secondary" role="status">
               Your account is ready for email verification. Sign in after your destination is
               verified to activate it.
             </p>
-            <a href="/login" className="btn btn--primary inline-flex">
+            <a href="/login" className="btn btn--primary">
               Go to login
             </a>
           </div>
@@ -153,7 +153,7 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
           <>
             <div className="mt-8 space-y-3">
               <p className="chip chip--primary chip--sm">You’re invited</p>
-              <h1 id="invite-title" className="text-2xl font-bold text-text">
+              <h1 id="invite-title" className="text-h2 text-text">
                 Create your Postern account
               </h1>
               <p className="text-sm leading-relaxed text-text-secondary">
@@ -162,7 +162,7 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
             </div>
 
             {state.error && (
-              <p role="alert" className="mt-6 rounded-lg bg-danger-surface p-3 text-sm text-danger">
+              <p role="alert" className="mt-6 bg-danger-surface p-3 text-sm text-danger">
                 {state.error}
               </p>
             )}
@@ -173,8 +173,8 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
               </p>
             ) : state.email !== null ? (
               <form onSubmit={handleSubmit} className="mt-7 space-y-5">
-                <div>
-                  <label htmlFor="registration-email" className="mb-1.5 block text-sm font-semibold">
+                <div className="field">
+                  <label htmlFor="registration-email" className="field__label">
                     Invited email address
                   </label>
                   <input
@@ -184,12 +184,12 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
                     value={state.email}
                     readOnly
                     aria-readonly="true"
-                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="input"
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="registration-password" className="mb-1.5 block text-sm font-semibold">
+                <div className="field">
+                  <label htmlFor="registration-password" className="field__label">
                     Password
                   </label>
                   <input
@@ -205,34 +205,30 @@ export function InviteRegistrationPage({ inviteCode }: Readonly<InviteRegistrati
                       setState({ ...state, password: event.target.value, error: null })
                     }
                     aria-describedby="password-help"
-                    className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="input"
                   />
-                  <p id="password-help" className="mt-1.5 text-xs text-text-muted">
+                  <p id="password-help" className="field__hint">
                     Use 12–128 characters.
                   </p>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={state.submitting}
-                  className="btn btn--primary w-full"
-                >
+                <button type="submit" disabled={state.submitting} className="btn btn--primary btn--block">
                   {state.submitting ? 'Creating account…' : 'Accept invitation'}
                 </button>
               </form>
             ) : (
-              <a href="/" className="btn btn--secondary mt-7 inline-flex">
+              <a href="/" className="btn btn--secondary mt-7">
                 Back to Postern
               </a>
             )}
 
             <p className="mt-5 text-xs leading-relaxed text-text-muted">
               By creating an account, you agree to our{' '}
-              <a href="/terms" className="font-semibold">
+              <a href="/terms" className="font-medium">
                 Terms of Service
               </a>{' '}
               and acknowledge our{' '}
-              <a href="/privacy" className="font-semibold">
+              <a href="/privacy" className="font-medium">
                 Privacy Policy
               </a>
               . This invitation is single-use and expires after seven days.

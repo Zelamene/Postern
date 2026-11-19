@@ -14,8 +14,6 @@ interface InboundSimulation {
   recipient: string
   sender: string
   subject: string
-  timestamp: string
-  status: string
 }
 
 type LeakActionState = 'flagged' | 'expected' | 'replaced' | 'blocked'
@@ -60,41 +58,42 @@ export function InteractiveDemo() {
         recipient: currentAlias,
         sender: `${cleanLabel}.com`,
         subject: `Your receipt for ${cleanLabel} subscription`,
-        timestamp: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-        status: 'Forwarded via KV (SPF/DKIM pass)',
       })
       setIsSimulating(false)
     }, 450)
   }
 
   return (
-    <section id="demo" aria-labelledby="demo-heading" className="scroll-mt-20 border-b border-hairline/70 bg-surface py-14 sm:py-16 lg:py-20">
+    <section
+      id="demo"
+      aria-labelledby="demo-heading"
+      className="scroll-mt-20 bg-surface py-14 sm:py-16 lg:py-20"
+    >
       <div className="shell">
         <Reveal>
           <div className="mb-14 max-w-[42rem]">
-            <span className="chip chip--primary chip--sm mb-3">Interactive Demo</span>
-            <h2 id="demo-heading" className="text-h2 font-bold tracking-tight text-text">
-              Try creating an alias right now
+            <span className="chip chip--primary chip--sm mb-3">Interactive demo</span>
+            <h2 id="demo-heading" className="text-h2 text-text">
+              Try an address of your own
             </h2>
             <p className="mt-3 text-body text-text-secondary">
-              Experience how fast and effortless alias generation is. Test edge forwarding and see how Postern reacts when an
-              unauthorized third party attempts to send you marketing spam.
+              Create an address, send a test message, and see what happens when a leak shows up.
             </p>
           </div>
         </Reveal>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-          <div className="min-w-0 rounded-2xl border border-hairline/80 bg-surface p-5 shadow-xs sm:p-7 lg:col-span-6">
-            <div className="flex items-center justify-between border-b border-hairline/60 pb-4">
-              <div className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-danger/40" />
-                <span className="size-3 rounded-full bg-warning/40" />
-                <span className="size-3 rounded-full bg-success/40" />
+          <div className="min-w-0 bg-bg p-5 sm:p-7 lg:col-span-6">
+            <div className="flex items-center justify-between border-b border-hairline pb-4">
+              <div className="flex items-center gap-2" aria-hidden="true">
+                <span className="size-3 bg-danger" />
+                <span className="size-3 bg-warning" />
+                <span className="size-3 bg-success" />
               </div>
-              <span className="font-mono text-xs text-text-muted">console.postern.sh</span>
+              <span className="font-mono text-xs text-text-muted">Demo</span>
             </div>
 
-            <h3 className="mt-5 text-h4 font-bold text-text">1. Configure your alias</h3>
+            <h3 className="mt-5 text-h4 text-text">1. Configure your address</h3>
             <div className="mt-5 space-y-4">
               <div className="field">
                 <label className="field__label" htmlFor="alias-label-input">
@@ -138,7 +137,7 @@ export function InteractiveDemo() {
                     type="text"
                     readOnly
                     value={currentAlias}
-                    className="input min-w-0 font-mono text-sm font-bold text-link"
+                    className="input min-w-0 font-mono text-sm text-link"
                   />
                   <span className="input-group__slot">
                     <button
@@ -152,12 +151,12 @@ export function InteractiveDemo() {
                   </span>
                 </div>
                 <p className="field__hint">
-                  Server-assigned 4-character suffix prevents namespace collisions and stops automated dictionary attacks.
+                  Postern adds the suffix so two people can use the same name.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pt-2">
-                <button type="button" onClick={() => void handleCopyAlias()} className="btn btn--primary shadow-xs">
+                <button type="button" onClick={() => void handleCopyAlias()} className="btn btn--primary">
                   <IconCopy size={16} />
                   {copied ? 'Copied to clipboard' : 'Copy address'}
                 </button>
@@ -173,29 +172,32 @@ export function InteractiveDemo() {
               </div>
 
               {copied && (
-                <div className="toast mt-2 toast--success" role="status">
-                  <IconCheck size={18} className="toast__icon" />
+                <p
+                  role="status"
+                  className="mt-2 flex items-center gap-2 bg-success-surface p-3 text-sm text-success-on-surface"
+                >
+                  <IconCheck size={16} className="shrink-0" />
                   Address copied to clipboard. Ready to paste on {cleanLabel}.com
-                </div>
+                </p>
               )}
             </div>
           </div>
 
-          <div className="min-w-0 rounded-2xl border border-hairline/80 bg-surface-sunken/60 p-5 shadow-xs sm:p-7 lg:col-span-6">
-            <div className="flex items-center justify-between border-b border-hairline/60 pb-4">
-              <h3 className="text-h4 font-bold text-text">2. Edge router &amp; ledger verification</h3>
-              <span className="chip chip--info chip--sm">Edge Router</span>
+          <div className="min-w-0 bg-surface-sunken p-5 sm:p-7 lg:col-span-6">
+            <div className="flex items-center justify-between border-b border-hairline pb-4">
+              <h3 className="text-h4 text-text">2. See the route</h3>
+              <span className="chip chip--info chip--sm">Demo</span>
             </div>
 
             {!inboundTest ? (
               <div className="empty py-14 text-center">
-                <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl border border-hairline/80 bg-surface text-text-muted shadow-2xs">
+                <div className="mx-auto mb-4 flex size-14 items-center justify-center bg-surface text-text-muted">
                   <IconMail size={26} />
                 </div>
-                <p className="empty__title text-h4 font-bold">No mail received yet</p>
+                <p className="empty__title">No mail received yet</p>
                 <p className="empty__body mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-secondary">
-                  Click <strong>Simulate incoming email</strong> to see how Postern routes a message
-                  to your primary inbox while discarding the body.
+                  Click <strong>Simulate incoming email</strong> to see how a message reaches your
+                  inbox.
                 </p>
               </div>
             ) : (
@@ -204,68 +206,67 @@ export function InteractiveDemo() {
                   <IconCheck size={20} className="alert__icon" />
                   <div>
                     <p className="alert__title">Simulated: email routed successfully</p>
-                    <p>
-                      Postern edge worker resolved policy and forwarded to your primary destination.
-                    </p>
+                    <p>Postern checked the address and sent the message to your destination.</p>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-hairline/80 bg-surface p-4 text-xs font-mono shadow-2xs">
-                  <div className="flex justify-between gap-2 py-1.5 border-b border-hairline/60">
+                <div className="bg-surface p-4 font-mono text-xs">
+                  <div className="flex justify-between gap-2 border-b border-hairline py-1.5">
                     <span className="text-text-muted">Recipient (To):</span>
-                    <span className="font-semibold text-text break-all text-right">{inboundTest.recipient}</span>
+                    <span className="break-all text-right text-text">{inboundTest.recipient}</span>
                   </div>
-                  <div className="flex justify-between gap-2 py-1.5 border-b border-hairline/60">
+                  <div className="flex justify-between gap-2 border-b border-hairline py-1.5">
                     <span className="text-text-muted">Sender (From):</span>
                     <span className="text-text">{inboundTest.sender}</span>
                   </div>
-                  <div className="flex justify-between gap-2 py-1.5 border-b border-hairline/60">
-                    <span className="text-text-muted">Authentication:</span>
-                    <span className="text-success font-semibold">SPF=pass · DKIM=pass</span>
-                  </div>
-                  <div className="flex justify-between gap-2 py-1.5 border-b border-hairline/60">
+                  <div className="flex justify-between gap-2 border-b border-hairline py-1.5">
                     <span className="text-text-muted">Subject:</span>
-                    <span className="text-text text-right">{inboundTest.subject}</span>
+                    <span className="text-right text-text">{inboundTest.subject}</span>
                   </div>
                   <div className="flex justify-between gap-2 py-1.5">
                     <span className="text-text-muted">Message body:</span>
-                    <span className="text-text-muted italic">[Discarded at Edge — 0 bytes stored]</span>
+                    <span className="italic text-text-muted">Not stored</span>
                   </div>
                 </div>
 
                 <p className="text-caption text-text-muted">
-                  Audit ledger stores header metadata only to verify delivery. Body content is never retained.
+                  The activity log keeps header details only. Message bodies are not stored.
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        <div className="mt-12 rounded-2xl border border-hairline/80 bg-surface p-5 shadow-xs sm:p-7 md:p-8">
-          <div className="flex flex-col gap-4 border-b border-hairline/60 pb-6 md:flex-row md:items-center md:justify-between">
+        <div className="mt-12 bg-bg p-5 sm:p-7 md:p-8">
+          <div className="flex flex-col gap-4 border-b border-hairline pb-6 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <span className="chip chip--warning chip--sm">Threat Model Demo</span>
-                <span className="text-caption text-text-muted">Scenario: Unexpected sender writes to your alias</span>
+                <span className="chip chip--warning chip--sm">Leak scenario</span>
+                <span className="text-caption text-text-muted">
+                  An unexpected sender writes to your address
+                </span>
               </div>
-              <h3 className="mt-2 text-h3 font-bold text-text">What happens when a service leaks your email?</h3>
+              <h3 className="mt-2 text-h3 text-text">What if a service shares your address?</h3>
             </div>
-            <div className="rounded-full border border-hairline/80 bg-surface-sunken px-3 py-1 text-caption font-mono text-text-muted">
-              Domain mismatch detected
+            <div className="bg-surface-sunken px-3 py-1 font-mono text-caption text-text-muted">
+              Different sender domain
             </div>
           </div>
 
-          <div className="my-6 rounded-xl border border-border/80 bg-surface-sunken/60 p-5">
+          <div className="my-6 bg-surface-sunken p-5">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 text-danger shrink-0">
+              <div className="mt-0.5 shrink-0 text-danger">
                 <IconAlertTriangle size={20} />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-text">Suspicious sender: promo@random-marketing-broker.com</p>
+                <p className="text-sm font-medium text-text">
+                  Suspicious sender: promo@random-marketing-broker.com
+                </p>
                 <p className="mt-1 text-sm leading-relaxed text-text-secondary">
-                  This sender sent mail to <span className="font-mono font-semibold text-text break-all">{currentAlias}</span>, but does
-                  not match the authorized service domain ({cleanLabel}.com). Postern flags the leak and allows you to choose
-                  your response:
+                  This sender wrote to{' '}
+                  <span className="break-all font-mono text-text">{currentAlias}</span>, but the
+                  expected domain is {cleanLabel}.com. Postern flags the message so you can choose
+                  what to do:
                 </p>
               </div>
             </div>
@@ -301,31 +302,28 @@ export function InteractiveDemo() {
             )}
           </div>
 
-          <div className="mt-6 rounded-xl border border-hairline/80 bg-surface-sunken/60 p-4 text-sm">
+          <div className="mt-6 bg-surface-sunken p-4 text-sm">
             {leakState === 'flagged' && (
               <p className="text-text-muted">
-                Choose an action above to see how Postern isolates the issue and restores your inbox tranquility.
+                Choose an action above to see how Postern handles the leak.
               </p>
             )}
             {leakState === 'expected' && (
               <div className="alert alert--info">
                 <p className="alert__title">Sender marked as expected</p>
-                <p>Future notifications from this sender to this alias will be forwarded without warnings.</p>
+                <p>Mail from this sender to this address will be forwarded without a warning.</p>
               </div>
             )}
             {leakState === 'replaced' && (
               <div className="alert alert--warning">
                 <p className="alert__title">New clean alias created for {cleanLabel}</p>
-                <p>
-                  The previous address has been permanently retired. Any further spam hitting the old address will be discarded
-                  at the edge rather than bounced.
-                </p>
+                <p>The old address is retired for good. New mail to it is discarded, not bounced.</p>
               </div>
             )}
             {leakState === 'blocked' && (
               <div className="alert alert--danger">
                 <p className="alert__title">Sender domain permanently blocked</p>
-                <p>Messages from promo@random-marketing-broker.com are now rejected immediately at the edge.</p>
+                <p>Mail from promo@random-marketing-broker.com is now discarded.</p>
               </div>
             )}
           </div>

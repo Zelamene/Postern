@@ -10,13 +10,11 @@ interface PersonaCardProps {
 
 function PersonaCard({ title, subtitle, benefits, icon: IconComponent }: Readonly<PersonaCardProps>) {
   return (
-    <div className="group rounded-2xl border border-hairline/80 bg-surface p-7 shadow-2xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md">
-      <div className="mb-5 flex size-11 items-center justify-center rounded-xl bg-surface-sunken text-primary shadow-2xs transition-transform duration-300 group-hover:scale-105">
+    <div className="bg-bg p-7 transition-colors duration-150 hover:bg-surface">
+      <div className="mb-5 flex size-11 items-center justify-center bg-surface-sunken text-primary">
         <IconComponent size={22} />
       </div>
-      <h3 className="text-h4 font-bold text-text transition-colors group-hover:text-primary">
-        {title}
-      </h3>
+      <h3 className="text-h4 text-text">{title}</h3>
       <p className="mt-1 text-sm text-text-muted">{subtitle}</p>
       <ul className="mt-5 space-y-2.5 text-sm text-text-secondary">
         {benefits.map((benefit) => (
@@ -37,68 +35,67 @@ export function WhoItsForSection() {
     <section
       id="who-its-for"
       aria-labelledby="audience-heading"
-      className="scroll-mt-20 border-b border-hairline/70 bg-surface py-14 sm:py-16 lg:py-20"
+      className="scroll-mt-20 bg-surface-sunken py-14 sm:py-16 lg:py-20"
     >
       <div className="shell">
         <Reveal>
-          <div className="mx-auto mb-8 max-w-[38rem] sm:mb-10 text-center">
-            <span className="chip chip--primary chip--sm mb-3">Who It&apos;s For</span>
-            <h2 id="audience-heading" className="text-h2 font-bold tracking-tight text-text">
-              Designed for anyone who values peace of mind
+          <div className="mx-auto mb-8 max-w-[38rem] text-center sm:mb-10">
+            <span className="chip chip--primary chip--sm mb-3">Who it&apos;s for</span>
+            <h2 id="audience-heading" className="text-h2 text-text">
+              For anyone who wants a quieter inbox
             </h2>
             <p className="mt-4 text-body text-text-secondary">
-              Whether you shop online, register for event tickets, or manage freelance clients,
-              Postern ensures your real email address stays protected and quiet.
+              Shop online, buy tickets, or work with clients. Your real email stays private.
             </p>
           </div>
         </Reveal>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <Reveal delayMs={80}>
             <PersonaCard
               icon={IconMail}
-              title="Online Shoppers"
-              subtitle="For one-time and occasional store signups"
+              title="Online shoppers"
+              subtitle="For store signups"
               benefits={[
-                'Receive order confirmations and delivery tracking',
-                'Stop promotional spam from cluttering your primary inbox',
-                'Turn off marketing notifications with a single click',
+                'Get order updates and tracking',
+                'Stop marketing mail',
+                'Turn off an address with one click',
               ]}
             />
           </Reveal>
           <Reveal delayMs={160}>
             <PersonaCard
               icon={IconShield}
-              title="Privacy Seekers"
-              subtitle="For people who reject digital tracking"
+              title="Privacy seekers"
+              subtitle="For people who dislike tracking"
               benefits={[
-                'Prevent data brokers from linking your accounts',
-                'Shield your true email from third-party analytics',
-                'Detect unauthorized data sharing immediately',
+                'Keep accounts from being linked',
+                'Hide your real email from trackers',
+                'See when a service shares your address',
               ]}
             />
           </Reveal>
           <Reveal delayMs={240}>
             <PersonaCard
               icon={IconUsers}
-              title="Freelancers & Job Seekers"
-              subtitle="For temporary and project-based inquiries"
+              title="Freelancers & job seekers"
+              subtitle="For project-based work"
               benefits={[
-                'Create professional aliases for each client or job board',
-                'Retire project addresses once contracts complete',
-                'Keep your personal communications separated',
+                'Use one address per client or job board',
+                'Retire an address when work ends',
+                'Keep work and personal mail apart',
               ]}
             />
           </Reveal>
           <Reveal delayMs={320}>
             <PersonaCard
               icon={IconLock}
-              title="Security Enthusiasts"
-              subtitle="For proactive identity defense"
+              title="Security enthusiasts"
+              subtitle="For extra protection"
               benefits={[
-                'Identify exactly which database suffered a breach',
-                'Eliminate credential stuffing vectors',
-                'Permanent tombstones prevent alias recycling',
+                'See which database leaked your address',
+                'Cut down on credential-stuffing attempts',
+                'Retired addresses are never reused',
               ]}
             />
           </Reveal>

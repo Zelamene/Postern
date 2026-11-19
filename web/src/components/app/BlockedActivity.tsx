@@ -13,23 +13,31 @@ export function BlockedActivity({ aliases, feed }: Readonly<BlockedActivityProps
   )
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Blocked mail</p>
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight">Blocked messages</h1>
-        <p className="mt-2 max-w-prose text-sm text-text-muted">
-          Messages Postern refused to forward because the sender was blocked or failed the
-          forwarding rules for the alias.
-        </p>
+    <div className="ea-stack">
+      <div className="ea-hero">
+        <div>
+          <h1 className="ea-title ea-title--md">Blocked messages</h1>
+          <p className="ea-lede">
+            Messages Postern refused to forward because the sender was blocked or failed the
+            forwarding rules for the alias.
+          </p>
+        </div>
+        {feed.items.length > 0 && (
+          <div className="ea-stats" aria-label="Blocked summary">
+            <span className="ea-stats__item">
+              <span className="ea-dot ea-dot--accent" aria-hidden="true" />
+              <span>
+                {feed.items.length} loaded {feed.items.length === 1 ? 'entry' : 'entries'}
+              </span>
+            </span>
+          </div>
+        )}
       </div>
 
-      <section
-        className="overflow-hidden rounded-2xl border border-hairline bg-surface shadow-sm"
-        aria-label="Blocked messages"
-      >
+      <section className="ea-stack" aria-label="Blocked messages">
         {feed.status === 'loading' && (
-          <div
-            className="space-y-3 p-5 sm:p-6"
+          <output
+            className="ea-card ea-card__pad"
             role="status"
             aria-busy="true"
             aria-label="Loading blocked mail"
@@ -37,22 +45,22 @@ export function BlockedActivity({ aliases, feed }: Readonly<BlockedActivityProps
             <div className="skeleton skeleton--line-lg" />
             <div className="skeleton skeleton--line" />
             <div className="skeleton skeleton--line" />
-          </div>
+          </output>
         )}
 
         {feed.status === 'error' && (
-          <p role="alert" className="p-5 text-sm text-danger sm:p-6">
+          <p role="alert" className="ea-notice ea-notice--error">
             {feed.error ?? 'Blocked mail could not be loaded.'}
           </p>
         )}
 
         {feed.status === 'ready' && feed.items.length === 0 && (
-          <div className="empty">
-            <span className="empty__art" aria-hidden="true">
+          <div className="ea-empty">
+            <span className="ea-empty__art" aria-hidden="true">
               <IconEyeOff size={22} />
             </span>
-            <p className="empty__title">Nothing blocked</p>
-            <p className="empty__body">
+            <p className="ea-empty__title">Nothing blocked</p>
+            <p className="ea-empty__body">
               When Postern stops a message, it is listed here with the reason.
             </p>
           </div>
@@ -60,30 +68,52 @@ export function BlockedActivity({ aliases, feed }: Readonly<BlockedActivityProps
 
         {feed.items.length > 0 && (
           <>
-            <ul className="divide-y divide-hairline">
+            <div className="ea-section-head">
+              <h2 className="ea-section-title">Incident register</h2>
+              <span className="ea-section-note">Loaded entries only</span>
+            </div>
+
+            <ul className="ea-timeline">
               {feed.items.map((message) => (
-                <li key={message.id} className="px-5 py-4 sm:px-6">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="break-all text-sm font-semibold">{message.fromHeader}</p>
-                    <p className="text-xs text-text-muted">
-                      {formatDateTime(message.receivedAt)}
+                <li key={message.id} className="ea-event">
+                  <span className="ea-marker ea-marker--accent" aria-hidden="true">
+                    <IconEyeOff size={16} />
+                  </span>
+                  <article className="ea-event__card">
+                    <div className="ea-event__head">
+                      <span className="ea-chip ea-chip--danger">{message.reason}</span>
+                      <time className="ea-event__time" dateTime={message.receivedAt}>
+                        {formatDateTime(message.receivedAt)}
+                      </time>
+                    </div>
+
+                    <p className="ea-section-note">Subject abstract</p>
+                    <p className="ea-event__subject">
+                      {message.subject?.trim() || 'No subject'}
                     </p>
-                  </div>
-                  <p className="mt-1 break-words text-sm text-text-secondary">
-                    {message.subject?.trim() || 'No subject'}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                    <span className="inline-flex rounded-full bg-danger-surface px-2 py-0.5 font-bold text-danger-on-surface">
-                      {message.reason}
-                    </span>
-                    <span>{labels.get(message.aliasId) ?? 'Unknown alias'}</span>
-                  </div>
+                    <p className="ea-hint">This message was not forwarded to your destination.</p>
+
+                    <div className="ea-register-grid">
+                      <div>
+                        <span className="ea-spec__label">Sender</span>
+                        <span className="ea-spec__value ea-spec__value--sm">
+                          {message.fromHeader || 'Unknown sender'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="ea-spec__label">Alias affected</span>
+                        <span className="ea-spec__value ea-spec__value--sm">
+                          {labels.get(message.aliasId) ?? 'Unknown alias'}
+                        </span>
+                      </div>
+                    </div>
+                  </article>
                 </li>
               ))}
             </ul>
 
             {feed.hasMore && (
-              <div className="border-t border-hairline px-5 py-3 sm:px-6">
+              <div className="ea-card__foot">
                 <button
                   type="button"
                   className="btn btn--secondary btn--sm"

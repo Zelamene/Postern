@@ -29,20 +29,19 @@ export function RecoveryKeyNotice({
 
   return (
     <section
-      className={`rounded-xl border border-warning/40 bg-warning-surface p-4 ${className}`}
+      className={`bg-warning-surface p-5 ${className}`}
       aria-labelledby="recovery-key-heading"
     >
-      <h2 id="recovery-key-heading" className="text-sm font-bold text-warning-on-surface">
+      <h2 id="recovery-key-heading" className="text-sm font-medium text-warning-on-surface">
         Save your recovery key
       </h2>
       <p className="mt-1 text-sm text-warning-on-surface">{RECOVERY_KEY_WARNING}</p>
-      <p className="mt-2 text-sm font-semibold text-warning-on-surface">
-        Store it somewhere secure, such as a password manager. Postern stores only a hash and
-        cannot show it again.
+      <p className="mt-2 text-sm font-medium text-warning-on-surface">
+        Store it somewhere safe, like a password manager. Postern keeps only a code and cannot show it again.
       </p>
       <code
         ref={keyRef}
-        className="mt-3 block break-all rounded-lg bg-surface px-3 py-2 text-sm text-text"
+        className="mt-3 block break-all bg-surface px-3 py-2 text-sm text-text"
       >
         {recoveryKey}
       </code>

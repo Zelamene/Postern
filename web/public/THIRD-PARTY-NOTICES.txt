@@ -1,5 +1,5 @@
-POSTERN — THIRD-PARTY NOTICES
-Last updated: 13 November 2026
+POSTERN - THIRD-PARTY NOTICES
+Last updated: 19 November 2026
 
 Postern includes the third-party software and fonts listed below. Full licence
 texts are published in /licenses/ and are also distributed with the
@@ -11,21 +11,31 @@ RUNTIME SOFTWARE (WEB)
 
 React and React DOM 19.3.1
   Copyright (c) Meta Platforms, Inc. and affiliates.
-  Licence: MIT — /licenses/react-MIT.txt
+  Licence: MIT - /licenses/react-MIT.txt
 
 @microsoft/signalr 10.0.11
   Copyright (c) .NET Foundation. All rights reserved.
-  Licence: MIT — /licenses/signalr-MIT.txt
+  Licence: MIT - /licenses/signalr-MIT.txt
   Bundled third-party notices: /licenses/signalr-bundled-third-party-notices.txt
 
 qrcode 1.5.4
   Copyright (c) 2012 Ryan Day
-  Licence: MIT — /licenses/qrcode-MIT.txt
+  Licence: MIT - /licenses/qrcode-MIT.txt
 
-@fontsource-variable/manrope 5.3.0
-  Manrope font, Copyright 2019 The Manrope Project Authors
-  (https://github.com/sharanda/manrope)
-  Licence: SIL Open Font License 1.1 — /licenses/manrope-OFL-1.1.txt
+@fontsource-variable/noto-serif 5.3.0
+  Noto Serif font, Copyright 2022 The Noto Project Authors
+  (https://github.com/notofonts/latin-greek-cyrillic)
+  Licence: SIL Open Font License 1.1 - /licenses/noto-serif-OFL-1.1.txt
+
+@fontsource-variable/inter 5.3.0
+  Inter font, Copyright 2016 The Inter Project Authors
+  (https://github.com/rsms/inter)
+  Licence: SIL Open Font License 1.1 - /licenses/inter-OFL-1.1.txt
+
+@fontsource-variable/source-code-pro 5.3.1
+  Source Code Pro font, Copyright Google Inc.
+  (https://github.com/adobe-fonts/source-code-pro)
+  Licence: SIL Open Font License 1.1 - /licenses/source-code-pro-OFL-1.1.txt
 
 --------------------------------------------------------------------------------
 RUNTIME SOFTWARE (API)

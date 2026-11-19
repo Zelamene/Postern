@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { ThemeMode } from '../types'
 import { RecoveryKeyNotice } from '../components/common/RecoveryKeyNotice'
-import { StaleDataNotice } from '../components/common/StaleDataNotice'
+import { AppFooter } from '../components/app/AppFooter'
 import { AppHeader } from '../components/app/AppHeader'
 import { AliasActivity } from '../components/app/AliasActivity'
-import { AliasComposer } from '../components/app/AliasComposer'
+import { CreateAliasDialog } from '../components/app/CreateAliasDialog'
 import { AliasList } from '../components/app/AliasList'
 import { BlockedActivity } from '../components/app/BlockedActivity'
 import { AccountSettings } from '../components/app/AccountSettings'
@@ -60,6 +60,7 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
 
   const [recoveryKey, setRecoveryKey] = useState<string | null>(() => takeRecoveryKey())
   const [forwardingAddress, setForwardingAddress] = useState<string | null>(null)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [signOutError, setSignOutError] = useState<string | null>(null)
 
@@ -86,6 +87,14 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
     }
   }
 
+  async function handleCreateAlias(input: Parameters<typeof aliases.create>[0]) {
+    const outcome = await aliases.create(input)
+    if (outcome.ok && !outcome.warning) {
+      setIsCreateOpen(false)
+    }
+    return outcome
+  }
+
   if (session.status === 'checking' || session.status === 'slow' || session.status === 'anonymous') {
     const message =
       session.status === 'anonymous'
@@ -95,38 +104,41 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
           : 'Loading your account'
 
     return (
-      <main className="flex min-h-screen items-center justify-center bg-bg px-4 text-text">
-        <div
-          className="flex w-full max-w-sm flex-col items-center gap-3 rounded-2xl border border-hairline bg-surface px-6 py-8 text-center shadow-sm"
-          role="status"
-          aria-live="polite"
-        >
-          <span className="spinner" aria-hidden="true" />
-          <p className="text-sm text-text-muted">{message}</p>
-        </div>
-      </main>
+      <div className="ea-root">
+        <main className="ea-state-main">
+          <div
+            className="ea-card ea-card__pad flex w-full max-w-sm flex-col items-center gap-3 text-center"
+            role="status"
+            aria-live="polite"
+          >
+            <span className="spinner" aria-hidden="true" />
+            <p className="ea-hint">{message}</p>
+          </div>
+        </main>
+        <AppFooter />
+      </div>
     )
   }
 
   if (session.status === 'unavailable') {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-bg px-4 py-12 text-text">
-        <section className="w-full max-w-md rounded-2xl border border-hairline bg-surface p-6 shadow-sm sm:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Connection</p>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight">We couldn’t connect right now</h1>
-          <p className="mt-3 text-sm text-text-muted">
-            Check your connection, then try again.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <button type="button" className="btn btn--primary" onClick={retry}>
-              Try again
-            </button>
-            <AppLink to="/login" className="btn btn--secondary">
-              Go to sign in
-            </AppLink>
-          </div>
-        </section>
-      </main>
+      <div className="ea-root">
+        <main className="ea-state-main">
+          <section className="ea-card ea-card__pad w-full max-w-md">
+            <h1 className="ea-title ea-title--sm">We couldn’t connect right now</h1>
+            <p className="ea-lede">Check your connection, then try again.</p>
+            <div className="ea-card__foot">
+              <button type="button" className="btn btn--primary" onClick={retry}>
+                Try again
+              </button>
+              <AppLink to="/login" className="btn btn--secondary">
+                Go to sign in
+              </AppLink>
+            </div>
+          </section>
+        </main>
+        <AppFooter />
+      </div>
     )
   }
 
@@ -138,7 +150,7 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
     aliases.aliases.map(addressDomain).find((domain) => domain !== null) ?? null
 
   return (
-    <div className="min-h-screen bg-bg text-text antialiased">
+    <div className="ea-root">
       <a
         href="#app-main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[var(--z-toast)] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-on-inverse focus:shadow-md"
@@ -156,57 +168,51 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
         onSignOut={() => void handleSignOut()}
       />
 
-      <main id="app-main" className="shell space-y-6 py-8 md:py-12">
+      <main id="app-main" className="ea-main" data-view={route.view}>
         {recoveryKey && (
           <RecoveryKeyNotice recoveryKey={recoveryKey} onDismiss={() => setRecoveryKey(null)} />
         )}
 
         {signOutError && (
-          <p role="alert" className="rounded-lg bg-danger-surface px-4 py-3 text-sm text-danger-on-surface">
+          <p role="alert" className="ea-notice ea-notice--error">
             {signOutError}
           </p>
         )}
 
-        <StaleDataNotice />
-
         {route.view === 'aliases' && (
           <>
-            {isFirstRun ? (
-              <section className="rounded-2xl border border-primary-border bg-surface-tint p-5 sm:p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                  First alias
-                </p>
-                <h1 className="mt-1 text-3xl font-extrabold tracking-tight">
-                  Start with one address
-                </h1>
-                <p className="mt-2 max-w-prose text-sm text-text-secondary">
-                  Pick one service — a newsletter, a shop, or a trial signup. Hand out the alias
-                  instead of your real address, and everything it receives still lands in{' '}
-                  <span className="font-semibold text-text">{destination}</span>.
-                </p>
-                <p className="mt-2 max-w-prose text-sm text-text-secondary">{REPLY_WARNING}</p>
-              </section>
-            ) : (
+            <div className="ea-hero">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                  Alias management
-                </p>
-                <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">
-                  Your aliases
-                </h1>
-                <p className="mt-2 text-sm text-text-muted">
-                  Every alias forwards to{' '}
-                  <span className="font-semibold text-text-secondary">{destination}</span>.
-                </p>
+                {isFirstRun ? (
+                  <>
+                    <h1 className="ea-title">Start with one address</h1>
+                    <p className="ea-lede">
+                      Pick one service — a newsletter, a shop, or a trial signup. Hand out the alias
+                      instead of your real address, and everything it receives still lands in{' '}
+                      <span className="ea-mono">{destination}</span>.
+                    </p>
+                    <p className="ea-lede">{REPLY_WARNING}</p>
+                  </>
+                ) : (
+                  <>
+                    <h1 className="ea-title">Your aliases</h1>
+                    <p className="ea-lede">
+                      Every alias forwards to <span className="ea-mono">{destination}</span>. Your
+                      primary address stays hidden.
+                    </p>
+                  </>
+                )}
               </div>
-            )}
-
-            <AliasComposer
-              isCreating={aliases.isCreating}
-              error={aliases.createError}
-              existingDomain={existingDomain}
-              onCreate={aliases.create}
-            />
+              <div className="ea-hero__actions">
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  Create an alias
+                </button>
+              </div>
+            </div>
 
             <AliasList
               aliases={aliases.aliases}
@@ -224,14 +230,16 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
 
         {route.view === 'messages' &&
           (aliases.status === 'ready' && selectedAlias === null ? (
-            <section className="mx-auto max-w-lg rounded-2xl border border-hairline bg-surface p-6 text-center shadow-sm sm:p-8">
-              <h1 className="text-2xl font-extrabold tracking-tight">Alias not found</h1>
-              <p className="mt-2 text-sm text-text-muted">
+            <section className="ea-card ea-card__pad mx-auto max-w-lg text-center">
+              <h1 className="ea-title ea-title--sm">Alias not found</h1>
+              <p className="ea-lede">
                 This alias may have been deleted, or it belongs to another account.
               </p>
-              <AppLink to="/app" className="btn btn--primary mt-5">
-                Back to aliases
-              </AppLink>
+              <div className="ea-card__foot">
+                <AppLink to="/app" className="btn btn--primary">
+                  Back to aliases
+                </AppLink>
+              </div>
             </section>
           ) : (
             <AliasActivity
@@ -253,6 +261,17 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
           />
         )}
       </main>
+
+      <AppFooter />
+
+      <CreateAliasDialog
+        open={isCreateOpen}
+        isCreating={aliases.isCreating}
+        error={aliases.createError}
+        existingDomain={existingDomain}
+        onCreate={handleCreateAlias}
+        onClose={() => setIsCreateOpen(false)}
+      />
     </div>
   )
 }

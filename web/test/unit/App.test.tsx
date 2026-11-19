@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it } from 'vitest'
 import App from '../../src/App'
@@ -16,11 +16,15 @@ describe('Postern app shell', () => {
 
   it('keeps the invite request beside the how-it-works link', () => {
     render(<App />)
-    const requestInvite = screen.getByRole('button', { name: 'Request an invite' })
     const howItWorks = screen.getByRole('link', { name: 'See how it works' })
+    const requestInvite = screen
+      .getAllByRole('button', { name: 'Request an invite' })
+      .find((button) => button.parentElement === howItWorks.parentElement)
 
-    expect(requestInvite.parentElement).toBe(howItWorks.parentElement)
-    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
+    expect(requestInvite).toBeDefined()
+    expect(
+      within(screen.getByRole('banner')).getByRole('link', { name: 'Sign in' }),
+    ).toHaveAttribute('href', '/login')
     expect(screen.queryByRole('link', { name: 'Admin sign-in' })).not.toBeInTheDocument()
   })
 

@@ -26,75 +26,82 @@ export function CookiePolicyPage({ theme, onThemeChange }: Readonly<LegalPagePro
         Postern uses only storage that is strictly necessary to operate the service. We do not use
         analytics, advertising, personalisation, or third-party tracking cookies.
       </p>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Type</th>
-            <th scope="col">Purpose</th>
-            <th scope="col">Lifetime and settings</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <code>Postern.Auth</code>
-            </td>
-            <td>Cookie</td>
-            <td>
-              Keeps you signed in and authenticates requests to the API. It contains a signed token
-              with your account identifier, email address, and a unique token ID.
-            </td>
-            <td>
-              HttpOnly, SameSite=Strict, Secure in production, path <code>/</code>. Expires after 1
-              hour for standard accounts and 15 minutes for administrators.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <code>Postern.AdminMfa</code>
-            </td>
-            <td>Cookie</td>
-            <td>
-              Holds a short-lived challenge after an administrator enters a password, until
-              two-factor authentication is completed.
-            </td>
-            <td>
-              HttpOnly, SameSite=Strict, Secure in production, path{' '}
-              <code>/api/auth/admin-mfa</code>. Expires after 5 minutes.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <code>postern-theme</code>
-            </td>
-            <td>
-              <code>localStorage</code>
-            </td>
-            <td>
-              Remembers whether you chose the light or dark theme, so the site does not flash the
-              wrong theme on load.
-            </td>
-            <td>Stays on your device until you clear site data.</td>
-          </tr>
-          <tr>
-            <td>
-              <code>postern-pending-recovery-key</code>
-            </td>
-            <td>
-              <code>sessionStorage</code>
-            </td>
-            <td>
-              Carries a newly generated recovery key from the sign-in step to the screen that shows
-              it to you once.
-            </td>
-            <td>
-              Removed as soon as it is read, and cleared when you close the tab. It is never sent to
-              our servers.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div
+        className="legal-table-wrap"
+        role="region"
+        aria-label="Cookies and browser storage"
+        tabIndex={0 /* NOSONAR S6845: WCAG 2.1.1 requires focusable overflow regions for keyboard scrolling */}
+      >
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Type</th>
+              <th scope="col">Purpose</th>
+              <th scope="col">Lifetime and settings</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <code>Postern.Auth</code>
+              </td>
+              <td>Cookie</td>
+              <td>
+                Keeps you signed in and authenticates requests to the API. It contains a signed token
+                with your account identifier, email address, and a unique token ID.
+              </td>
+              <td>
+                HttpOnly, SameSite=Strict, Secure in production, path <code>/</code>. Expires after 1
+                hour for standard accounts and 15 minutes for administrators.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code>Postern.AdminMfa</code>
+              </td>
+              <td>Cookie</td>
+              <td>
+                Holds a short-lived challenge after an administrator enters a password, until
+                two-factor authentication is completed.
+              </td>
+              <td>
+                HttpOnly, SameSite=Strict, Secure in production, path{' '}
+                <code>/api/auth/admin-mfa</code>. Expires after 5 minutes.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code>postern-theme</code>
+              </td>
+              <td>
+                <code>localStorage</code>
+              </td>
+              <td>
+                Remembers whether you chose the light or dark theme, so the site does not flash the
+                wrong theme on load.
+              </td>
+              <td>Stays on your device until you clear site data.</td>
+            </tr>
+            <tr>
+              <td>
+                <code>postern-pending-recovery-key</code>
+              </td>
+              <td>
+                <code>sessionStorage</code>
+              </td>
+              <td>
+                Carries a newly generated recovery key from the sign-in step to the screen that shows
+                it to you once.
+              </td>
+              <td>
+                Removed as soon as it is read, and cleared when you close the tab. It is never sent to
+                our servers.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <h2>3. Why there is no consent banner</h2>
       <p>

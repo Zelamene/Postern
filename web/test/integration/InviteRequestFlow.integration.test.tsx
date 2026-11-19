@@ -49,7 +49,7 @@ describe('Invite request flow', () => {
 
     renderAt('/')
 
-    await user.click(screen.getByRole('button', { name: 'Request an invite' }))
+    await user.click(screen.getAllByRole('button', { name: 'Request an invite' })[0])
     await user.type(screen.getByLabelText('Email address'), 'requester@example.test')
     await user.click(screen.getByRole('button', { name: 'Send request' }))
 

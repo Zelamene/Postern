@@ -22,6 +22,8 @@ interface AliasComposerProps {
   /** Mail domain taken from an existing alias, used only for the preview. */
   existingDomain: string | null
   onCreate: (input: CreateAliasInput) => Promise<CreateAliasOutcome>
+  /** Hide the card heading when the composer is hosted inside a dialog. */
+  showHeading?: boolean
 }
 
 export function AliasComposer({
@@ -29,6 +31,7 @@ export function AliasComposer({
   error,
   existingDomain,
   onCreate,
+  showHeading = true,
 }: Readonly<AliasComposerProps>) {
   const [label, setLabel] = useState('')
   const [category, setCategory] = useState<AliasCategory>(DEFAULT_ALIAS_CATEGORY)
@@ -92,20 +95,24 @@ export function AliasComposer({
 
   return (
     <section
-      className="rounded-2xl border border-hairline bg-surface p-5 shadow-sm sm:p-6"
-      aria-labelledby={`${labelId}-title`}
+      className={showHeading ? 'ea-card ea-card__pad' : 'ea-composer'}
+      aria-labelledby={showHeading ? `${labelId}-title` : undefined}
     >
-      <h2 id={`${labelId}-title`} className="text-lg font-bold">
-        Create an alias
-      </h2>
-      <p className="mt-1 max-w-prose text-sm text-text-muted">
-        Name it after the service you are signing up for. Postern adds a random suffix so the
-        address stays unguessable.
-      </p>
+      {showHeading && (
+        <>
+          <h2 id={`${labelId}-title`} className="ea-card__title">
+            Create an alias
+          </h2>
+          <p className="ea-lede">
+            Name it after the service you are signing up for. Postern adds a random suffix so the
+            address stays unguessable.
+          </p>
+        </>
+      )}
 
-      <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor={labelId} className="mb-1 block text-sm font-semibold">
+      <form className="ea-composer__grid" onSubmit={handleSubmit}>
+        <div className="ea-field">
+          <label htmlFor={labelId} className="ea-label">
             Label
           </label>
           <input
@@ -126,13 +133,13 @@ export function AliasComposer({
             aria-describedby={`${labelHintId} ${previewId}`}
             aria-invalid={labelError ? true : undefined}
           />
-          <p id={labelHintId} className="mt-1 text-xs text-text-muted">
+          <p id={labelHintId} className="ea-hint">
             Lowercase letters, numbers, dots, hyphens and underscores only.
           </p>
         </div>
 
-        <div>
-          <label htmlFor={categoryId} className="mb-1 block text-sm font-semibold">
+        <div className="ea-field">
+          <label htmlFor={categoryId} className="ea-label">
             Category
           </label>
           <select
@@ -152,14 +159,12 @@ export function AliasComposer({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-text-muted">
-            Groups aliases so you can find them later.
-          </p>
+          <p className="ea-hint">Groups aliases so you can find them later.</p>
         </div>
 
-        <div className="sm:col-span-2">
-          <label htmlFor={senderId} className="mb-1 block text-sm font-semibold">
-            Expected sender <span className="font-normal text-text-muted">(optional)</span>
+        <div className="ea-field ea-field--wide">
+          <label htmlFor={senderId} className="ea-label">
+            Expected sender <span className="font-normal text-outline">(optional)</span>
           </label>
           <input
             id={senderId}
@@ -184,21 +189,19 @@ export function AliasComposer({
             aria-describedby={senderHintId}
             aria-invalid={senderError ? true : undefined}
           />
-          <p id={senderHintId} className="mt-1 text-xs text-text-muted">
+          <p id={senderHintId} className="ea-hint">
             The address or domain this service writes from. Mail from it is never flagged.
           </p>
         </div>
 
-        <div className="sm:col-span-2" id={previewId}>
-          <div className="rounded-lg bg-surface-sunken px-3 py-2">
-            <p className="text-xs font-bold tracking-[0.16em] text-text-muted uppercase">
-              Preview
-            </p>
+        <div className="ea-field ea-field--wide" id={previewId}>
+          <div className="ea-preview">
+            <p className="ea-section-note">Generated address preview</p>
             <code className="mt-1 block break-all text-sm">
               {previewLabel}.{MASKED_SUFFIX}
               {existingDomain ? `@${existingDomain}` : ''}
             </code>
-            <p className="mt-1 text-xs text-text-muted">
+            <p className="ea-hint">
               {existingDomain
                 ? 'The dots stand in for the random suffix Postern adds when you save.'
                 : 'Postern fills in the rest of the address when you save.'}
@@ -206,10 +209,10 @@ export function AliasComposer({
           </div>
         </div>
 
-        <div className="sm:col-span-2">
+        <div className="ea-field ea-field--wide">
           <button
             type="submit"
-            className="btn btn--primary btn--block sm:w-auto"
+            className="btn btn--primary"
             disabled={isCreating}
             aria-busy={isCreating || undefined}
           >

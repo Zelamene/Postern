@@ -38,6 +38,11 @@ function markReplaced(alias: Alias, replacementId: string): Alias {
   return { ...alias, status, replacedByAliasId: replacementId }
 }
 
+/** A realtime refresh can add a new alias before its create/replace call resolves. */
+function prependUnique(current: Alias[], alias: Alias): Alias[] {
+  return [alias, ...current.filter((item) => item.id !== alias.id)]
+}
+
 export function useAliases(enabled: boolean): AliasesController {
   const [aliases, setAliases] = useState<Alias[]>([])
   const [status, setStatus] = useState<AliasLoadStatus>('loading')
@@ -110,7 +115,7 @@ export function useAliases(enabled: boolean): AliasesController {
 
       try {
         const created = await createAliasRequest(input)
-        setAliases((current) => [created, ...current])
+        setAliases((current) => prependUnique(current, created))
         setStatus('ready')
         return {
           ok: true,
@@ -186,12 +191,14 @@ export function useAliases(enabled: boolean): AliasesController {
   }, [])
 
   const applyReplacement = useCallback((aliasId: string, replacement: Alias) => {
-    setAliases((current) => [
-      replacement,
-      ...current.map((alias) =>
-        alias.id === aliasId ? markReplaced(alias, replacement.id) : alias,
+    setAliases((current) =>
+      prependUnique(
+        current.map((alias) =>
+          alias.id === aliasId ? markReplaced(alias, replacement.id) : alias,
+        ),
+        replacement,
       ),
-    ])
+    )
   }, [])
 
   const dismissActionError = useCallback(() => setActionError(null), [])

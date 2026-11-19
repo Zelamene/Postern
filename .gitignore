@@ -76,3 +76,8 @@ worker/perf/cpu-measurement.json
 send-nfr-burst.mjs
 
 load/scripts/generated/
+
+postern-sas.tex
+postern-srs.tex
+docs/srs/figures/
+docs/nfr/evidence/templates/

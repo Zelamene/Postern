@@ -9,7 +9,7 @@ interface NotificationMenuProps {
 }
 
 const TRIGGER_CLASS =
-  'relative flex size-9 items-center justify-center rounded-full border border-hairline/80 bg-surface-sunken/60 text-text-secondary transition-colors hover:border-primary/40 hover:text-primary'
+  'relative flex size-9 items-center justify-center bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-sunken hover:text-text'
 
 export function NotificationMenu({ controller }: Readonly<NotificationMenuProps>) {
   const [isOpen, setIsOpen] = useState(false)
@@ -96,10 +96,10 @@ export function NotificationMenu({ controller }: Readonly<NotificationMenuProps>
           role="dialog"
           aria-label="Notifications"
           tabIndex={-1}
-          className="absolute right-0 top-full z-[var(--z-dropdown)] mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-hairline bg-surface p-3 shadow-lg outline-none"
+          className="absolute right-0 top-full z-[var(--z-dropdown)] mt-2 w-[min(20rem,calc(100vw-2rem))] bg-surface p-4 shadow-md outline-none"
         >
-          <div className="flex items-center justify-between gap-3 border-b border-hairline pb-2">
-            <h2 className="text-sm font-bold text-text">Notifications</h2>
+          <div className="flex items-center justify-between gap-3 border-b border-hairline pb-3">
+            <h2 className="text-sm font-medium text-text">Notifications</h2>
             <button
               type="button"
               className="btn btn--ghost btn--sm"
@@ -119,7 +119,7 @@ export function NotificationMenu({ controller }: Readonly<NotificationMenuProps>
 
             {controller.status === 'error' && (
               <p role="alert" className="px-1 py-4 text-sm text-danger-on-surface">
-                {controller.error ?? 'Notifications could not be loaded. Please try again.'}
+                {controller.error ?? 'Could not load notifications. Try again.'}
               </p>
             )}
 
@@ -136,19 +136,19 @@ export function NotificationMenu({ controller }: Readonly<NotificationMenuProps>
                       <button
                         type="button"
                         onClick={() => handleSelect(notification)}
-                        className="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-sunken"
+                        className="flex w-full items-start gap-2.5 px-2 py-2.5 text-left transition-colors duration-150 hover:bg-surface-sunken"
                       >
                         <span
                           aria-hidden="true"
                           className={`mt-1.5 size-2 flex-none rounded-full ${
-                            isUnread ? 'bg-primary' : 'bg-transparent'
+                            isUnread ? 'bg-accent' : 'bg-transparent'
                           }`}
                         />
                         <span className="min-w-0">
                           {isUnread && <span className="sr-only">Unread: </span>}
                           <span
                             className={`block truncate text-sm ${
-                              isUnread ? 'font-semibold text-text' : 'font-medium text-text-secondary'
+                              isUnread ? 'font-medium text-text' : 'text-text-secondary'
                             }`}
                           >
                             {notification.title}
