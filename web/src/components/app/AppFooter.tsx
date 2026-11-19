@@ -10,7 +10,10 @@ export function AppFooter() {
   return (
     <footer className="ea-footer">
       <div className="ea-footer__inner">
-        <span className="ea-footer__brand">Postern</span>
+        <div className="ea-footer__identity">
+          <span className="ea-footer__brand">Postern</span>
+          <span className="ea-footer__copyright">© {COPYRIGHT_YEAR}</span>
+        </div>
 
         <nav aria-label="Footer navigation" className="ea-footer__nav">
           {FOOTER_LINKS.map((link) => (
@@ -19,8 +22,6 @@ export function AppFooter() {
             </a>
           ))}
         </nav>
-
-        <span className="ea-footer__copyright">© {COPYRIGHT_YEAR} Postern</span>
       </div>
     </footer>
   )

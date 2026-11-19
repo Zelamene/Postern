@@ -159,13 +159,10 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
       </a>
 
       <AppHeader
-        email={account.email}
         view={route.view}
         theme={theme}
         notifications={notifications}
-        isSigningOut={isSigningOut}
         onThemeChange={onThemeChange}
-        onSignOut={() => void handleSignOut()}
       />
 
       <main id="app-main" className="ea-main" data-view={route.view}>
@@ -258,6 +255,8 @@ export function AppPage({ pathname, theme, onThemeChange }: Readonly<AppPageProp
             account={{ ...account, forwardingAddress: destination }}
             onForwardingAddressChange={setForwardingAddress}
             onAccountDeleted={() => navigate('/login', { replace: true })}
+            isSigningOut={isSigningOut}
+            onSignOut={() => void handleSignOut()}
           />
         )}
       </main>

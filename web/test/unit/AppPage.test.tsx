@@ -301,7 +301,7 @@ describe('AppPage', () => {
       }),
     )
 
-    renderApp()
+    renderApp('/app/account')
 
     const buttons = await screen.findAllByRole('button', { name: 'Sign out' })
     await user.click(buttons[0]!)
@@ -320,7 +320,7 @@ describe('AppPage', () => {
       ),
     )
 
-    renderApp()
+    renderApp('/app/account')
 
     const buttons = await screen.findAllByRole('button', { name: 'Sign out' })
     await user.click(buttons[0]!)

@@ -12,6 +12,8 @@ interface AccountSettingsProps {
   account: CurrentAccount
   onForwardingAddressChange: (address: string) => void
   onAccountDeleted: () => void
+  isSigningOut: boolean
+  onSignOut: () => void
 }
 
 function describeError(error: unknown, fallback: string): string {
@@ -30,6 +32,8 @@ export function AccountSettings({
   account,
   onForwardingAddressChange,
   onAccountDeleted,
+  isSigningOut,
+  onSignOut,
 }: Readonly<AccountSettingsProps>) {
   const toast = useToast()
   const [forwardingAddress, setForwardingAddress] = useState(account.forwardingAddress)
@@ -172,6 +176,26 @@ export function AccountSettings({
             </button>
           </div>
         </form>
+      </section>
+
+      <section
+        className="ea-card ea-card__pad"
+        aria-labelledby={`${forwardingId}-session`}
+      >
+        <h2 id={`${forwardingId}-session`} className="ea-section-title">
+          Session
+        </h2>
+        <p className="ea-hint">Signed in as {account.email}.</p>
+        <div className="ea-card__foot">
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={onSignOut}
+            disabled={isSigningOut}
+          >
+            {isSigningOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </div>
       </section>
 
       <section

@@ -339,50 +339,75 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
                       key={message.id}
                       className={`ea-activity-row${message.isFlagged ? ' ea-activity-row--flagged' : ''}`}
                     >
-                      <div className="ea-activity-row__head">
-                        <div className="ea-activity-row__identity">
-                          <span className="ea-activity-row__sender">
-                            {message.fromHeader || message.envelopeSender || 'Unknown sender'}
-                          </span>
-                          {message.fromHeader && senderAddress && (
-                            <span className="ea-activity-row__address">
-                              &lt;{senderAddress}&gt;
-                            </span>
-                          )}
+                      <div className="ea-activity-row__main">
+                        <span className="ea-activity-row__avatar" aria-hidden="true">
+                          <IconMail size={16} />
+                        </span>
+
+                        <div className="ea-activity-row__body">
+                          <div className="ea-activity-row__head">
+                            <div className="ea-activity-row__identity">
+                              <span className="ea-activity-row__sender">
+                                {message.fromHeader || message.envelopeSender || 'Unknown sender'}
+                              </span>
+                              {message.fromHeader && senderAddress && (
+                                <span className="ea-activity-row__address">
+                                  &lt;{senderAddress}&gt;
+                                </span>
+                              )}
+                            </div>
+                            <time className="ea-activity-row__time" dateTime={message.receivedAt}>
+                              {formatDateTime(message.receivedAt)}
+                            </time>
+                          </div>
+
+                          <p className="ea-activity-row__subject">
+                            {message.subject?.trim() || 'No subject'}
+                          </p>
+
+                          <dl className="ea-activity-row__meta">
+                            <div className="ea-activity-row__meta-group">
+                              <dt className="ea-activity-row__meta-label">Authentication</dt>
+                              <dd className="ea-activity-row__meta-value">
+                                <span
+                                  className={`ea-chip ${authTone(message.authenticationResult)}`}
+                                >
+                                  {message.authenticationResult || 'unknown'}
+                                </span>
+                              </dd>
+                            </div>
+
+                            {severityDetail && (
+                              <div className="ea-activity-row__meta-group">
+                                <dt className="ea-activity-row__meta-label">Assessment</dt>
+                                <dd className="ea-activity-row__meta-value">
+                                  <span
+                                    className={`ea-chip ${severityDetail.tone}`}
+                                    title={message.flagReason ?? undefined}
+                                  >
+                                    {severityDetail.label} · {severityDetail.description}
+                                  </span>
+                                </dd>
+                              </div>
+                            )}
+
+                            <div className="ea-activity-row__meta-group ea-activity-row__meta-group--wide">
+                              <dt className="ea-activity-row__meta-label">Sender domain</dt>
+                              <dd className="ea-activity-row__domain">
+                                {sender ? (
+                                  <>
+                                    <strong className="ea-mono">{sender}</strong>{' '}
+                                    {message.isFlagged
+                                      ? 'is not on the expected sender list.'
+                                      : 'is recorded on this message.'}
+                                  </>
+                                ) : (
+                                  'Sender details were not recorded.'
+                                )}
+                              </dd>
+                            </div>
+                          </dl>
                         </div>
-                        <time className="ea-activity-row__time" dateTime={message.receivedAt}>
-                          {formatDateTime(message.receivedAt)}
-                        </time>
-                      </div>
-
-                      <p className="ea-activity-row__subject">
-                        {message.subject?.trim() || 'No subject'}
-                      </p>
-
-                      <div className="ea-activity-row__meta">
-                        <span className={`ea-chip ${authTone(message.authenticationResult)}`}>
-                          {message.authenticationResult || 'unknown'} authentication
-                        </span>
-                        {severityDetail && (
-                          <span
-                            className={`ea-chip ${severityDetail.tone}`}
-                            title={message.flagReason ?? undefined}
-                          >
-                            {severityDetail.label} · {severityDetail.description}
-                          </span>
-                        )}
-                        <span className="ea-activity-row__domain">
-                          {sender ? (
-                            <>
-                              Domain <strong className="ea-mono">{sender}</strong>{' '}
-                              {message.isFlagged
-                                ? 'is not on the expected sender list.'
-                                : 'is recorded on this message.'}
-                            </>
-                          ) : (
-                            'Sender details were not recorded.'
-                          )}
-                        </span>
                       </div>
 
                       {showLeakActions && (
