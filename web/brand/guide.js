@@ -1,4 +1,6 @@
-import '@fontsource-variable/manrope';
+import '@fontsource-variable/noto-serif';
+import '@fontsource-variable/inter';
+import '@fontsource-variable/source-code-pro';
 
 const root = document.documentElement;
 const styles = getComputedStyle(root);

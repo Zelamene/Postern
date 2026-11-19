@@ -34,7 +34,7 @@ function App() {
     localStorage.setItem(STORAGE_KEY, theme)
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', theme === 'dark' ? '#151110' : '#fbf8f4')
+      ?.setAttribute('content', theme === 'dark' ? '#121212' : '#f9f9f9')
   }, [theme])
 
   useEffect(() => {

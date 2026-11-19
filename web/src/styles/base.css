@@ -1,5 +1,4 @@
 @layer base {
-
   *,
   *::before,
   *::after {
@@ -33,8 +32,8 @@
 
   ::selection,
   *::selection {
-    background-color: var(--color-primary);
-    color: var(--color-text-on-primary);
+    background-color: var(--accent);
+    color: var(--on-accent);
   }
 
   h1,
@@ -44,34 +43,33 @@
   h5,
   h6 {
     margin: 0;
-    font-family: var(--font-sans);
+    font-family: var(--font-display);
+    font-weight: 400;
     color: var(--color-text);
     text-wrap: balance;
   }
 
   h1 {
     font-size: var(--fs-h1);
-    font-weight: var(--fw-black);
     line-height: var(--lh-h1);
     letter-spacing: var(--ls-h1);
   }
 
   h2 {
     font-size: var(--fs-h2);
-    font-weight: var(--fw-bold);
     line-height: var(--lh-h2);
     letter-spacing: var(--ls-h2);
   }
 
   h3 {
     font-size: var(--fs-h3);
-    font-weight: var(--fw-semibold);
     line-height: var(--lh-h3);
     letter-spacing: var(--ls-h3);
   }
 
   h4 {
     font-size: var(--fs-h4);
+    font-family: var(--font-sans);
     font-weight: var(--fw-semibold);
     line-height: var(--lh-h4);
     letter-spacing: var(--ls-h4);
@@ -88,13 +86,14 @@
     text-decoration-line: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 0.18em;
-    text-decoration-color: var(--color-primary-on-inverse);
-    transition: color var(--dur-instant) var(--ease-standard),
-      text-decoration-color var(--dur-instant) var(--ease-standard);
+    text-decoration-color: color-mix(in srgb, var(--color-link) 35%, transparent);
+    transition:
+      color var(--dur-fast) var(--ease-standard),
+      text-decoration-color var(--dur-fast) var(--ease-standard);
   }
 
   a:hover {
-    color: var(--color-primary-hover);
+    color: var(--color-link-hover);
     text-decoration-color: currentColor;
   }
 
@@ -119,7 +118,7 @@
   pre {
     margin: 0;
     padding: var(--space-4);
-    border: 1px solid var(--color-hairline);
+    border: 0;
     border-radius: var(--radius-lg);
     background-color: var(--color-surface-sunken);
     overflow-x: auto;
@@ -177,7 +176,8 @@
   }
 
   .on-maroon :focus-visible,
-  .on-maroon:focus-visible {
+  .on-maroon:focus-visible,
+  .on-dark :focus-visible {
     outline-color: var(--color-focus-inverse);
   }
 
@@ -200,7 +200,7 @@
     z-index: var(--z-toast);
     padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-md);
-    background-color: var(--color-link);
+    background-color: var(--color-primary);
     color: var(--color-text-on-primary);
     font-weight: var(--fw-semibold);
     text-decoration: none;
