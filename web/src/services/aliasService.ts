@@ -80,8 +80,21 @@ export async function createAlias(input: CreateAliasInput): Promise<Alias> {
   return toAlias(alias)
 }
 
-export function addExpectedSender(aliasId: string, senderEtld1: string): Promise<void> {
-  return postSenderAction('expected-senders', aliasId, senderEtld1)
+/**
+ * The composer accepts either a full address or a bare domain. Send addresses as
+ * `senderAddress` so the API stores address-level trust; sending them as
+ * `senderEtld1` would silently trust every address at the domain (e.g. all of
+ * gmail.com).
+ */
+export function addExpectedSender(aliasId: string, sender: string): Promise<void> {
+  const separator = sender.lastIndexOf('@')
+  const isAddress = separator > 0 && separator < sender.length - 1
+  return requestEmpty(aliasPath(aliasId, '/expected-senders'), {
+    method: 'POST',
+    body: isAddress
+      ? { senderEtld1: sender.slice(separator + 1), senderAddress: sender }
+      : { senderEtld1: sender },
+  })
 }
 
 export function markExpectedSender(

@@ -11,7 +11,7 @@ public sealed class ExpectedSenderScopeTests
     private static readonly DateTimeOffset Now = new(2026, 11, 13, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task FirstContactAtPublicProviderTrustsOnlyThatAddress()
+    public async Task ContactAtPublicProviderIsNeverAutoTrusted()
     {
         var repository = new ScopeActivityRepository();
         var alias = repository.AddAlias();
@@ -34,14 +34,13 @@ public sealed class ExpectedSenderScopeTests
 
         Assert.Equal(IngestResult.Accepted, first);
         Assert.Equal(IngestResult.Accepted, second);
-        var trusted = Assert.Single(repository.AddedExpectedSenders);
-        Assert.Equal("alice@gmail.com", trusted.SenderAddress);
-        Assert.Equal("gmail.com", trusted.SenderEtld1);
-        Assert.False(trusted.TrustWholeDomain);
+        Assert.Empty(repository.AddedExpectedSenders);
         Assert.Equal(2, repository.Messages.Count);
-        Assert.False(repository.Messages[0].IsFlagged);
-        Assert.True(repository.Messages[1].IsFlagged);
-        Assert.Equal("unexpected_pass", repository.Messages[1].FlagReason);
+        Assert.All(repository.Messages, message =>
+        {
+            Assert.True(message.IsFlagged);
+            Assert.Equal("unexpected_pass", message.FlagReason);
+        });
     }
 
     [Fact]

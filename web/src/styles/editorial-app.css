@@ -1180,6 +1180,14 @@
   font-size: 0.75rem;
 }
 
+.ea-activity-row__provider {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--outline);
+  font-size: 0.6875rem;
+  font-style: italic;
+}
+
 .ea-activity-row__actions {
   display: flex;
   flex-wrap: wrap;

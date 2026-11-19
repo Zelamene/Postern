@@ -85,6 +85,35 @@ public sealed class IngestFlowTests(PosternFixture fixture) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Ingest_FirstPassingMessageFromPublicProvider_IsFlaggedWithoutAutoTrust()
+    {
+        var user = await fixture.AUserAsync();
+        var alias = await fixture.AnAliasAsync(user.Id);
+
+        using var worker = _factory.CreateClient();
+        var ingest = await worker.PostAsJsonAsync("/api/ingest", new
+        {
+            recipientAddress = alias.FullAddress,
+            envelopeSender = "person@gmail.com",
+            fromHeader = "Person <person@gmail.com>",
+            subject = "Hello from a public mailbox",
+            authenticationResult = "pass"
+        });
+        Assert.Equal(HttpStatusCode.Accepted, ingest.StatusCode);
+
+        using var client = _factory.CreateAuthenticatedClient(user.Id, user.Email);
+        var page = await ReadMessagesAsync(client, alias.Id);
+        var message = Assert.Single(page.Items);
+        Assert.True(message.IsFlagged);
+        Assert.Equal("unexpected_pass", message.FlagReason);
+
+        await using var db = fixture.CreateContext();
+        Assert.Empty(await db.ExpectedSenders
+            .Where(sender => sender.AliasId == alias.Id)
+            .ToListAsync());
+    }
+
+    [Fact]
     public async Task Ingest_ToDisabledAlias_IsBlockedAndReadableInBlockedLog()
     {
         var user = await fixture.AUserAsync();

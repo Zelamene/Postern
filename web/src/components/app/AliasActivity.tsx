@@ -330,6 +330,8 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
                 {feed.items.map((message) => {
                   const sender = senderOf(message)
                   const senderAddress = senderAddressOf(message)
+                  const trustLabel = senderAddress ?? sender
+                  const isPublicProvider = isPublicEmailProvider(sender)
                   const severity = leakSeverity(message)
                   const severityDetail = severity ? SEVERITY_DETAILS[severity] : null
                   const showLeakActions = message.isFlagged && alias?.status === 'Active'
@@ -404,6 +406,11 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
                                 ) : (
                                   'Sender details were not recorded.'
                                 )}
+                                {isPublicProvider && message.isFlagged && (
+                                  <span className="ea-activity-row__provider">
+                                    Public mailbox providers need explicit approval.
+                                  </span>
+                                )}
                               </dd>
                             </div>
                           </dl>
@@ -417,7 +424,7 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
                               type="button"
                               className="ea-activity-row__action"
                               disabled={pendingMessageId === message.id}
-                              aria-label={`Mark ${sender} as expected`}
+                              aria-label={`Mark ${trustLabel} as expected`}
                               onClick={() =>
                                 void handleSenderAction(
                                   message.id,
@@ -427,7 +434,7 @@ export function AliasActivity({ alias, feed, onAliasReplaced }: Readonly<AliasAc
                                 )
                               }
                             >
-                              Mark {sender} as expected
+                              Mark {trustLabel} as expected
                             </button>
                           )}
                           <button

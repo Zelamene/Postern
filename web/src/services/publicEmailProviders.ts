@@ -1,15 +1,40 @@
-const PUBLIC_EMAIL_PROVIDERS = new Set([
+/**
+ * Shared mailbox providers whose domain identifies a mailbox host, not the
+ * service that gave out an alias. Keep in sync with shared/public-email-domains.json
+ * (publicEmailProviders.test.ts asserts the two lists are identical).
+ */
+export const PUBLIC_EMAIL_PROVIDERS = [
   'gmail.com',
   'googlemail.com',
   'outlook.com',
   'outlook.co.uk',
+  'outlook.de',
+  'outlook.es',
+  'outlook.fr',
+  'outlook.it',
   'hotmail.com',
   'hotmail.co.uk',
+  'hotmail.fr',
+  'hotmail.de',
+  'hotmail.es',
+  'hotmail.it',
   'live.com',
   'live.co.uk',
+  'live.fr',
+  'live.de',
   'msn.com',
   'yahoo.com',
   'yahoo.co.uk',
+  'yahoo.fr',
+  'yahoo.de',
+  'yahoo.es',
+  'yahoo.it',
+  'yahoo.com.au',
+  'yahoo.com.br',
+  'yahoo.com.mx',
+  'yahoo.ca',
+  'yahoo.co.in',
+  'yahoo.co.jp',
   'ymail.com',
   'rocketmail.com',
   'icloud.com',
@@ -18,27 +43,40 @@ const PUBLIC_EMAIL_PROVIDERS = new Set([
   'aol.com',
   'proton.me',
   'protonmail.com',
+  'protonmail.ch',
   'pm.me',
   'gmx.com',
   'gmx.net',
   'gmx.de',
+  'gmx.at',
+  'gmx.ch',
+  'gmx.co.uk',
   'mail.com',
   'web.de',
   'zoho.com',
+  'zoho.eu',
   'yandex.com',
   'yandex.ru',
+  'yandex.kz',
+  'yandex.by',
   'mail.ru',
   'fastmail.com',
   'hey.com',
   'tutanota.com',
+  'tutanota.de',
   'tuta.io',
   'qq.com',
   '163.com',
   '126.com',
-])
+  'yeah.net',
+  'naver.com',
+  'daum.net',
+] as const
+
+const PUBLIC_EMAIL_PROVIDER_SET: ReadonlySet<string> = new Set(PUBLIC_EMAIL_PROVIDERS)
 
 /** True when the domain is a shared mailbox provider, where blocking reaches far beyond one person. */
 export function isPublicEmailProvider(domain: string | null): boolean {
   const normalized = domain?.trim().toLowerCase()
-  return normalized ? PUBLIC_EMAIL_PROVIDERS.has(normalized) : false
+  return normalized ? PUBLIC_EMAIL_PROVIDER_SET.has(normalized) : false
 }

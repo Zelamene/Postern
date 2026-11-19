@@ -146,6 +146,83 @@ public sealed class IngestFlagLogicTests
         Assert.Equal(alias.Id, addedSender.AliasId);
     }
 
+    [Theory]
+    [InlineData("gmail.com", "person@gmail.com")]
+    [InlineData("GMAIL.COM", "Person@Gmail.com")]
+    [InlineData("yahoo.com", "person@yahoo.com")]
+    [InlineData("outlook.com", "person@outlook.com")]
+    public async Task FirstPassingMessageFromPublicProviderIsFlaggedAndNotAutoTrusted(
+        string domain,
+        string address)
+    {
+        Assert.True(PublicEmailDomains.Contains(domain));
+
+        var repository = new FlagTestActivityRepository();
+        var alias = FlagTestActivityRepository.CreateAlias(AliasStatus.Active, []);
+        repository.AddAlias(alias);
+        var service = new IngestService(repository, new FixedTimeProvider(Now));
+
+        var result = await service.IngestAsync(
+            alias.FullAddress!,
+            address,
+            $"Person <{address}>",
+            "Hello",
+            "pass",
+            CancellationToken.None);
+
+        Assert.Equal(IngestResult.Accepted, result);
+        var message = Assert.Single(repository.Messages);
+        Assert.True(message.IsFlagged);
+        Assert.Equal("unexpected_pass", message.FlagReason);
+        Assert.Empty(repository.AddedExpectedSenders);
+    }
+
+    [Fact]
+    public async Task FirstPublicProviderMessageWithoutAuthIsFlaggedWithoutAutoTrust()
+    {
+        var repository = new FlagTestActivityRepository();
+        var alias = FlagTestActivityRepository.CreateAlias(AliasStatus.Active, []);
+        repository.AddAlias(alias);
+        var service = new IngestService(repository, new FixedTimeProvider(Now));
+
+        var result = await service.IngestAsync(
+            alias.FullAddress!,
+            "person@gmail.com",
+            "Person <person@gmail.com>",
+            "Hello",
+            "none",
+            CancellationToken.None);
+
+        Assert.Equal(IngestResult.Accepted, result);
+        var message = Assert.Single(repository.Messages);
+        Assert.True(message.IsFlagged);
+        Assert.Equal("none", message.FlagReason);
+        Assert.Empty(repository.AddedExpectedSenders);
+    }
+
+    [Fact]
+    public async Task ManualExpectedSenderAtPublicProviderIsHonoured()
+    {
+        var repository = new FlagTestActivityRepository();
+        var alias = FlagTestActivityRepository.CreateAlias(AliasStatus.Active, ["gmail.com"]);
+        repository.AddAlias(alias);
+        var service = new IngestService(repository, new FixedTimeProvider(Now));
+
+        var result = await service.IngestAsync(
+            alias.FullAddress!,
+            "person@gmail.com",
+            "Person <person@gmail.com>",
+            "Hello",
+            "pass",
+            CancellationToken.None);
+
+        Assert.Equal(IngestResult.Accepted, result);
+        var message = Assert.Single(repository.Messages);
+        Assert.False(message.IsFlagged);
+        Assert.Null(message.FlagReason);
+        Assert.Empty(repository.AddedExpectedSenders);
+    }
+
     [Fact]
     public async Task SubjectIsDecodedAndTruncatedToSixtyCharacters()
     {
