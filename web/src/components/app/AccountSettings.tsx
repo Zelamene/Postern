@@ -125,9 +125,12 @@ export function AccountSettings({
             <label htmlFor={forwardingId} className="mb-1 block text-sm font-semibold">
               Destination address
             </label>
+            {/* Plain text on purpose: native email validation rejects valid
+                Universal Acceptance addresses that the backend accepts. */}
             <input
               id={forwardingId}
-              type="email"
+              type="text"
+              inputMode="email"
               className="input w-full"
               value={forwardingAddress}
               onChange={(event) => {

@@ -21,7 +21,7 @@ test('selected text keeps a high-contrast foreground in both themes', async ({ p
     document.documentElement.dataset.theme = 'light'
   })
   expect(await selectedColors()).toEqual({
-    background: 'rgb(116, 23, 42)',
+    background: 'rgb(107, 29, 47)',
     foreground: 'rgb(255, 255, 255)',
   })
 
@@ -29,8 +29,8 @@ test('selected text keeps a high-contrast foreground in both themes', async ({ p
     document.documentElement.dataset.theme = 'dark'
   })
   expect(await selectedColors()).toEqual({
-    background: 'rgb(176, 69, 84)',
-    foreground: 'rgb(255, 255, 255)',
+    background: 'rgb(215, 163, 176)',
+    foreground: 'rgb(42, 16, 24)',
   })
 })
 

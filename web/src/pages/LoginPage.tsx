@@ -84,7 +84,6 @@ export function LoginPage() {
         </a>
 
         <div className="mt-8 space-y-3">
-          <p className="chip chip--primary chip--sm">Invite only</p>
           <h1 id="login-title" className="text-h2 text-text">
             Sign in to Postern
           </h1>

@@ -6,7 +6,7 @@ async function submitRequest(browser: Browser, baseURL: string, email: string) {
   try {
     const page = await context.newPage()
     await page.goto('/')
-    await page.getByRole('button', { name: 'Request an invite' }).click()
+    await page.getByRole('button', { name: 'Request an invite' }).first().click()
     await page.getByLabel('Email address').fill(email)
     const request = page.waitForResponse(
       (response) =>
