@@ -67,8 +67,11 @@ describe('BlockedActivity', () => {
     )
 
     expect(screen.getByText('bad@example.com')).toBeInTheDocument()
-    expect(screen.getByText('blocked_sender')).toBeInTheDocument()
+    expect(screen.getByText('Blocked sender')).toBeInTheDocument()
+    expect(screen.queryByText('blocked_sender')).toBeNull()
     expect(screen.getByText('Shop')).toBeInTheDocument()
+    expect(screen.queryByText(/incident register/i)).toBeNull()
+    expect(screen.queryByText(/loaded entries only/i)).toBeNull()
 
     await user.click(screen.getByRole('button', { name: /load older messages/i }))
     expect(loadMore).toHaveBeenCalled()
