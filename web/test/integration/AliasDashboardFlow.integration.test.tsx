@@ -5,6 +5,15 @@ import { afterEach, describe, expect, it } from 'vitest'
 import App from '../../src/App'
 import { server } from '../server'
 
+if (typeof HTMLDialogElement !== 'undefined') {
+  HTMLDialogElement.prototype.showModal ??= function showModal(this: HTMLDialogElement) {
+    this.setAttribute('open', '')
+  }
+  HTMLDialogElement.prototype.close ??= function close(this: HTMLDialogElement) {
+    this.removeAttribute('open')
+  }
+}
+
 function renderAt(pathname: string) {
   window.history.pushState({}, '', pathname)
   return render(<App />)
@@ -90,6 +99,7 @@ describe('Alias dashboard flow', () => {
     renderAt('/app')
 
     expect(await screen.findByRole('heading', { name: 'Your aliases' })).toBeDefined()
+    await user.click(screen.getByRole('button', { name: 'Create an alias' }))
     await user.type(screen.getByLabelText('Label'), 'Shop')
     await user.click(screen.getByRole('button', { name: 'Create alias' }))
 

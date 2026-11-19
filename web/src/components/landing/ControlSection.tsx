@@ -53,7 +53,6 @@ export function ControlSection() {
     >
       <div className="editorial-shell">
         <EditorialReveal className="mb-14 max-w-2xl">
-          <span className="editorial-eyebrow mb-3">Control</span>
           <h2 id="actions-heading" className="editorial-section-title mb-4">
             Take action when something looks wrong
           </h2>

@@ -1,4 +1,5 @@
-import { IconMoon, IconPosternLogo, IconSun } from '../common/Icons'
+import { IconMoon, IconSun } from '../common/Icons'
+import { EditorialLogo } from '../landing/EditorialLogo'
 import { NotificationMenu } from '../common/NotificationMenu'
 import type { AppView, NotificationsController, ThemeMode } from '../../types'
 import { AppLink } from './AppLink'
@@ -32,36 +33,59 @@ export function AppHeader({
   const activeView = view === 'messages' ? 'aliases' : view
 
   return (
-    <header className="sticky top-0 z-[var(--z-sticky)] bg-bg/95 backdrop-blur-sm">
-      <div className="shell flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center justify-between gap-3">
-          <AppLink
-            to="/app"
-            className="group flex items-center gap-3 text-text no-underline"
-          >
-            <span className="flex size-9 items-center justify-center bg-surface-container-lowest text-primary">
-              <IconPosternLogo size={20} />
-            </span>
-            <span className="font-[family-name:var(--font-display)] text-xl tracking-tight">Postern</span>
+    <header className="ea-header">
+      <div className="ea-header__inner">
+        <div className="ea-header__left">
+          <AppLink to="/app" className="ea-brand">
+            <EditorialLogo size={28} />
+            <span className="ea-brand__name">Postern</span>
           </AppLink>
 
-          <div className="flex items-center gap-2 sm:hidden">
-            <NotificationMenu controller={notifications} />
-            <button
-              type="button"
-              onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
-              className="flex size-9 items-center justify-center bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-sunken hover:text-text"
-              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {isDark ? <IconSun size={16} /> : <IconMoon size={16} />}
-            </button>
-          </div>
+          <nav aria-label="App navigation" className="ea-nav">
+            {NAV_ITEMS.map((item) => {
+              const isActive = item.view === activeView
+              return (
+                <AppLink
+                  key={item.view}
+                  to={item.to}
+                  aria-current={isActive ? 'page' : undefined}
+                  className="ea-nav__link"
+                >
+                  {item.label}
+                </AppLink>
+              )
+            })}
+          </nav>
         </div>
 
-        <nav
-          aria-label="App navigation"
-          className="order-3 flex items-center gap-5 self-start border-b border-hairline pb-1 sm:order-none sm:border-b-0 sm:pb-0"
-        >
+        <div className="ea-header__right">
+          <div className="ea-header__dest">
+            <span>Forwarding to</span>
+            <code title={email}>{email}</code>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
+            className="ea-icon-btn"
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <IconSun size={16} /> : <IconMoon size={16} />}
+          </button>
+
+          <NotificationMenu controller={notifications} />
+
+          <button
+            type="button"
+            className="ea-signout"
+            onClick={onSignOut}
+            disabled={isSigningOut}
+          >
+            {isSigningOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </div>
+
+        <nav aria-label="Compact app navigation" className="ea-nav ea-nav--mobile">
           {NAV_ITEMS.map((item) => {
             const isActive = item.view === activeView
             return (
@@ -69,11 +93,7 @@ export function AppHeader({
                 key={item.view}
                 to={item.to}
                 aria-current={isActive ? 'page' : undefined}
-                className={`pb-2 text-sm font-medium no-underline transition-colors duration-150 sm:pb-0 ${
-                  isActive
-                    ? 'text-text'
-                    : 'text-text-secondary hover:text-text'
-                }`}
+                className="ea-nav__link"
               >
                 {item.label}
               </AppLink>
@@ -81,34 +101,23 @@ export function AppHeader({
           })}
         </nav>
 
-        <div className="hidden items-center gap-2 sm:flex">
-          <span className="max-w-[14rem] truncate text-xs text-text-muted" title={email}>
-            {email}
-          </span>
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            onClick={onSignOut}
-            disabled={isSigningOut}
-          >
-            {isSigningOut ? 'Signing out…' : 'Sign out'}
-          </button>
+        <div className="ea-mobile-controls">
           <NotificationMenu controller={notifications} />
           <button
             type="button"
             onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
-            className="flex size-9 items-center justify-center bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-sunken hover:text-text"
+            className="ea-icon-btn"
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDark ? <IconSun size={16} /> : <IconMoon size={16} />}
           </button>
         </div>
 
-        <div className="flex items-center justify-between gap-3 sm:hidden">
-          <span className="min-w-0 truncate text-xs text-text-muted">{email}</span>
+        <div className="ea-mobile-session">
+          <span title={email}>{email}</span>
           <button
             type="button"
-            className="btn btn--ghost btn--sm"
+            className="ea-signout"
             onClick={onSignOut}
             disabled={isSigningOut}
           >

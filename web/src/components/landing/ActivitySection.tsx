@@ -14,7 +14,6 @@ export function ActivitySection() {
       <div className="editorial-shell">
         <EditorialReveal className="mb-12 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
           <div className="max-w-xl">
-            <span className="editorial-eyebrow mb-3">Transparency</span>
             <h2 id="activity-heading" className="editorial-section-title mb-3">
               See exactly who’s using each alias
             </h2>

@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { analyzePage } from '../support/a11y'
-import { EXPECTED_PROPAGATION } from '../support/freshnessCopy'
 
 async function focusByKeyboard(page: Page, locator: Locator, maxTabs = 80) {
   for (let index = 0; index < maxTabs; index += 1) {
@@ -15,7 +14,8 @@ async function focusByKeyboard(page: Page, locator: Locator, maxTabs = 80) {
 
 test('signed-in app has no WCAG 2.2 AA violations', async ({ page }) => {
   await page.goto('/app')
-  await expect(page.getByText(EXPECTED_PROPAGATION)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'All aliases' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Footer navigation' })).toBeVisible()
 
   const results = await analyzePage(page)
   expect(results.violations).toEqual([])
@@ -23,7 +23,8 @@ test('signed-in app has no WCAG 2.2 AA violations', async ({ page }) => {
 
 test('a core alias journey is operable by keyboard alone', async ({ page }) => {
   await page.goto('/app')
-  await expect(page.getByText(EXPECTED_PROPAGATION)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'All aliases' })).toBeVisible()
+  await page.getByRole('button', { name: 'Create an alias' }).click()
 
   const label = `keyboard-${randomUUID().slice(0, 8)}`
   const labelInput = page.getByLabel('Label')
@@ -31,7 +32,7 @@ test('a core alias journey is operable by keyboard alone', async ({ page }) => {
   await expect(labelInput).toBeFocused()
   await page.keyboard.type(label)
 
-  const submit = page.getByRole('button', { name: 'Create alias' })
+  const submit = page.getByRole('button', { name: 'Create alias', exact: true })
   await focusByKeyboard(page, submit)
   await expect(submit).toBeFocused()
   await page.keyboard.press('Enter')

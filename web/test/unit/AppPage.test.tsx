@@ -5,6 +5,15 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { AppPage } from '../../src/pages/AppPage'
 import { server } from '../server'
 
+if (typeof HTMLDialogElement !== 'undefined') {
+  HTMLDialogElement.prototype.showModal ??= function showModal(this: HTMLDialogElement) {
+    this.setAttribute('open', '')
+  }
+  HTMLDialogElement.prototype.close ??= function close(this: HTMLDialogElement) {
+    this.removeAttribute('open')
+  }
+}
+
 const ACCOUNT = {
   userId: '6f1c9f1e-0d7f-4a63-9a44-4d5f6f2c6f11',
   email: 'person@example.test',
@@ -28,6 +37,7 @@ afterEach(() => {
 
 describe('AppPage', () => {
   it('opens on a first-run prompt when the account has no aliases', async () => {
+    const user = userEvent.setup()
     signedIn()
     server.use(http.get('*/api/aliases', () => HttpResponse.json([])))
 
@@ -37,6 +47,9 @@ describe('AppPage', () => {
       await screen.findByRole('heading', { name: 'Start with one address' }),
     ).toBeVisible()
     expect(screen.getByText('No aliases yet')).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Create an alias' }))
+    expect(screen.getByRole('dialog', { name: 'Create an alias' })).toBeVisible()
     expect(screen.getByLabelText('Label')).toBeVisible()
   })
 
@@ -91,6 +104,7 @@ describe('AppPage', () => {
     expect(await screen.findByText('shop.k4m2@postern.local')).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Your aliases' })).toBeVisible()
 
+    await user.click(screen.getByRole('button', { name: 'Create an alias' }))
     await user.type(screen.getByLabelText('Label'), 'Newsletter')
     await user.click(screen.getByRole('button', { name: 'Create alias' }))
 
@@ -134,6 +148,7 @@ describe('AppPage', () => {
 
     renderApp()
 
+    await user.click(await screen.findByRole('button', { name: 'Create an alias' }))
     await user.type(await screen.findByLabelText('Label'), 'Bank')
     await user.selectOptions(screen.getByLabelText('Category'), 'finance')
     await user.type(screen.getByLabelText(/Expected sender/), 'alerts@bank.example')
@@ -177,6 +192,7 @@ describe('AppPage', () => {
 
     renderApp()
 
+    await user.click(await screen.findByRole('button', { name: 'Create an alias' }))
     await user.type(await screen.findByLabelText('Label'), 'bank')
     await user.type(screen.getByLabelText(/Expected sender/), 'alerts@bank.example')
     await user.click(screen.getByRole('button', { name: 'Create alias' }))

@@ -10,7 +10,6 @@ export function InviteSection() {
       className="scroll-mt-20 bg-bg py-20 lg:py-32 focus:outline-none"
     >
       <EditorialReveal className="editorial-shell max-w-2xl text-center">
-        <span className="editorial-eyebrow mb-3">Get Started</span>
         <h2 id="request-invite-heading" className="editorial-section-title mb-4">
           Request an invitation
         </h2>

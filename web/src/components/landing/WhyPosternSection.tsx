@@ -37,7 +37,6 @@ export function WhyPosternSection() {
     >
       <div className="editorial-shell">
         <EditorialReveal className="mb-14 max-w-2xl lg:mb-18">
-          <span className="editorial-eyebrow mb-3">Why Postern?</span>
           <h2 id="why-postern-heading" className="editorial-section-title">
             Built for clarity, privacy, and quiet control.
           </h2>

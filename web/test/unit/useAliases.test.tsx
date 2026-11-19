@@ -81,6 +81,23 @@ describe('useAliases', () => {
     expect(result.current.aliases[0]?.id).toBe('a2')
   })
 
+  it('does not duplicate an alias that a realtime refresh already added', async () => {
+    const created = { ...ALIAS, id: 'a2' }
+    fetchAliases.mockResolvedValueOnce([]).mockResolvedValueOnce([created])
+    createAlias.mockResolvedValue(created)
+    const { result } = renderHook(() => useAliases(true))
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+
+    await act(async () => {
+      await result.current.refresh()
+    })
+    await act(async () => {
+      await result.current.create({ label: 'shop', category: 'shopping' } as never)
+    })
+
+    expect(result.current.aliases.map((alias) => alias.id)).toEqual(['a2'])
+  })
+
   it('stays loading and skips the initial request while disabled', () => {
     const { result } = renderHook(() => useAliases(false))
 
@@ -231,6 +248,22 @@ describe('useAliases', () => {
     expect(result.current.aliases[0]).toEqual(replacement)
     expect(result.current.aliases[1]?.status).toBe('Replaced')
     expect(result.current.aliases[1]?.replacedByAliasId).toBe('a9')
+  })
+
+  it('does not duplicate a replacement that a realtime refresh already added', async () => {
+    const replacement = { ...ALIAS, id: 'a9', fullAddress: 'new@x.com' }
+    fetchAliases.mockResolvedValueOnce([ALIAS]).mockResolvedValueOnce([ALIAS, replacement])
+    const { result } = renderHook(() => useAliases(true))
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+
+    await act(async () => {
+      await result.current.refresh()
+    })
+    act(() => {
+      result.current.applyReplacement('a1', replacement)
+    })
+
+    expect(result.current.aliases.map((alias) => alias.id)).toEqual(['a9', 'a1'])
   })
 
   it('disables, deletes, and applies replacements', async () => {
