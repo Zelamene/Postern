@@ -7,3 +7,5 @@ Disallow: /app/
 Disallow: /admin
 Disallow: /invite/
 Disallow: /api/
+
+Sitemap: https://3xyz.uk/sitemap.xml
