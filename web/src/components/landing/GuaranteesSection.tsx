@@ -7,10 +7,8 @@ interface GuaranteeCardProps {
 
 function GuaranteeCard({ title, description }: Readonly<GuaranteeCardProps>) {
   return (
-    <div className="group rounded-2xl border border-hairline/80 bg-surface p-7 shadow-2xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md">
-      <h3 className="text-h4 font-bold text-text transition-colors group-hover:text-primary">
-        {title}
-      </h3>
+    <div className="bg-bg p-7 transition-colors duration-150 hover:bg-surface">
+      <h3 className="text-h4 text-text">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-text-secondary">{description}</p>
     </div>
   )
@@ -21,13 +19,13 @@ export function GuaranteesSection() {
     <section
       id="guarantees"
       aria-labelledby="guarantees-heading"
-      className="scroll-mt-20 bg-surface-sunken/40 py-14 sm:py-16 lg:py-20"
+      className="scroll-mt-20 bg-surface py-14 sm:py-16 lg:py-20"
     >
       <div className="shell">
         <Reveal>
-          <div className="mx-auto mb-8 max-w-[38rem] sm:mb-10 text-center">
+          <div className="mx-auto mb-8 max-w-[38rem] text-center sm:mb-10">
             <span className="chip chip--primary chip--sm mb-3">Privacy by design</span>
-            <h2 id="guarantees-heading" className="text-h2 font-bold tracking-tight text-text">
+            <h2 id="guarantees-heading" className="text-h2 text-text">
               Protections built into how Postern works
             </h2>
             <p className="mt-4 text-body text-text-secondary">
@@ -37,7 +35,7 @@ export function GuaranteesSection() {
           </div>
         </Reveal>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
           <Reveal delayMs={80}>
             <GuaranteeCard
               title="No Message Bodies Stored"

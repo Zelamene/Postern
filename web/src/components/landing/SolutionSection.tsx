@@ -17,17 +17,15 @@ interface SolutionCardProps {
 
 export function SolutionCard({ icon, title, description }: Readonly<SolutionCardProps>) {
   return (
-    <div className="group rounded-2xl border border-hairline/80 bg-surface p-7 shadow-2xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md">
+    <div className="bg-bg p-7 transition-colors duration-150 hover:bg-surface">
       <div
         data-testid="card-icon"
-        className="mb-5 flex size-11 items-center justify-center rounded-xl bg-primary text-text-on-primary shadow-2xs transition-transform duration-300 group-hover:scale-105"
+        className="mb-5 flex size-11 items-center justify-center bg-primary text-text-on-primary"
       >
         {icon}
       </div>
-      <h3 className="text-h4 font-bold text-text transition-colors group-hover:text-primary">
-        {title}
-      </h3>
-      <p className="mt-2 text-sm leading-relaxed text-text-secondary">{description}</p>
+      <h3 className="text-h4 text-text">{title}</h3>
+      <p className="mt-2 text-sm text-text-secondary">{description}</p>
     </div>
   )
 }
@@ -37,18 +35,17 @@ export function SolutionSection() {
     <section
       id="solution"
       aria-labelledby="solution-heading"
-      className="scroll-mt-20 border-b border-hairline/70 bg-surface py-14 sm:py-16 lg:py-20"
+      className="scroll-mt-20 bg-surface py-14 sm:py-16 lg:py-20"
     >
       <div className="shell">
         <Reveal>
-          <div className="mx-auto mb-8 max-w-[38rem] sm:mb-10 text-center">
-            <span className="chip chip--primary chip--sm mb-3">The Solution</span>
-            <h2 id="solution-heading" className="text-h2 font-bold tracking-tight text-text">
-              Give each website its own dedicated gate
+          <div className="mx-auto mb-8 max-w-[38rem] text-center sm:mb-10">
+            <span className="chip chip--primary chip--sm mb-3">The solution</span>
+            <h2 id="solution-heading" className="text-h2 text-text">
+              An address for every service
             </h2>
             <p className="mt-4 text-body text-text-secondary">
-              Postern sits between the public web and your private mailbox. You receive all
-              legitimate messages seamlessly, while keeping full control over who can talk to you.
+              Postern sits between the web and your mailbox. Real mail reaches you. Everything else stops at the gate.
             </p>
           </div>
         </Reveal>
@@ -57,43 +54,43 @@ export function SolutionSection() {
           <Reveal delayMs={60}>
             <SolutionCard
               icon={<IconShield size={22} />}
-              title="Dedicated Disposable Aliases"
-              description="Create custom addresses like netflix.k7q2@3xyz.uk. Your real primary email address is never disclosed to any external website."
+              title="Your own address for each site"
+              description="Create an address like netflix.k7q2@3xyz.uk. The site never sees your real email."
             />
           </Reveal>
           <Reveal delayMs={120}>
             <SolutionCard
               icon={<IconZap size={22} />}
-              title="Edge-First Forwarding"
-              description="Incoming mail is forwarded to your personal Gmail, Outlook, or Proton address through Cloudflare’s edge, with no central inbox in between. Delivery time depends on the sender and your mail provider."
+              title="Mail goes straight through"
+              description="Valid mail is forwarded from the edge to your existing inbox. Delivery time depends on the sender and your mail provider."
             />
           </Reveal>
           <Reveal delayMs={180}>
             <SolutionCard
               icon={<IconSparkles size={22} />}
-              title="Automatic Leak Identification"
-              description="Because each service has a unique alias, any unsolicited marketing email immediately reveals exactly who sold your information."
+              title="Spot the leak"
+              description="An unexpected message tells you exactly which service shared your address."
             />
           </Reveal>
           <Reveal delayMs={240}>
             <SolutionCard
               icon={<IconTrash2 size={22} />}
-              title="One-Click Gate Closing"
-              description="Turn off an alias at any time with a single tap. Subsequent messages sent to that address are discarded rather than bounced."
+              title="Close the gate"
+              description="Turn off an address with one click. Later mail is discarded, not bounced."
             />
           </Reveal>
           <Reveal delayMs={300}>
             <SolutionCard
               icon={<IconLock size={22} />}
-              title="Zero Message Body Storage"
-              description="Postern never saves your email bodies or attachments. Forwarding happens on edge servers and content is immediately discarded."
+              title="No stored content"
+              description="Postern does not save email bodies or attachments. Forwarding happens at the edge, and content is discarded."
             />
           </Reveal>
           <Reveal delayMs={360}>
             <SolutionCard
               icon={<IconCheckCircle size={22} />}
-              title="Permanent Retirement"
-              description="Deleted aliases are cryptographically tombstoned. They are not recycled or assigned to anyone else."
+              title="Gone for good"
+              description="Deleted addresses are retired permanently. They are never given to someone else."
             />
           </Reveal>
         </div>

@@ -79,7 +79,7 @@ export function RequestInvite() {
       <dialog ref={dialogRef} className="dialog" aria-labelledby="request-invite-title">
         <div className="dialog__header flex items-start justify-between gap-4">
           <div>
-            <h2 id="request-invite-title" className="text-xl font-bold text-text">
+            <h2 id="request-invite-title" className="text-h4 text-text">
               Request an invite
             </h2>
             <p className="mt-1 text-sm text-text-muted">
@@ -121,8 +121,8 @@ export function RequestInvite() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="invite-email" className="mb-1 block text-sm font-medium text-text">
+              <div className="field">
+                <label htmlFor="invite-email" className="field__label">
                   Email address
                 </label>
                 <input
@@ -134,25 +134,21 @@ export function RequestInvite() {
                   required
                   autoCapitalize="none"
                   spellCheck={false}
-                  className="w-full rounded-md border border-hairline px-3 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="input"
                   placeholder="you@example.com"
                   autoComplete="email"
                   aria-describedby="invite-email-help"
                 />
-                <p id="invite-email-help" className="mt-1 text-xs text-text-muted">
+                <p id="invite-email-help" className="field__hint">
                   We’ll email you if your request is approved. We use your address only to review
                   and respond to this request — see our{' '}
-                  <a href="/privacy" className="font-semibold">
+                  <a href="/privacy" className="font-medium">
                     Privacy Policy
                   </a>
                   .
                 </p>
               </div>
-              <button
-                type="submit"
-                disabled={state.submitting}
-                className="btn btn--primary w-full"
-              >
+              <button type="submit" disabled={state.submitting} className="btn btn--primary btn--block">
                 {state.submitting ? 'Sending...' : 'Send request'}
               </button>
               <p className="text-center text-sm text-text-secondary">

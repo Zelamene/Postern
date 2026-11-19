@@ -76,26 +76,26 @@ export function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg px-4 py-12 text-text">
       <section
-        className="w-full max-w-lg rounded-2xl border border-hairline bg-surface p-6 shadow-md sm:p-9"
+        className="w-full max-w-lg bg-surface p-6 sm:p-9"
         aria-labelledby="login-title"
       >
-        <a href="/" className="text-sm font-extrabold tracking-tight text-primary no-underline">
+        <a href="/" className="text-lg tracking-tight text-text no-underline">
           Postern
         </a>
 
         <div className="mt-8 space-y-3">
-          <p className="chip chip--primary chip--sm">Invite-only access</p>
-          <h1 id="login-title" className="text-2xl font-bold text-text">
+          <p className="chip chip--primary chip--sm">Invite only</p>
+          <h1 id="login-title" className="text-h2 text-text">
             Sign in to Postern
           </h1>
           <p className="text-sm leading-relaxed text-text-secondary">
-            Postern is an invite-only platform. You can sign in only after your invitation has been
-            accepted and your account is ready.
+            Postern is an invite-only platform. Sign in after your invitation has been accepted and
+            your account is ready.
           </p>
         </div>
 
         {error && (
-          <p role="alert" className="mt-6 rounded-lg bg-danger-surface p-3 text-sm text-danger">
+          <p role="alert" className="mt-6 bg-danger-surface p-3 text-sm text-danger">
             {error}
             {adminSignIn && (
               <>
@@ -107,8 +107,8 @@ export function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="mt-7 space-y-5">
-          <div>
-            <label htmlFor="login-email" className="mb-1.5 block text-sm font-semibold">
+          <div className="field">
+            <label htmlFor="login-email" className="field__label">
               Email address
             </label>
             <input
@@ -121,12 +121,12 @@ export function LoginPage() {
               value={email}
               disabled={isSubmitting}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="input"
             />
           </div>
 
-          <div>
-            <label htmlFor="login-password" className="mb-1.5 block text-sm font-semibold">
+          <div className="field">
+            <label htmlFor="login-password" className="field__label">
               Password
             </label>
             <input
@@ -137,11 +137,11 @@ export function LoginPage() {
               value={password}
               disabled={isSubmitting}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="input"
             />
           </div>
 
-          <button type="submit" disabled={isSubmitting} className="btn btn--primary w-full">
+          <button type="submit" disabled={isSubmitting} className="btn btn--primary btn--block">
             {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>

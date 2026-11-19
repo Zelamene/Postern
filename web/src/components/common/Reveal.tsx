@@ -65,8 +65,8 @@ export function Reveal({
   const transformStyle = direction === 'none'
     ? ''
     : direction === 'down'
-      ? '-translate-y-2'
-      : 'translate-y-2'
+      ? '-translate-y-6'
+      : 'translate-y-6'
 
   return (
     <div

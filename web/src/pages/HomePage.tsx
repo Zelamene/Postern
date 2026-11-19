@@ -19,7 +19,7 @@ export function HomePage({ theme, onThemeChange }: Readonly<HomePageProps>) {
     <div className="min-h-screen bg-bg text-text antialiased">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[var(--z-toast)] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-on-inverse focus:shadow-md"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[var(--z-toast)] focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-on-inverse"
       >
         Skip to main content
       </a>
