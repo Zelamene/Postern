@@ -65,8 +65,8 @@ export function Reveal({
   const transformStyle = direction === 'none'
     ? ''
     : direction === 'down'
-      ? '-translate-y-6'
-      : 'translate-y-6'
+      ? '-translate-y-2'
+      : 'translate-y-2'
 
   return (
     <div
@@ -74,7 +74,7 @@ export function Reveal({
       style={{
         transitionDelay: `${delayMs}ms`,
       }}
-      className={`transition-all duration-700 ease-out ${
+      className={`transition-all duration-200 ease-out ${
         isVisible ? 'opacity-100 translate-y-0' : `opacity-0 ${transformStyle}`
       } ${className}`}
     >

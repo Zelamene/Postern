@@ -20,14 +20,14 @@ export function AdminHeader({
   const isDark = theme === 'dark'
 
   return (
-    <header className="border-b border-hairline/70 bg-surface">
-      <div className="shell flex min-h-16 items-center justify-between gap-4">
-        <a href="/" className="flex items-center gap-2.5 text-text no-underline">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-on-inverse">
+    <header className="bg-bg">
+      <div className="shell flex min-h-16 items-center justify-between gap-4 py-4">
+        <a href="/" className="flex items-center gap-3 text-text no-underline">
+          <span className="flex size-9 items-center justify-center bg-surface-container-lowest text-primary">
             <IconPosternLogo size={20} />
           </span>
-          <span className="text-lg font-extrabold tracking-tight">Postern</span>
-          <span className="hidden border-l border-hairline pl-3 text-xs font-semibold uppercase tracking-[0.14em] text-text-muted sm:inline">
+          <span className="font-[family-name:var(--font-display)] text-xl tracking-tight">Postern</span>
+          <span className="hidden border-l border-hairline pl-3 text-xs font-medium uppercase tracking-[0.08em] text-text-muted sm:inline">
             Admin
           </span>
         </a>
@@ -41,7 +41,7 @@ export function AdminHeader({
           <button
             type="button"
             onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
-            className="flex size-9 items-center justify-center rounded-full border border-hairline/80 bg-surface-sunken/60 text-text-secondary transition-colors hover:border-primary/40 hover:text-primary"
+            className="flex size-9 items-center justify-center bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-sunken hover:text-text"
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDark ? <IconSun size={16} /> : <IconMoon size={16} />}

@@ -32,17 +32,17 @@ export function AppHeader({
   const activeView = view === 'messages' ? 'aliases' : view
 
   return (
-    <header className="sticky top-0 z-[var(--z-sticky)] border-b border-hairline/70 bg-bg/85 backdrop-blur-md">
-      <div className="shell flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <header className="sticky top-0 z-[var(--z-sticky)] bg-bg/95 backdrop-blur-sm">
+      <div className="shell flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center justify-between gap-3">
           <AppLink
             to="/app"
-            className="group flex items-center gap-2.5 text-text no-underline"
+            className="group flex items-center gap-3 text-text no-underline"
           >
-            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-on-inverse transition-transform duration-200 group-hover:scale-105">
+            <span className="flex size-9 items-center justify-center bg-surface-container-lowest text-primary">
               <IconPosternLogo size={20} />
             </span>
-            <span className="text-lg font-extrabold tracking-tight">Postern</span>
+            <span className="font-[family-name:var(--font-display)] text-xl tracking-tight">Postern</span>
           </AppLink>
 
           <div className="flex items-center gap-2 sm:hidden">
@@ -50,7 +50,7 @@ export function AppHeader({
             <button
               type="button"
               onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
-              className="flex size-9 items-center justify-center rounded-full border border-hairline/80 bg-surface-sunken/60 text-text-secondary transition-colors hover:border-primary/40 hover:text-primary"
+              className="flex size-9 items-center justify-center bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-sunken hover:text-text"
               aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {isDark ? <IconSun size={16} /> : <IconMoon size={16} />}
@@ -60,7 +60,7 @@ export function AppHeader({
 
         <nav
           aria-label="App navigation"
-          className="order-3 flex items-center gap-0.5 self-start rounded-full border border-hairline/60 bg-surface-sunken/70 p-1 sm:order-none"
+          className="order-3 flex items-center gap-5 self-start border-b border-hairline pb-1 sm:order-none sm:border-b-0 sm:pb-0"
         >
           {NAV_ITEMS.map((item) => {
             const isActive = item.view === activeView
@@ -69,10 +69,10 @@ export function AppHeader({
                 key={item.view}
                 to={item.to}
                 aria-current={isActive ? 'page' : undefined}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold no-underline transition-colors ${
+                className={`pb-2 text-sm font-medium no-underline transition-colors duration-150 sm:pb-0 ${
                   isActive
-                    ? 'bg-surface text-text shadow-xs'
-                    : 'text-text-secondary hover:bg-surface hover:text-text'
+                    ? 'text-text'
+                    : 'text-text-secondary hover:text-text'
                 }`}
               >
                 {item.label}
@@ -82,7 +82,7 @@ export function AppHeader({
         </nav>
 
         <div className="hidden items-center gap-2 sm:flex">
-          <span className="max-w-[14rem] truncate text-xs font-medium text-text-muted" title={email}>
+          <span className="max-w-[14rem] truncate text-xs text-text-muted" title={email}>
             {email}
           </span>
           <button
@@ -97,7 +97,7 @@ export function AppHeader({
           <button
             type="button"
             onClick={() => onThemeChange(isDark ? 'light' : 'dark')}
-            className="flex size-9 items-center justify-center rounded-full border border-hairline/80 bg-surface-sunken/60 text-text-secondary transition-colors hover:border-primary/40 hover:text-primary"
+            className="flex size-9 items-center justify-center bg-transparent text-text-secondary transition-colors duration-150 hover:bg-surface-sunken hover:text-text"
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDark ? <IconSun size={16} /> : <IconMoon size={16} />}
@@ -105,7 +105,7 @@ export function AppHeader({
         </div>
 
         <div className="flex items-center justify-between gap-3 sm:hidden">
-          <span className="min-w-0 truncate text-xs font-medium text-text-muted">{email}</span>
+          <span className="min-w-0 truncate text-xs text-text-muted">{email}</span>
           <button
             type="button"
             className="btn btn--ghost btn--sm"

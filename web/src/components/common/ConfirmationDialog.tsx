@@ -85,7 +85,7 @@ export function ConfirmationDialog({
       }}
     >
       <div className="dialog__header">
-        <h2 id="confirmation-title" className="text-xl font-bold text-text">
+        <h2 id="confirmation-title" className="font-[family-name:var(--font-display)] text-2xl font-normal tracking-tight text-text">
           {title}
         </h2>
       </div>
