@@ -1,12 +1,5 @@
-import { IconCheck } from '../common/Icons'
 import { RequestInvite } from '../user/RequestInvite'
 import { HeroVisual } from './HeroVisual'
-
-const TRUST = [
-  'No message bodies stored',
-  'No central inbox',
-  'One-click block',
-] as const
 
 export function Hero() {
   return (
@@ -28,19 +21,10 @@ export function Hero() {
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <RequestInvite />
-            <a href="#how-it-works" className="btn btn--secondary btn--lg">
+            <a href="#why-postern" className="btn btn--secondary btn--lg">
               See how it works
             </a>
           </div>
-
-          <ul className="m-0 mt-8 flex list-none flex-wrap gap-x-6 gap-y-2 p-0 text-caption text-text-muted">
-            {TRUST.map((item) => (
-              <li key={item} className="flex items-center gap-2">
-                <IconCheck size={13} className="text-success" />
-                {item}
-              </li>
-            ))}
-          </ul>
         </div>
 
         <HeroVisual />

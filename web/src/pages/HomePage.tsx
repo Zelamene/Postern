@@ -2,8 +2,8 @@ import { SectionLink } from '../components/common/SectionLink'
 import { ActivitySection } from '../components/landing/ActivitySection'
 import { ControlSection } from '../components/landing/ControlSection'
 import { EditorialFooter } from '../components/landing/EditorialFooter'
-import { EditorialHero } from '../components/landing/EditorialHero'
 import { EditorialNavbar } from '../components/landing/EditorialNavbar'
+import { Hero } from '../components/landing/Hero'
 import { InviteSection } from '../components/landing/InviteSection'
 import { WhyPosternSection } from '../components/landing/WhyPosternSection'
 import type { ThemeMode } from '../types'
@@ -26,7 +26,7 @@ export function HomePage({ theme, onThemeChange }: Readonly<HomePageProps>) {
       <EditorialNavbar theme={theme} onThemeChange={onThemeChange} />
 
       <main id="main-content" tabIndex={-1} className="focus:outline-none">
-        <EditorialHero />
+        <Hero />
         <WhyPosternSection />
         <ActivitySection />
         <ControlSection />
