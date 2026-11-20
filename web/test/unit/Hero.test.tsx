@@ -19,9 +19,9 @@ describe('Hero', () => {
       expect(screen.getByText(trust)).toBeVisible()
     }
 
-    expect(screen.getByText('offers@shopify.com')).toBeVisible()
-    expect(screen.getByText('to netflix.k7q2@3xyz.uk')).toBeVisible()
-    expect(screen.getByText('netflix.k7q2@3xyz.uk')).toBeVisible()
-    expect(screen.getByText('Delivered to your inbox')).toBeVisible()
+    expect(screen.getByText('netflix.k7q2@xyz.uk')).toBeVisible()
+    expect(screen.getByText('spotify.f9m3@xyz.uk')).toBeVisible()
+    expect(screen.getByText('From Netflix (via alias)')).toBeVisible()
+    expect(screen.getByText('Your real address is hidden')).toBeVisible()
   })
 })

@@ -1,5 +1,6 @@
-import { IconCheck, IconInbox, IconMail, IconPosternLogo } from '../common/Icons'
+import { IconCheck } from '../common/Icons'
 import { RequestInvite } from '../user/RequestInvite'
+import { HeroVisual } from './HeroVisual'
 
 const TRUST = [
   'No message bodies stored',
@@ -7,85 +8,15 @@ const TRUST = [
   'One-click block',
 ] as const
 
-function Metric({ value, label }: Readonly<{ value: string; label: string }>) {
-  return (
-    <div>
-      <p className="font-mono text-sm text-text">{value}</p>
-      <p className="mt-1 text-[10px] uppercase tracking-[0.08em] text-text-muted">{label}</p>
-    </div>
-  )
-}
-
-function Connector() {
-  return <div className="ml-7 h-8 w-px bg-hairline" aria-hidden="true" />
-}
-
-function HeroRoute() {
-  return (
-    <div className="mx-auto w-full max-w-[26rem] select-none" aria-hidden="true">
-      <div className="bg-surface p-4">
-        <div className="flex items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center bg-danger-surface text-danger">
-            <IconMail size={16} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-mono text-xs text-text">offers@shopify.com</p>
-            <p className="mt-0.5 text-[11px] text-text-muted">to netflix.k7q2@3xyz.uk</p>
-          </div>
-        </div>
-      </div>
-
-      <Connector />
-
-      <div className="bg-surface-container-low p-5">
-        <div className="flex items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center bg-primary text-text-on-primary">
-            <IconPosternLogo size={18} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-[0.08em] text-text-muted">Your gate</p>
-            <p className="mt-0.5 truncate font-mono text-xs text-text">netflix.k7q2@3xyz.uk</p>
-          </div>
-          <span className="flex shrink-0 items-center gap-1 bg-success-surface px-2 py-1 text-[10px] font-medium text-success-on-surface">
-            <IconCheck size={11} />
-            ON
-          </span>
-        </div>
-
-        <div className="mt-4 flex items-start justify-between gap-2 border-t border-hairline pt-4">
-          <Metric value="3" label="forwarded" />
-          <Metric value="0" label="stored" />
-          <Metric value="1" label="blocked" />
-        </div>
-      </div>
-
-      <Connector />
-
-      <div className="bg-surface p-4">
-        <div className="flex items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center bg-success-surface text-success">
-            <IconInbox size={16} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-mono text-xs text-text">you@gmail.com</p>
-            <p className="mt-0.5 text-[11px] text-text-muted">Delivered to your inbox</p>
-          </div>
-          <span className="shrink-0 bg-surface-sunken px-2 py-0.5 font-mono text-[10px] text-text-muted">
-            inbox
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function Hero() {
   return (
-    <section aria-labelledby="hero-title" className="bg-surface">
-      <div className="shell grid items-center gap-12 py-14 sm:py-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:py-20">
-        <div className="max-w-xl">
-          <span className="chip chip--primary chip--sm">A quieter inbox</span>
-          <h1 id="hero-title" className="mt-5 text-display text-text">
+    <section
+      aria-labelledby="hero-title"
+      className="relative isolate overflow-hidden border-b border-hairline/70 bg-[#fbf3f9] dark:bg-[#0f090d]"
+    >
+      <div className="shell grid items-center gap-8 pt-10 pb-10 sm:gap-10 sm:pt-12 sm:pb-12 lg:min-h-[36rem] lg:py-16">
+        <div className="relative z-10 max-w-xl">
+          <h1 id="hero-title" className="mt-5 text-display font-black text-text">
             Your inbox,
             <br />
             on your terms.
@@ -112,7 +43,7 @@ export function Hero() {
           </ul>
         </div>
 
-        <HeroRoute />
+        <HeroVisual />
       </div>
     </section>
   )

@@ -16,9 +16,18 @@
           ? stored === 'dark'
           : window.matchMedia('(prefers-color-scheme: dark)').matches
         document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-        const themeColor = document.querySelector('meta[name="theme-color"]')
-        if (themeColor) {
-          themeColor.setAttribute('content', dark ? '#121212' : '#f9f9f9')
+
+        if (location.pathname === '/' || location.pathname === '/index.html') {
+          const base = '/media/hero/hero-' + (dark ? 'dark' : 'light')
+          const preload = document.createElement('link')
+          preload.rel = 'preload'
+          preload.as = 'image'
+          preload.type = 'image/avif'
+          preload.setAttribute('fetchpriority', 'high')
+          preload.setAttribute('imagesrcset', base + '-1200.avif 1200w, ' + base + '.avif 1672w')
+          preload.setAttribute('imagesizes', '(min-width: 1024px) 58vw, 100vw')
+          preload.setAttribute('media', '(min-width: 1024px) and (min-height: 600px)')
+          document.head.appendChild(preload)
         }
       })()
     </script>
