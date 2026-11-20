@@ -40,7 +40,7 @@ function HeroPicture({ variant }: Readonly<{ variant: keyof typeof SOURCES }>) {
         height={941}
         fetchPriority="high"
         decoding="async"
-        className="size-full object-cover object-[96%_center] lg:object-contain lg:object-bottom"
+        className="size-full object-contain object-bottom"
       />
     </picture>
   )
@@ -88,10 +88,10 @@ export function HeroVisual() {
 
   return (
     <div
-      className="hero-visual relative mx-auto w-full max-w-[34rem] select-none sm:max-w-[38rem] lg:absolute lg:right-0 lg:bottom-0 lg:mx-0 lg:aspect-[1672/941] lg:w-[76%] lg:max-w-[60rem]"
+      className="hero-visual absolute right-0 bottom-0 aspect-[1672/941] w-[76%] max-w-[60rem] select-none"
       aria-hidden="true"
     >
-      <div className="relative aspect-[6/5] w-full overflow-hidden lg:aspect-auto lg:h-full">
+      <div className="relative h-full w-full overflow-hidden">
         <div className="absolute inset-0" style={EDGE_MASK}>
           <div className="absolute inset-0 opacity-100 transition-opacity duration-300 dark:opacity-0">
             <HeroPicture variant="light" />
@@ -104,11 +104,10 @@ export function HeroVisual() {
         </div>
 
         <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[#fbf3f9] to-transparent dark:from-[#0f090d]" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#fbf3f9] to-transparent lg:hidden dark:from-[#0f090d]" />
       </div>
 
       <Chip
-        className="top-[6%] left-[4%] lg:top-[8%] lg:left-[52%]"
+        className="top-[8%] left-[52%]"
         delay={0}
         reduced={reduced}
       >
@@ -120,7 +119,7 @@ export function HeroVisual() {
       </Chip>
 
       <Chip
-        className="top-[46%] left-[6%] hidden sm:block lg:hidden xl:top-[46%] xl:left-[38%] xl:block"
+        className="top-[46%] left-[38%] hidden xl:block"
         delay={1.2}
         reduced={reduced}
       >
@@ -132,7 +131,7 @@ export function HeroVisual() {
       </Chip>
 
       <Chip
-        className="right-[2%] bottom-[6%] lg:top-[18%] lg:right-[2%] lg:bottom-auto"
+        className="top-[18%] right-[2%]"
         delay={0.6}
         reduced={reduced}
       >
@@ -149,7 +148,7 @@ export function HeroVisual() {
       </Chip>
 
       <Chip
-        className="top-[62%] right-[6%] hidden sm:block lg:hidden xl:top-[54%] xl:right-[4%] xl:block"
+        className="top-[54%] right-[4%] hidden xl:block"
         delay={1.8}
         reduced={reduced}
       >
