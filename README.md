@@ -6,9 +6,6 @@
 
 <p align="center">
   <a href="https://github.com/Zelamene/Postern/actions/workflows/Pipeline.yml"><img src="https://github.com/Zelamene/Postern/actions/workflows/Pipeline.yml/badge.svg" alt="Postern Pipeline" /></a>
-  <a href="https://github.com/Zelamene/Postern/actions/workflows/web-ci.yml"><img src="https://github.com/Zelamene/Postern/actions/workflows/web-ci.yml/badge.svg" alt="Web CI" /></a>
-  <a href="https://github.com/Zelamene/Postern/actions/workflows/backend-ci.yml"><img src="https://github.com/Zelamene/Postern/actions/workflows/backend-ci.yml/badge.svg" alt="Backend CI" /></a>
-  <a href="https://github.com/Zelamene/Postern/actions/workflows/nfr-ci.yml"><img src="https://github.com/Zelamene/Postern/actions/workflows/nfr-ci.yml/badge.svg" alt="NFR Gate" /></a>
   <a href="https://sonarcloud.io/summary/new_code?id=Zelamene_Postern"><img src="https://sonarcloud.io/api/project_badges/measure?project=Zelamene_Postern&amp;metric=alert_status" alt="SonarCloud quality gate" /></a>
   <a href="https://sonarcloud.io/summary/new_code?id=Zelamene_Postern"><img src="https://sonarcloud.io/api/project_badges/measure?project=Zelamene_Postern&amp;metric=coverage" alt="SonarCloud coverage" /></a>
   <a href="https://n-a-68.betteruptime.com/"><img src="https://n-a-68.betteruptime.com/badge.svg" alt="Better Stack status" /></a>
