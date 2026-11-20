@@ -22,8 +22,11 @@ Postern stores message headers only, never bodies. New senders are flagged for r
 
 ## Project documentation
 
+- [Software requirements specification (SRS)](docs/Postern%20SRS.pdf)
+- [Software architecture document (SAS)](docs/Postern%20SAS.pdf)
 - [Architecture decisions (ADRs)](docs/ADR.md)
 - [Architecture diagram](docs/Diagrams/Postern%20Architecuture%20Diagram.jpg)
+- [Deployment diagram](docs/Diagrams/Postern%20Deployment%20Diagram.jpg)
 - [NFR evidence](docs/nfr/README.md)
 
 ## Built with
