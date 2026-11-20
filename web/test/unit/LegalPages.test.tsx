@@ -16,6 +16,13 @@ describe('legal pages', () => {
 
     render(<PrivacyPolicyPage theme="light" onThemeChange={noop} />)
 
+    const primaryNav = within(screen.getByRole('navigation', { name: 'Primary navigation' }))
+    expect(primaryNav.getByRole('link', { name: 'Why Postern' })).toHaveAttribute(
+      'href',
+      '/#why-postern',
+    )
+    expect(screen.queryByText('The Problem')).toBeNull()
+
     expect(screen.getByRole('heading', { level: 1, name: 'Privacy Policy' })).toBeVisible()
     expect(
       screen.getByRole('heading', { level: 2, name: '6. How long we keep it' }),

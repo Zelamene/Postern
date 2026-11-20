@@ -26,7 +26,7 @@ test('marks senders as expected, blocks a sender, and reviews blocked mail', asy
       response.request().method() === 'POST',
   )
   await expectedMessage
-    .getByRole('button', { name: 'Mark unexpected.example as expected' })
+    .getByRole('button', { name: 'Mark security@unexpected.example as expected' })
     .click()
   expect((await markExpectedResponse).status()).toBe(204)
   await expect(page.getByRole('status')).toContainText('Sender marked as expected')
@@ -77,6 +77,6 @@ test('marks senders as expected, blocks a sender, and reviews blocked mail', asy
   expect(blockedResponse.status()).toBe(200)
   await page.goto('/app/blocked')
   const blockedMail = page.getByRole('listitem').filter({ hasText: blockedMailSubject })
-  await expect(blockedMail).toContainText('policy')
+  await expect(blockedMail).toContainText('Policy')
   await expect(blockedMail).toContainText(label)
 })

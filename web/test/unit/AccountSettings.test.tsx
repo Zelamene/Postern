@@ -42,6 +42,8 @@ describe('AccountSettings', () => {
         account={account}
         onForwardingAddressChange={onForwardingAddressChange}
         onAccountDeleted={vi.fn()}
+        isSigningOut={false}
+        onSignOut={vi.fn()}
       />,
     )
 
@@ -65,6 +67,8 @@ describe('AccountSettings', () => {
         account={account}
         onForwardingAddressChange={onForwardingAddressChange}
         onAccountDeleted={vi.fn()}
+        isSigningOut={false}
+        onSignOut={vi.fn()}
       />,
     )
 
@@ -89,6 +93,8 @@ describe('AccountSettings', () => {
         account={account}
         onForwardingAddressChange={vi.fn()}
         onAccountDeleted={onAccountDeleted}
+        isSigningOut={false}
+        onSignOut={vi.fn()}
       />,
     )
 
@@ -102,5 +108,24 @@ describe('AccountSettings', () => {
 
     await waitFor(() => expect(deleteAccount).toHaveBeenCalled())
     expect(onAccountDeleted).toHaveBeenCalled()
+  })
+
+  it('shows the signed-in address and signs out from the session section', async () => {
+    const user = userEvent.setup()
+    const onSignOut = vi.fn()
+
+    render(
+      <AccountSettings
+        account={account}
+        onForwardingAddressChange={vi.fn()}
+        onAccountDeleted={vi.fn()}
+        isSigningOut={false}
+        onSignOut={onSignOut}
+      />,
+    )
+
+    expect(screen.getByText(`Signed in as ${account.email}.`)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
+    expect(onSignOut).toHaveBeenCalledTimes(1)
   })
 })

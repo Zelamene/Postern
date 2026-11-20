@@ -170,9 +170,9 @@ function decodeBase32(secret: string): Buffer {
   return Buffer.from(bytes)
 }
 
-function currentTotp(secret: string): string {
+function totpForStep(secret: string, step: number): string {
   const counter = Buffer.alloc(8)
-  counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000)))
+  counter.writeBigUInt64BE(BigInt(step))
   const digest = createHmac('sha1', decodeBase32(secret)).update(counter).digest()
   const offset = digest[digest.length - 1] & 0x0f
   const value =
@@ -181,6 +181,35 @@ function currentTotp(secret: string): string {
     ((digest[offset + 2] & 0xff) << 8) |
     (digest[offset + 3] & 0xff)
   return String(value % 1_000_000).padStart(6, '0')
+}
+
+async function submitAdminTotp(
+  page: Page,
+  secret: string,
+  setupRequired: boolean,
+): Promise<void> {
+  const submitLabel = setupRequired ? 'Enable and continue' : 'Verify and sign in'
+  const currentStep = Math.floor(Date.now() / 30_000)
+  const offsets = setupRequired ? [0] : [0, -1, 1, -2, 2, -3, 3, -4, 4]
+
+  for (const offset of offsets) {
+    await page.getByLabel('Authenticator code').fill(totpForStep(secret, currentStep + offset))
+    await page.getByRole('button', { name: submitLabel }).click()
+
+    try {
+      await expect(page.getByRole('heading', { name: 'Admin dashboard' })).toBeVisible({
+        timeout: 1_500,
+      })
+      return
+    } catch (error) {
+      const invalidCode = page.getByRole('alert').filter({ hasText: /invalid or expired/i })
+      if (!(await invalidCode.isVisible())) {
+        throw error
+      }
+    }
+  }
+
+  throw new Error('Admin TOTP was rejected for every nearby time step.')
 }
 
 export async function signInAsAdmin(
@@ -203,14 +232,12 @@ export async function signInAsAdmin(
   let totpSecret = existingTotpSecret
   if (setupRequired) {
     totpSecret = await page.getByText(/^[A-Z2-7]{32}$/).innerText()
-    await page.getByLabel('Authenticator code').fill(currentTotp(totpSecret))
-    await page.getByRole('button', { name: 'Enable and continue' }).click()
+    await submitAdminTotp(page, totpSecret, true)
   } else {
     if (!totpSecret) {
       throw new Error('An enrolled admin needs its test authenticator secret to sign in again.')
     }
-    await page.getByLabel('Authenticator code').fill(currentTotp(totpSecret))
-    await page.getByRole('button', { name: 'Verify and sign in' }).click()
+    await submitAdminTotp(page, totpSecret, false)
   }
 
   await expect(page.getByRole('heading', { name: 'Admin dashboard' })).toBeVisible()

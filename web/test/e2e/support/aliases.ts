@@ -15,12 +15,13 @@ export async function createAliasViaUi(
   options: { category?: string; expectedSender?: string } = {},
 ): Promise<E2EAlias> {
   await page.goto('/app')
+  await page.getByRole('button', { name: 'Create an alias' }).click()
   await page.getByLabel('Label', { exact: true }).fill(label)
   await page.getByLabel('Category', { exact: true }).selectOption(options.category ?? 'shopping')
   if (options.expectedSender) {
     await page.getByLabel(/Expected sender/).fill(options.expectedSender)
   }
-  await page.getByRole('button', { name: 'Create alias' }).click()
+  await page.getByRole('button', { name: 'Create alias', exact: true }).click()
 
   const aliasRow = page
     .getByRole('listitem')

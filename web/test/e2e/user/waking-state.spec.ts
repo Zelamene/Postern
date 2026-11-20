@@ -1,5 +1,4 @@
 import { expect, test } from '@playwright/test'
-import { EXPECTED_PROPAGATION } from '../support/freshnessCopy'
 
 const DELAYED_RESPONSE_MS = 6_000
 
@@ -14,5 +13,7 @@ test('shows the waking state while the delayed account response is pending', asy
     timeout: 5_000,
   })
 
-  await expect(page.getByText(EXPECTED_PROPAGATION)).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { name: 'All aliases' })).toBeVisible({
+    timeout: 15_000,
+  })
 })

@@ -4,7 +4,7 @@ import { HeroVisual } from './HeroVisual'
 
 const TRUST = [
   'No message bodies stored',
-  '15 ms edge forwarding',
+  'No central inbox',
   'One-click block',
 ] as const
 
@@ -22,10 +22,8 @@ export function Hero() {
             on your terms.
           </h1>
 
-          <p className="mt-6 max-w-[46ch] text-body-lg leading-[1.7] text-text-secondary">
-            A postern is the side gate of a castle — the quiet entrance so the main gate never has
-            to open. Postern gives every service its own disposable address. When a company leaks
-            your data, you catch them instantly and cut them off with one click.
+          <p className="mt-6 max-w-[46ch] text-body-lg text-text-secondary">
+            Postern gives every service its own address. When one leaks your data, you know who did it — and you can cut it off.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -37,7 +35,7 @@ export function Hero() {
 
           <ul className="m-0 mt-8 flex list-none flex-wrap gap-x-6 gap-y-2 p-0 text-caption text-text-muted">
             {TRUST.map((item) => (
-              <li key={item} className="flex items-center gap-1.5">
+              <li key={item} className="flex items-center gap-2">
                 <IconCheck size={13} className="text-success" />
                 {item}
               </li>

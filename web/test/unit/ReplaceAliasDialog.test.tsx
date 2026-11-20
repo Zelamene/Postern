@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -103,7 +103,9 @@ describe('ReplaceAliasDialog', () => {
     expect(
       screen.getByRole('dialog', { name: 'Kill the leak, keep the service' }),
     ).toBeVisible()
-    expect(screen.getByRole('list', { name: 'Replacement checklist' })).toBeVisible()
+    const checklist = screen.getByRole('list', { name: 'Replacement checklist' })
+    expect(checklist).toBeVisible()
+    expect(within(checklist).getByRole('button', { name: 'Reserve new address' })).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: 'Reserve new address' }))
     expect(await screen.findByText('shop.ab12@postern.local')).toBeVisible()

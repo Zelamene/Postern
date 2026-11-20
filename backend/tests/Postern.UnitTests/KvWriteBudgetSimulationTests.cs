@@ -19,6 +19,7 @@ namespace Postern.UnitTests;
 /// <see cref="IKvWriter"/> and a clock advanced in five-minute steps, so a 24 h day
 /// finishes in milliseconds without approximating any write path.
 /// </summary>
+[Collection("RateLimitService")]
 public sealed class KvWriteBudgetSimulationTests(ITestOutputHelper output)
 {
     private const int AccountCount = 199;
@@ -127,19 +128,19 @@ public sealed class KvWriteBudgetSimulationTests(ITestOutputHelper output)
 
     private static async Task<int> RunInitialFullSyncAsync(Simulation simulation)
     {
-        var before = simulation.Kv.Writes.Count;
+        var before = simulation.Kv.Writes.Length;
         var result = await simulation.Sync.SyncAsync(null, CancellationToken.None, fullSync: true);
 
         Assert.Equal(AccountCount, result.AliasesSynced);
         Assert.Equal(0, result.AliasesFailed);
         Assert.True(result.GlobalBlocklistRebuilt);
         Assert.True(result.SuspendedUsersRebuilt);
-        return simulation.Kv.Writes.Count - before;
+        return simulation.Kv.Writes.Length - before;
     }
 
     private static async Task<SimulationDay> SimulateDayAsync(Simulation simulation)
     {
-        var firstWriteIndex = simulation.Kv.Writes.Count;
+        var firstWriteIndex = simulation.Kv.Writes.Length;
         var maxWritesPerChange = 0;
         var ticks = 0;
 
@@ -150,13 +151,13 @@ public sealed class KvWriteBudgetSimulationTests(ITestOutputHelper output)
 
             foreach (var change in simulation.Changes.Where(item => item.Tick == tick))
             {
-                var before = simulation.Kv.Writes.Count;
+                var before = simulation.Kv.Writes.Length;
                 Assert.True(await simulation.Aliases.DisableAsync(
                     change.UserId,
                     change.AliasId,
                     CancellationToken.None));
 
-                var changeWrites = simulation.Kv.Writes.Count - before;
+                var changeWrites = simulation.Kv.Writes.Length - before;
                 maxWritesPerChange = Math.Max(maxWritesPerChange, changeWrites);
                 Assert.True(
                     changeWrites <= 1,
@@ -249,7 +250,7 @@ public sealed class KvWriteBudgetSimulationTests(ITestOutputHelper output)
         private readonly Dictionary<string, string> values = new(StringComparer.Ordinal);
         private readonly List<KvWrite> writes = [];
 
-        public IReadOnlyList<KvWrite> Writes
+        public KvWrite[] Writes
         {
             get
             {

@@ -15,26 +15,27 @@ type Step = 'reserve' | 'confirm'
 type CopyState = 'idle' | 'copied' | 'manual'
 
 interface ChecklistItemProps {
+  step: number
   done: boolean
   label: string
+  state: string
   children?: React.ReactNode
 }
 
-function ChecklistItem({ done, label, children }: Readonly<ChecklistItemProps>) {
+function ChecklistItem({ step, done, label, state, children }: Readonly<ChecklistItemProps>) {
   return (
-    <li className="flex items-start gap-3 text-sm">
+    <li className="ea-checklist__item">
       <span
-        className={
-          done
-            ? 'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary'
-            : 'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-hairline bg-surface text-text-muted'
-        }
+        className={`ea-checklist__marker${done ? ' ea-checklist__marker--done' : ''}`}
         aria-hidden="true"
       >
-        {done ? <IconCheck size={12} /> : <span className="h-1.5 w-1.5 rounded-full bg-current" />}
+        {done ? <IconCheck size={14} /> : step}
       </span>
-      <div className="min-w-0 flex-1">
-        <p className={done ? 'font-medium text-text' : 'text-text'}>{label}</p>
+      <div className="ea-checklist__body">
+        <div className="ea-checklist__row">
+          <p className="ea-checklist__title">{label}</p>
+          <span className="ea-checklist__state">{done ? 'Complete' : state}</span>
+        </div>
         {children}
       </div>
     </li>
@@ -202,7 +203,7 @@ export function ReplaceAliasDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="dialog max-w-xl"
+      className="dialog"
       aria-labelledby="replace-alias-title"
       onCancel={(event) => {
         if (isBusy) {
@@ -213,96 +214,136 @@ export function ReplaceAliasDialog({
       }}
     >
       <div className="dialog__header">
-        <h2 id="replace-alias-title" className="text-xl font-bold text-text">
+        <h2 id="replace-alias-title" className="ea-dialog__title">
           Kill the leak, keep the service
         </h2>
       </div>
 
-      <div className="dialog__body space-y-4">
-        <p>
+      <div className="dialog__body">
+        <p className="ea-dialog__intro">
           Create a fresh address for this service, save it there, then confirm. The old address
           stops forwarding as soon as the replacement is linked.
         </p>
 
-        <div className="rounded-xl border border-hairline bg-surface-sunken p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-text-muted">
-            Replacement checklist
-          </p>
-          <ol className="mt-3 space-y-3" aria-label="Replacement checklist">
-            <ChecklistItem
-              done={hasReservedAddress}
-              label="Reserve a new address for this service."
-            >
-              {!hasReservedAddress && (
-                <p className="mt-1 text-text-muted">
-                  Get the real address first so you can save it before the old one is retired.
-                </p>
-              )}
-            </ChecklistItem>
-            <ChecklistItem done={hasCopiedAddress} label="Copy or save the new address.">
-              {hasReservedAddress && replacement?.fullAddress && (
-                <div className="mt-2 rounded-lg border border-primary-border bg-primary-surface p-3">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-                    New address
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-start gap-2">
-                    <code ref={addressRef} className="min-w-0 flex-1 break-all text-sm text-text">
-                      {replacement.fullAddress}
-                    </code>
-                    <button
-                      type="button"
-                      className="btn btn--secondary btn--sm"
-                      onClick={() => void copyAddress()}
-                    >
-                      {copyState === 'copied' ? (
-                        <IconCheck className="btn__icon" />
-                      ) : (
-                        <IconCopy className="btn__icon" />
-                      )}
-                      {copyState === 'copied' ? 'Copied' : 'Copy address'}
-                    </button>
-                  </div>
-                  {copyState === 'manual' && (
-                    <p className="mt-2 text-xs text-text-muted">
-                      The address is selected, so use your keyboard to copy it.
-                    </p>
-                  )}
-                </div>
-              )}
-              {hasReservedAddress && !hasCopiedAddress && (
-                <p className="mt-2 flex items-start gap-2 text-text-muted">
-                  <IconAlertTriangle size={16} className="mt-0.5 shrink-0 text-warning" />
-                  <span>Copy the address before confirming, so you don’t lose it.</span>
-                </p>
-              )}
-            </ChecklistItem>
-            <ChecklistItem
-              done={serviceUpdated}
-              label="Update the affected service with the new address."
-            >
-              <label htmlFor={serviceUpdatedId} className="mt-2 flex items-start gap-2 text-text-muted">
-                <input
-                  id={serviceUpdatedId}
-                  type="checkbox"
-                  className="mt-1"
-                  checked={serviceUpdated}
-                  onChange={(event) => setServiceUpdated(event.target.checked)}
-                  disabled={!hasReservedAddress || isBusy}
-                />
-                <span>I’ve updated the service and saved the new address where needed.</span>
-              </label>
-            </ChecklistItem>
-            <ChecklistItem done={false} label="Confirm replacement to retire the old address.">
-              <p className="mt-1 text-text-muted">
-                Confirm only after the checklist above is complete. The old address stops forwarding
-                when the replacement is linked.
-              </p>
-            </ChecklistItem>
-          </ol>
+        <div className="ea-transition">
+          <div>
+            <span className="ea-transition__label">Current address</span>
+            <p className="ea-transition__title">Retired on confirmation</p>
+            <p className="ea-transition__address ea-transition__address--retired">
+              {alias.fullAddress ?? 'Address pending'}
+            </p>
+            <p className="ea-transition__note">
+              Mail sent here stops forwarding when the replacement is linked.
+            </p>
+          </div>
+          <div>
+            <span className="ea-transition__label">Replacement</span>
+            <p className="ea-transition__title">Ready to save</p>
+            <p className="ea-transition__address ea-transition__address--new">
+              {hasReservedAddress ? 'Reserved — copy it below' : 'Not reserved yet'}
+            </p>
+            <p className="ea-transition__note">
+              The new entry keeps this alias’s label and category.
+            </p>
+          </div>
         </div>
 
+        <h3 className="ea-section-title">Replacement checklist</h3>
+        <p className="ea-hint">Perform each action deliberately before linking the replacement.</p>
+
+        <ol className="ea-checklist" aria-label="Replacement checklist">
+          <ChecklistItem
+            step={1}
+            done={hasReservedAddress}
+            state="Required"
+            label="Reserve a new address for this service."
+          >
+            {!hasReservedAddress ? (
+              <>
+                <p>
+                  Click <strong>Reserve new address</strong> here to create the replacement before
+                  the old one is retired.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn--primary btn--sm ea-checklist__action"
+                  onClick={() => void reserveAddress()}
+                  disabled={isBusy}
+                  aria-busy={isReserving || undefined}
+                >
+                  {isReserving ? 'Reserving…' : 'Reserve new address'}
+                </button>
+              </>
+            ) : (
+              <p>A fresh address is ready to copy below.</p>
+            )}
+          </ChecklistItem>
+
+          <ChecklistItem
+            step={2}
+            done={hasCopiedAddress}
+            state={hasReservedAddress ? 'Required' : 'Waiting'}
+            label="Copy or save the new address."
+          >
+            {hasReservedAddress && replacement?.fullAddress && (
+              <div className="ea-checklist__address">
+                <code ref={addressRef} className="min-w-0 flex-1">
+                  {replacement.fullAddress}
+                </code>
+                <button
+                  type="button"
+                  className="btn btn--primary btn--sm"
+                  onClick={() => void copyAddress()}
+                >
+                  {copyState === 'copied' ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                  {copyState === 'copied' ? 'Copied' : 'Copy address'}
+                </button>
+              </div>
+            )}
+            {copyState === 'manual' && (
+              <p>The address is selected, so use your keyboard to copy it.</p>
+            )}
+            {hasReservedAddress && !hasCopiedAddress && (
+              <p className="ea-checklist__warning">
+                <IconAlertTriangle size={16} />
+                <span>Copy the address before confirming, so you don’t lose it.</span>
+              </p>
+            )}
+          </ChecklistItem>
+
+          <ChecklistItem
+            step={3}
+            done={serviceUpdated}
+            state={hasReservedAddress ? 'Action' : 'Waiting'}
+            label="Update the affected service with the new address."
+          >
+            <label htmlFor={serviceUpdatedId} className="ea-checklist__confirm">
+              <input
+                id={serviceUpdatedId}
+                type="checkbox"
+                checked={serviceUpdated}
+                onChange={(event) => setServiceUpdated(event.target.checked)}
+                disabled={!hasReservedAddress || isBusy}
+              />
+              <span>I’ve updated the service and saved the new address where needed.</span>
+            </label>
+          </ChecklistItem>
+
+          <ChecklistItem
+            step={4}
+            done={false}
+            state="Pending"
+            label="Confirm replacement to retire the old address."
+          >
+            <p>
+              Confirm only after the checklist above is complete. The old address stops forwarding
+              when the replacement is linked.
+            </p>
+          </ChecklistItem>
+        </ol>
+
         {error && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="ea-notice ea-notice--error ea-notice--inline">
             {error}
           </p>
         )}
@@ -313,15 +354,7 @@ export function ReplaceAliasDialog({
           Cancel
         </button>
         {step === 'reserve' ? (
-          <button
-            type="button"
-            className="btn btn--primary"
-            onClick={() => void reserveAddress()}
-            disabled={isBusy}
-            aria-busy={isReserving || undefined}
-          >
-            {isReserving ? 'Reserving…' : 'Reserve new address'}
-          </button>
+          <p className="ea-dialog__footnote">Complete step 1 above to continue.</p>
         ) : (
           <button
             type="button"

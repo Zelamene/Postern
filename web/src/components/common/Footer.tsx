@@ -12,13 +12,13 @@ const COPYRIGHT_YEAR = new Date().getFullYear()
 
 export function Footer() {
   return (
-    <footer className="border-t border-hairline/70 bg-surface py-12 text-sm text-text-secondary">
-      <div className="shell flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+    <footer className="bg-surface-sunken py-14 text-sm text-text-secondary">
+      <div className="shell flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <IconPosternLogo size={20} className="text-primary" />
+          <div className="flex size-8 items-center justify-center bg-surface text-text">
+            <IconPosternLogo size={18} className="text-text" />
           </div>
-          <span className="font-bold text-text">Postern</span>
+          <span className="font-[family-name:var(--font-display)] text-lg text-text">Postern</span>
         </div>
 
         <nav
@@ -29,7 +29,7 @@ export function Footer() {
             <a
               key={link.href}
               href={link.href}
-              className="font-medium text-text-secondary no-underline transition-colors hover:text-text"
+              className="text-sm font-medium text-text-secondary no-underline transition-colors duration-150 hover:text-text"
             >
               {link.label}
             </a>
@@ -37,9 +37,9 @@ export function Footer() {
         </nav>
       </div>
 
-      <div className="shell mt-6 border-t border-hairline/50 pt-6">
+      <div className="shell mt-8 border-t border-hairline pt-6">
         <p className="text-caption text-text-muted">
-          © {COPYRIGHT_YEAR} Postern. An invite-only, single-purpose email alias service.
+          © {COPYRIGHT_YEAR} Postern. A simple, private email alias service.
         </p>
       </div>
     </footer>

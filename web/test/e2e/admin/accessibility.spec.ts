@@ -4,16 +4,14 @@ import { EXPECTED_BEST_EFFORT, EXPECTED_PROPAGATION } from '../support/freshness
 
 test('signed-in admin dashboard has no WCAG 2.2 AA violations', async ({ page }) => {
   await page.goto('/admin')
-  await expect(page.getByText(EXPECTED_PROPAGATION)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Admin dashboard' })).toBeVisible()
 
   const results = await analyzePage(page)
   expect(results.violations).toEqual([])
 })
 
-test('admin stale-data surfaces state propagation delay and best-effort logging', async ({
-  page,
-}) => {
+test('admin dashboard omits the data-freshness banner', async ({ page }) => {
   await page.goto('/admin')
-  await expect(page.getByText(EXPECTED_PROPAGATION)).toBeVisible()
-  await expect(page.getByText(EXPECTED_BEST_EFFORT)).toBeVisible()
+  await expect(page.getByText(EXPECTED_PROPAGATION)).toHaveCount(0)
+  await expect(page.getByText(EXPECTED_BEST_EFFORT)).toHaveCount(0)
 })

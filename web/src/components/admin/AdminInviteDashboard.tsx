@@ -20,21 +20,21 @@ interface AdminInviteDashboardProps {
   onRevoke: (inviteId: string) => void
 }
 
-function statusStyle(status: string): string {
+function statusTone(status: string): string {
   switch (status) {
     case 'delivered':
     case 'accepted':
-      return 'bg-success-surface text-success-on-surface'
+      return 'ea-chip--success'
     case 'sent':
-      return 'bg-info-surface text-info-on-surface'
+      return 'ea-chip--accent'
     case 'bounced':
     case 'complained':
     case 'failed':
-      return 'bg-danger-surface text-danger-on-surface'
+      return 'ea-chip--danger'
     case 'pending':
-      return 'bg-warning-surface text-warning-on-surface'
+      return 'ea-chip--neutral'
     default:
-      return 'bg-surface-sunken text-text-muted'
+      return 'ea-chip--muted'
   }
 }
 
@@ -66,81 +66,67 @@ export function AdminInviteDashboard({
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <>
+      <div className="ea-hero ea-hero--tight">
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-link">
-            Invitation management
-          </p>
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Admin dashboard</h1>
-          <p className="mt-2 text-sm text-text-muted">
+          <h1 className="ea-title ea-title--md">Admin dashboard</h1>
+          <p className="ea-lede">
             Review invite requests and manage delivery from one place.
           </p>
         </div>
-        <button type="button" className="btn btn--secondary" onClick={onRefresh} disabled={isLoading}>
-          {isLoading ? 'Refreshing…' : 'Refresh'}
-        </button>
+        <div className="ea-hero__actions">
+          <button type="button" className="btn btn--secondary" onClick={onRefresh} disabled={isLoading}>
+            {isLoading ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {recoveryKey && (
-        <RecoveryKeyNotice recoveryKey={recoveryKey} onDismiss={onDismissRecoveryKey} className="p-5" />
+        <div className="ea-admin-notice">
+          <RecoveryKeyNotice recoveryKey={recoveryKey} onDismiss={onDismissRecoveryKey} />
+        </div>
       )}
 
-      {loadError && (
-        <p role="alert" className="rounded-lg bg-danger-surface px-4 py-3 text-sm text-danger-on-surface">
-          {loadError}
-        </p>
-      )}
-      {actionError && (
-        <p role="alert" className="rounded-lg bg-danger-surface px-4 py-3 text-sm text-danger-on-surface">
-          {actionError}
-        </p>
-      )}
+      {loadError && <p role="alert" className="ea-notice ea-notice--error">{loadError}</p>}
+      {actionError && <p role="alert" className="ea-notice ea-notice--error">{actionError}</p>}
 
-      <section aria-label="Invitation capacity" className="grid gap-4 sm:grid-cols-2">
-        <article className="rounded-2xl border border-hairline bg-surface p-5 shadow-sm">
-          <p className="text-sm font-semibold text-text-muted">Seats free</p>
-          <p className="mt-2 text-4xl font-extrabold tracking-tight text-primary tnum">
-            {dashboard.seatsFree}
-          </p>
-          <p className="mt-1 text-xs text-text-muted">
+      <section aria-label="Invitation capacity" className="ea-admin-summary">
+        <div className="ea-admin-summary__item">
+          <span className="ea-admin-summary__label">Seats free</span>
+          <strong className="ea-admin-summary__value tnum">{dashboard.seatsFree}</strong>
+          <span className="ea-admin-summary__detail">
             Available after registered users and outstanding invites
-          </p>
-        </article>
-        <article className="rounded-2xl border border-hairline bg-surface p-5 shadow-sm">
-          <p className="text-sm font-semibold text-text-muted">Outstanding invites</p>
-          <p className="mt-2 text-4xl font-extrabold tracking-tight tnum">
-            {dashboard.outstandingInvites}
-          </p>
-          <p className="mt-1 text-xs text-text-muted">
+          </span>
+        </div>
+        <div className="ea-admin-summary__item">
+          <span className="ea-admin-summary__label">Outstanding invites</span>
+          <strong className="ea-admin-summary__value tnum">{dashboard.outstandingInvites}</strong>
+          <span className="ea-admin-summary__detail">
             Unused invitations that have not expired or been revoked
-          </p>
-        </article>
+          </span>
+        </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-hairline bg-surface shadow-sm">
-        <div className="border-b border-hairline px-5 py-4 sm:px-6">
-          <h2 className="text-xl font-bold">Invite requests</h2>
-          <p className="mt-1 text-sm text-text-muted">
-            Approve a request to issue an invitation, or reject it.
-          </p>
+      <section className="ea-admin-section" aria-labelledby="invite-requests-heading">
+        <div className="ea-admin-section__head">
+          <div>
+            <h2 id="invite-requests-heading" className="ea-admin-section__title">Invite requests</h2>
+            <p className="ea-admin-section__hint">
+              Approve a request to issue an invitation, or reject it.
+            </p>
+          </div>
         </div>
         {requests.length === 0 ? (
-          <p className="px-5 py-8 text-sm text-text-muted sm:px-6">No pending invite requests.</p>
+          <p className="ea-admin-empty">No pending invite requests.</p>
         ) : (
-          <ul className="divide-y divide-hairline">
+          <ul className="ea-admin-list">
             {requests.map((request) => (
-              <li
-                key={request.id}
-                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
-              >
-                <div className="min-w-0">
-                  <p className="break-all font-semibold">{request.email}</p>
-                  <p className="mt-1 text-xs text-text-muted">
-                    Requested {formatDate(request.requestedAt)}
-                  </p>
+              <li key={request.id} className="ea-admin-row">
+                <div className="ea-admin-row__primary">
+                  <p className="ea-admin-row__title">{request.email}</p>
+                  <p className="ea-admin-row__meta">Requested {formatDate(request.requestedAt)}</p>
                 </div>
-                <div className="flex shrink-0 gap-2">
+                <div className="ea-admin-actions">
                   <button
                     type="button"
                     className="btn btn--primary btn--sm"
@@ -164,52 +150,40 @@ export function AdminInviteDashboard({
         )}
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-hairline bg-surface shadow-sm">
-        <div className="border-b border-hairline px-5 py-4 sm:px-6">
-          <h2 className="text-xl font-bold">All invites</h2>
-          <p className="mt-1 text-sm text-text-muted">
-            Delivery state, expiry, and available actions for each invitation.
-          </p>
+      <section className="ea-admin-section" aria-labelledby="all-invites-heading">
+        <div className="ea-admin-section__head">
+          <div>
+            <h2 id="all-invites-heading" className="ea-admin-section__title">All invites</h2>
+            <p className="ea-admin-section__hint">
+              Delivery state, expiry, and available actions for each invitation.
+            </p>
+          </div>
         </div>
         {dashboard.invites.length === 0 ? (
-          <p className="px-5 py-8 text-sm text-text-muted sm:px-6">
-            No invitations have been issued yet.
-          </p>
+          <p className="ea-admin-empty">No invitations have been issued yet.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[42rem] text-left text-sm">
-              <thead className="bg-surface-sunken text-xs uppercase tracking-wide text-text-muted">
+          <div className="ea-admin-table-wrap">
+            <table className="ea-admin-table">
+              <thead>
                 <tr>
-                  <th scope="col" className="px-5 py-3 font-semibold sm:px-6">
-                    Recipient
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-semibold">
-                    Status
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-semibold">
-                    Expires
-                  </th>
-                  <th scope="col" className="px-5 py-3 text-right font-semibold sm:px-6">
-                    Actions
-                  </th>
+                  <th scope="col">Recipient</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Expires</th>
+                  <th scope="col" className="ea-admin-table__actions-head">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-hairline">
+              <tbody>
                 {dashboard.invites.map((invite) => (
                   <tr key={invite.id}>
-                    <td className="break-all px-5 py-4 font-medium sm:px-6">{invite.email}</td>
-                    <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold capitalize ${statusStyle(invite.status)}`}
-                      >
+                    <td className="ea-admin-cell--primary">{invite.email}</td>
+                    <td>
+                      <span className={`ea-chip ${statusTone(invite.status)}`}>
                         {invite.status}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-text-muted">
-                      {formatExpiry(invite.expiresAt)}
-                    </td>
-                    <td className="px-5 py-4 sm:px-6">
-                      <div className="flex justify-end gap-2">
+                    <td className="ea-admin-cell--muted">{formatExpiry(invite.expiresAt)}</td>
+                    <td className="ea-admin-table__actions">
+                      <div className="ea-admin-actions">
                         {invite.canResend && (
                           <button
                             type="button"
@@ -261,6 +235,6 @@ export function AdminInviteDashboard({
           onReject(rejectedRequest.id)
         }}
       />
-    </div>
+    </>
   )
 }

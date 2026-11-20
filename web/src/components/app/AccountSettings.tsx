@@ -12,6 +12,8 @@ interface AccountSettingsProps {
   account: CurrentAccount
   onForwardingAddressChange: (address: string) => void
   onAccountDeleted: () => void
+  isSigningOut: boolean
+  onSignOut: () => void
 }
 
 function describeError(error: unknown, fallback: string): string {
@@ -30,6 +32,8 @@ export function AccountSettings({
   account,
   onForwardingAddressChange,
   onAccountDeleted,
+  isSigningOut,
+  onSignOut,
 }: Readonly<AccountSettingsProps>) {
   const toast = useToast()
   const [forwardingAddress, setForwardingAddress] = useState(account.forwardingAddress)
@@ -92,43 +96,51 @@ export function AccountSettings({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Account</p>
-        <h1 className="mt-1 text-3xl font-extrabold tracking-tight">Account settings</h1>
-        <p className="mt-2 max-w-prose text-sm text-text-muted">
-          Your aliases forward into one destination inbox. Change it here without touching any
-          alias.
-        </p>
+    <div className="ea-stack">
+      <div className="ea-hero">
+        <div>
+          <h1 className="ea-title ea-title--md">Account settings</h1>
+          <p className="ea-lede">
+            Your aliases forward into one destination inbox. Change it here without touching any
+            alias.
+          </p>
+        </div>
       </div>
 
       <section
-        className="rounded-2xl border border-hairline bg-surface p-5 shadow-sm sm:p-6"
+        className="ea-card ea-card__pad"
         aria-labelledby={`${forwardingId}-title`}
       >
-        <h2 id={`${forwardingId}-title`} className="text-xl font-bold">
+        <h2 id={`${forwardingId}-title`} className="ea-section-title">
           Forwarding destination
         </h2>
-        <p className="mt-1 text-sm text-text-muted">
+        <p className="ea-hint">
           Mail sent to any of your aliases is relayed to this address.
         </p>
 
-        <dl className="mt-4 grid gap-1 text-sm">
-          <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-            Sign-in email
-          </dt>
-          <dd className="break-all font-medium">{account.email}</dd>
-        </dl>
-
-        <form className="mt-5 space-y-3" onSubmit={handleForwardingSubmit}>
+        <div className="ea-spec">
           <div>
-            <label htmlFor={forwardingId} className="mb-1 block text-sm font-semibold">
+            <span className="ea-spec__label">Current forwarding destination</span>
+            <span className="ea-spec__value">{account.forwardingAddress}</span>
+          </div>
+          <div>
+            <span className="ea-spec__label">Account sign-in</span>
+            <span className="ea-spec__value ea-spec__value--sm">{account.email}</span>
+          </div>
+        </div>
+
+        <form className="ea-composer__grid" onSubmit={handleForwardingSubmit}>
+          <div className="ea-field ea-field--wide">
+            <label htmlFor={forwardingId} className="ea-label">
               Destination address
             </label>
+            {/* Plain text on purpose: native email validation rejects valid
+                Universal Acceptance addresses that the backend accepts. */}
             <input
               id={forwardingId}
-              type="email"
-              className="input w-full"
+              type="text"
+              inputMode="email"
+              className="input"
               value={forwardingAddress}
               onChange={(event) => {
                 setForwardingAddress(event.target.value)
@@ -140,51 +152,84 @@ export function AccountSettings({
               required
               disabled={isSaving}
             />
+            <p className="ea-hint">
+              Confirm any verification sent to a new address before relying on it.
+            </p>
+
+            {saveError && (
+              <p role="alert" className="ea-notice ea-notice--error ea-notice--inline">
+                {saveError}
+              </p>
+            )}
+
+            {saveNotice && (
+              <output className="ea-notice ea-notice--inline">{saveNotice}</output>
+            )}
           </div>
 
-          {saveError && (
-            <p role="alert" className="text-sm text-danger">
-              {saveError}
-            </p>
-          )}
-
-          {saveNotice && (
-            <output className="text-sm text-success">
-              {saveNotice}
-            </output>
-          )}
-
-          <button type="submit" className="btn btn--primary" disabled={isSaving}>
-            {isSaving ? 'Saving…' : 'Update destination'}
-          </button>
+          <div className="ea-field ea-field--wide ea-inline-action">
+            <span className="ea-inline-action__note">
+              Every alias forwards here. Updating this destination does not change alias addresses.
+            </span>
+            <button type="submit" className="btn btn--primary" disabled={isSaving}>
+              {isSaving ? 'Saving…' : 'Update destination'}
+            </button>
+          </div>
         </form>
       </section>
 
       <section
-        className="rounded-2xl border border-danger/40 bg-danger-surface/40 p-5 sm:p-6"
+        className="ea-card ea-card__pad"
+        aria-labelledby={`${forwardingId}-session`}
+      >
+        <h2 id={`${forwardingId}-session`} className="ea-section-title">
+          Session
+        </h2>
+        <p className="ea-hint">Signed in as {account.email}.</p>
+        <div className="ea-card__foot">
+          <button
+            type="button"
+            className="btn btn--secondary"
+            onClick={onSignOut}
+            disabled={isSigningOut}
+          >
+            {isSigningOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </div>
+      </section>
+
+      <section
+        className="ea-danger"
         aria-labelledby={`${forwardingId}-danger`}
       >
-        <h2 id={`${forwardingId}-danger`} className="text-xl font-bold">
+        <h2 id={`${forwardingId}-danger`} className="ea-section-title">
           Delete account
         </h2>
-        <p className="mt-1 max-w-prose text-sm text-text-secondary">
+        <p className="ea-lede">
           Deleting your account retires every alias and stops all forwarding. This cannot be
           undone.
         </p>
 
-        {deleteError && (
-          <p role="alert" className="mt-3 text-sm text-danger">
-            {deleteError}
-          </p>
-        )}
-
-        <button
-          type="button"
-          className="btn btn--danger-solid mt-4"
-          onClick={() => setIsDeleteOpen(true)}
-        >
-          Delete my account
-        </button>
+        <div className="ea-danger__box">
+          <div>
+            <h3 className="ea-card__title">Retire every alias</h3>
+            <p className="ea-hint">
+              This closes the account and stops delivery to the destination above.
+            </p>
+            {deleteError && (
+              <p role="alert" className="ea-notice ea-notice--error ea-notice--inline">
+                {deleteError}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            className="btn btn--danger-solid"
+            onClick={() => setIsDeleteOpen(true)}
+          >
+            Delete my account
+          </button>
+        </div>
       </section>
 
       <ConfirmationDialog

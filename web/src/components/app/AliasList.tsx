@@ -1,13 +1,26 @@
 import { useEffect, useState } from 'react'
 import { ConfirmationDialog } from '../common/ConfirmationDialog'
-import { IconCopy, IconInbox } from '../common/Icons'
+import { IconInbox } from '../common/Icons'
 import { useToast } from '../common/toast'
-import type { Alias } from '../../types'
+import type { Alias, AliasStatus } from '../../types'
 import { copyText, selectText } from '../../services/clipboard'
 import { formatDate } from '../../services/formatters'
 import { ALIAS_DELETE_RETENTION } from '../../services/productCopy'
 import { AppLink } from './AppLink'
-import { ALIAS_STATUS_CLASSES } from './aliasStatus'
+
+const STATUS_CHIP_CLASSES: Record<AliasStatus, string> = {
+  Active: 'ea-chip ea-chip--success',
+  Disabled: 'ea-chip ea-chip--muted',
+  Replaced: 'ea-chip ea-chip--neutral',
+  Deleted: 'ea-chip ea-chip--muted',
+}
+
+const STATUS_NOTES: Record<AliasStatus, string> = {
+  Active: 'Forwarding on',
+  Disabled: 'Paused',
+  Replaced: 'Retired',
+  Deleted: 'Retired',
+}
 
 interface AliasListProps {
   aliases: Alias[]
@@ -99,17 +112,15 @@ export function AliasList({
   return (
     <>
       <section
-        className="overflow-hidden rounded-2xl border border-hairline bg-surface shadow-sm"
+        className="ea-alias-section"
         aria-labelledby="alias-list-title"
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-4 sm:px-6">
+        <div className="ea-section-head">
           <div className="min-w-0">
-            <h2 id="alias-list-title" className="text-xl font-bold">
+            <h2 id="alias-list-title" className="ea-section-title">
               All aliases
             </h2>
-            <p className="mt-1 text-sm text-text-muted">
-              Open an alias to review the mail it has received.
-            </p>
+            <p className="ea-hint">Every address, its status, and its next action in one place.</p>
           </div>
           <button
             type="button"
@@ -163,85 +174,105 @@ export function AliasList({
             </span>
             <p className="empty__title">No aliases yet</p>
             <p className="empty__body">
-              Create your first alias above, then hand it to a service instead of your real
-              address.
+              Use Create an alias to add your first address, then hand it to a service instead of
+              your real address.
             </p>
           </div>
         )}
 
         {aliases.length > 0 && (
-          <ul className="divide-y divide-hairline">
-            {aliases.map((alias) => {
-              const label = alias.label ?? 'default'
-              return (
-                <li
-                  key={alias.id}
-                  className="grid gap-3 px-5 py-4 sm:px-6 md:grid-cols-[minmax(0,1fr)_6.5rem_8rem_auto] md:items-center"
-                >
-                  <div className="min-w-0">
-                    <p className="font-semibold capitalize">{label}</p>
-                    <div className="mt-0.5 flex min-w-0 items-start gap-1.5">
-                      <code className="min-w-0 break-all text-xs text-text-muted">
+          <>
+            <div className="ea-alias-legend" aria-hidden="true">
+              <span>Alias</span>
+              <span>Address</span>
+              <span>Status</span>
+              <span>Created</span>
+              <span>Actions</span>
+            </div>
+            <ul className="ea-alias-grid">
+              {aliases.map((alias) => {
+                const label = alias.label ?? 'default'
+                const isRetired = alias.status === 'Replaced' || alias.status === 'Deleted'
+                return (
+                  <li
+                    key={alias.id}
+                    className={`ea-alias-row${isRetired ? ' ea-alias-row--retired' : ''}`}
+                  >
+                    <div className="ea-alias-identity">
+                      <span className="ea-alias-avatar" aria-hidden="true">
+                        {label.charAt(0).toUpperCase() || '@'}
+                      </span>
+                      <div className="ea-alias-identity__text">
+                        <h3 className="ea-alias-label capitalize">{label}</h3>
+                        {alias.category && (
+                          <span className="ea-alias-category">Category: {alias.category}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="ea-alias-address">
+                      <code className={isRetired ? 'line-through' : undefined}>
                         {alias.fullAddress ?? 'Address pending'}
                       </code>
-                      {alias.fullAddress && (
+                      {alias.fullAddress ? (
                         <button
                           type="button"
-                          className="tip inline-flex size-6 shrink-0 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-tint hover:text-primary"
+                          className="ea-copy"
                           data-tip={copiedAliasId === alias.id ? 'Copied' : 'Copy address'}
                           aria-label={`Copy address for ${label}`}
                           onClick={(event) => {
-                            const code =
-                              event.currentTarget.parentElement?.querySelector('code')
+                            const code = event.currentTarget.parentElement?.querySelector('code')
                             void copyAddress(alias, code instanceof HTMLElement ? code : null)
                           }}
                         >
-                          <IconCopy size={14} />
+                          {copiedAliasId === alias.id ? 'Copied' : 'Copy'}
                         </button>
+                      ) : (
+                        <span className="ea-hint">Pending</span>
                       )}
                     </div>
-                  </div>
 
-                  <div>
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${ALIAS_STATUS_CLASSES[alias.status]}`}
-                    >
-                      {alias.status}
+                    <div className="ea-alias-status">
+                      <span className={STATUS_CHIP_CLASSES[alias.status]}>{alias.status}</span>
+                      <span className="ea-alias-status__note">{STATUS_NOTES[alias.status]}</span>
+                    </div>
+
+                    <span className="ea-alias-created">
+                      <span className="ea-alias-meta-label">Created</span>
+                      <time className="ea-mono" dateTime={alias.createdAt}>
+                        {formatDate(alias.createdAt)}
+                      </time>
                     </span>
-                  </div>
 
-                  <p className="text-xs text-text-muted md:text-sm">
-                    Created {formatDate(alias.createdAt)}
-                  </p>
-
-                  <div className="flex flex-wrap gap-2 md:justify-end">
-                    <AppLink
-                      to={`/app/aliases/${alias.id}`}
-                      className="btn btn--secondary btn--sm"
-                    >
-                      Activity
-                    </AppLink>
-                    <button
-                      type="button"
-                      className="btn btn--ghost btn--sm"
-                      disabled={isBusy || alias.status !== 'Active'}
-                      onClick={() => setPendingAction({ kind: 'disable', alias })}
-                    >
-                      Disable
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn--danger btn--sm"
-                      disabled={isBusy || alias.status === 'Deleted'}
-                      onClick={() => setPendingAction({ kind: 'delete', alias })}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+                    <div className="ea-alias-actions">
+                      <AppLink
+                        to={`/app/aliases/${alias.id}`}
+                        className="btn btn--secondary btn--sm"
+                      >
+                        Activity
+                      </AppLink>
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        disabled={isBusy || alias.status !== 'Active'}
+                        onClick={() => setPendingAction({ kind: 'disable', alias })}
+                      >
+                        Disable
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--danger btn--sm"
+                        disabled={isBusy || alias.status === 'Deleted'}
+                        onClick={() => setPendingAction({ kind: 'delete', alias })}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
         )}
       </section>
 

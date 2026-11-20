@@ -1,0 +1,11 @@
+# Postern crawler policy
+# Account, admin, invite, and API surfaces are private and must not be crawled.
+
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /admin
+Disallow: /invite/
+Disallow: /api/
+
+Sitemap: https://3xyz.uk/sitemap.xml

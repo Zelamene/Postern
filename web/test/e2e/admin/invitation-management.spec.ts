@@ -6,14 +6,15 @@ async function submitRequest(browser: Browser, baseURL: string, email: string) {
   try {
     const page = await context.newPage()
     await page.goto('/')
-    await page.getByRole('button', { name: 'Request an invite' }).click()
-    await page.getByLabel('Email address').fill(email)
+    await page.getByRole('button', { name: 'Request an invite' }).first().click()
+    const dialog = page.getByRole('dialog', { name: 'Request an invite' })
+    await dialog.getByLabel('Email address').fill(email)
     const request = page.waitForResponse(
       (response) =>
         response.url().endsWith('/api/invite-requests') &&
         response.request().method() === 'POST',
     )
-    await page.getByRole('button', { name: 'Send request' }).click()
+    await dialog.getByRole('button', { name: 'Send request' }).click()
     expect((await request).status()).toBe(202)
     await expect(page.getByRole('status')).toContainText('Your request has been recorded')
   } finally {

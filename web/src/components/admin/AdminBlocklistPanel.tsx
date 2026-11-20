@@ -36,37 +36,33 @@ export function AdminBlocklistPanel({
   }
 
   return (
-    <section aria-labelledby="blocklist-heading" className="panel">
-      <div className="panel__header">
+    <section aria-labelledby="blocklist-heading" className="ea-admin-panel">
+      <div className="ea-admin-panel__head">
         <div>
-          <h2 id="blocklist-heading" className="text-xl font-bold">Global blocklist</h2>
-          <p className="mt-1 text-sm text-text-muted">
+          <h2 id="blocklist-heading" className="ea-admin-panel__title">Global blocklist</h2>
+          <p className="ea-admin-panel__hint">
             Domains blocked for every alias across Postern.
           </p>
         </div>
-        <span className="chip">{entries.length} blocked</span>
+        <span className="ea-chip ea-chip--neutral">{entries.length} blocked</span>
       </div>
-      <div className="panel__body space-y-5">
+      <div className="ea-admin-panel__body">
         {error && (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p role="alert" className="rounded-lg bg-danger-surface px-4 py-3 text-sm text-danger-on-surface">
-              {error}
-            </p>
+          <div className="ea-admin-inline">
+            <p role="alert" className="ea-notice ea-notice--error">{error}</p>
             <button type="button" className="btn btn--secondary btn--sm" onClick={onReload}>
               Try again
             </button>
           </div>
         )}
 
-        <form className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto] sm:items-end" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="blocklist-domain" className="mb-1 block text-sm font-semibold">
-              Domain
-            </label>
+        <form className="ea-admin-form" onSubmit={handleSubmit}>
+          <div className="ea-field">
+            <label htmlFor="blocklist-domain" className="ea-label">Domain</label>
             <input
               id="blocklist-domain"
               type="text"
-              className="input w-full"
+              className="input"
               placeholder="example.com"
               autoComplete="off"
               spellCheck={false}
@@ -75,14 +71,12 @@ export function AdminBlocklistPanel({
               onChange={(event) => setDomain(event.target.value)}
             />
           </div>
-          <div>
-            <label htmlFor="blocklist-reason" className="mb-1 block text-sm font-semibold">
-              Reason
-            </label>
+          <div className="ea-field">
+            <label htmlFor="blocklist-reason" className="ea-label">Reason</label>
             <input
               id="blocklist-reason"
               type="text"
-              className="input w-full"
+              className="input"
               placeholder="Optional"
               value={reason}
               onChange={(event) => setReason(event.target.value)}
@@ -94,31 +88,31 @@ export function AdminBlocklistPanel({
         </form>
 
         {isLoading && entries.length === 0 ? (
-          <div className="flex min-h-24 items-center justify-center gap-3 text-text-muted" role="status">
+          <div className="ea-admin-loading" role="status">
             <span className="spinner" aria-hidden="true" />
             Loading blocklist
           </div>
         ) : entries.length === 0 ? (
-          <p className="text-sm text-text-muted">No domains are blocked yet.</p>
+          <p className="ea-admin-empty">No domains are blocked yet.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table">
+          <div className="ea-admin-table-wrap">
+            <table className="ea-admin-table">
               <caption className="sr-only">Globally blocked domains</caption>
               <thead>
                 <tr>
                   <th scope="col">Domain</th>
                   <th scope="col">Reason</th>
                   <th scope="col">Added</th>
-                  <th scope="col" className="text-right">Actions</th>
+                  <th scope="col" className="ea-admin-table__actions-head">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((entry) => (
                   <tr key={entry.domain}>
-                    <td className="addr">{entry.domain}</td>
+                    <td className="ea-mono">{entry.domain}</td>
                     <td>{entry.reason}</td>
-                    <td className="whitespace-nowrap text-text-muted">{formatDate(entry.createdAt)}</td>
-                    <td className="text-right">
+                    <td className="ea-admin-cell--muted">{formatDate(entry.createdAt)}</td>
+                    <td className="ea-admin-table__actions">
                       <button
                         type="button"
                         className="btn btn--danger btn--sm"
