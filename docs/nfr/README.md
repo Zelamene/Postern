@@ -26,7 +26,7 @@ Rules this directory follows, learned the hard way on QR2.4:
 | QR7.2 | 0 new high/critical issues; duplication ≤ 3%; cognitive complexity ≤ 15 per function | `evidence/QR7.2-2026-11-18.json` (CI SonarCloud gate, main branch, 18 Nov 2026); `.github/workflows/sonarcloud.yml` | Gate PASSED: 0 new issues, 0.0% duplication, 0 open S3776; 90.0% new-code coverage |
 | QR2.1 | Ingest p95 ≤ 300 ms at 20 rps for 5 min; 0 unexpected 5xx | `evidence/QR2.1-2026-11-18.json` + raw k6 summary; `load/scripts/k6-ingest.js`, `load/scripts/seed.mjs` | PASS: 23.756 ms p95 at 20.002 rps over 5 min (n=6001), 0 unexpected 5xx |
 | QR2.2 | Dashboard reads p95 ≤ 500 ms on 50-item pages | `evidence/QR2.2-2026-11-18.json` + raw k6 summary; `load/scripts/k6-read.js`, `load/scripts/seed-messages.mjs` | PASS: 13.401 ms activity / 12.019 ms blocked p95 (n=7501), every page 50 items |
-| QR2.3 | Core-task steps p95 ≤ 2 s; task p95 ≤ 5 s; effect in mail path p95 ≤ 60 s | `evidence/QR2.3-2026-11-18.json` (mail-effect leg only); `load/scripts/time-to-effect.mjs` | Mail-effect leg PASS: 23.982 ms p95 floor (n=200), 4× `cacheTtl:60` reads verified; 2 s / 5 s journey timings remain `(build)` |
+| QR2.3 | Core-task steps p95 ≤ 2 s; task p95 ≤ 5 s; effect in mail path p95 ≤ 60 s | `evidence/QR2.3-2026-11-18.json` (mail-effect + step/task legs); `load/scripts/time-to-effect.mjs`, `backend/src/Postern.Api/Program.cs`, `web/test/e2e/support/serverTiming.ts`, `web/test/e2e/user/core-task-timing.spec.ts`, `web/test/e2e/admin/core-task-timing.spec.ts` | PASS: 60 s mail-effect leg 23.982 ms p95 floor (n=200), 4× `cacheTtl:60` reads verified; step/task journeys passed in Browser NFR Nightly #9 (2026-11-19, disposable fresh-stack, 2 s step / 5 s task budgets with `Server-Timing`) |
 | QR3.3 | ≥ 95% of core-task steps meet targets under 20 rps ingest + 25 sessions; < 1% errors; same at 28 rps peak; excess throttled, mail unaffected | `evidence/QR3.3-2026-11-18.json` + three raw k6 summaries; `load/scripts/k6-mixed.js` | PASS: 100% steps in target and 0% errors at 20 rps and 28 rps peak; 6001× 429, 0× 5xx under saturation with mail ingress 100% healthy |
 | QR3.2 | < 1,000 KV writes per day at 199 accounts; ≤ 1 write per alias change | `evidence/QR3.2-2026-11-18.json` (instrumented `IKvWriter` + advancing `TimeProvider` 24 h simulation and Cloudflare dashboard billed counts); `backend/tests/Postern.UnitTests/KvWriteBudgetSimulationTests.cs` | PASS: 226 writes in 24 h (427 incl. initial projection), 1 per alias change; dashboard Nov-to-date 63 mutating ops (18 writes + 45 deletes), 240 in all op classes |
 | QR4.2 | First request after idle p95 ≤ 30 s; waking state displayed | `evidence/QR4.2-2026-11-18.json` (delayed-response Playwright test); `web/test/e2e/user/waking-state.spec.ts`, `.github/workflows/browser-nightly.yml` | PASS (in-repo waking-state half): waking message asserted in 5/5 fresh-stack runs with a 6 s delayed response; cold-start p95 sample remains external |
@@ -182,8 +182,8 @@ without a build failure.
   publish-then-poll harness measures only the propagation floor (23.982 ms p95); the 60 s
   production bound comes from the four `cacheTtl:60` reads in `worker/src/index.ts`, which
   the harness verifies in source. It is not claimed as an emulated edge-cache measurement.
-  The 2 s step and 5 s task legs of QR2.3 still need server-timing-instrumented Playwright
-  journeys.
+  The 2 s step and 5 s task legs of QR2.3 now run as server-timing-instrumented Playwright
+  journeys in browser nightly (see `QR2.3-2026-11-18.json`, step/task leg, Browser NFR Nightly #9).
 - **QR3.3 saturation asserts 429-not-5xx on the rate-limited auth path.** The ASP.NET
   fixed-window IP limiter rejects the 11th+ login inside 15 minutes with 429; the harness
   floods that endpoint at 100 rps and confirms 0 5xx while ingest (the API-side mail
@@ -219,7 +219,8 @@ without a build failure.
   `Server-Timing` header, so the three timed core tasks (create alias, review activity,
   sync KV) are measured with `Date.now()` around the Playwright actions. This closes the
   "median task" and "100% pass on a fresh database" halves of QR6.2 but does not supply the
-  2 s step / 5 s task server-timing legs of QR2.3, which remain `(build)`.
+  2 s step / 5 s task server-timing legs of QR2.3 are now covered by instrumented browser-nightly
+  journeys (`QR2.3-2026-11-18.json`, step/task leg).
 - **QR6.1 keyboard coverage is the core journey; QR6.3 checks copy presence.** The automated
   keyboard check covers alias creation only, so the "all actions" clause still relies on the
   per-release manual keyboard checklist. The QR6.3 assertions prove both statements render on
