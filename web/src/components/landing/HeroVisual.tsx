@@ -103,7 +103,7 @@ export function HeroVisual() {
           <div className="hero-grain pointer-events-none absolute inset-0" />
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[#fbf3f9] to-transparent dark:from-[#0f090d]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[#e9e9ea] to-transparent dark:from-[#0f090d]" />
       </div>
 
       <Chip
