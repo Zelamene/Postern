@@ -5,7 +5,7 @@ export function Hero() {
   return (
     <section
       aria-labelledby="hero-title"
-      className="relative isolate overflow-hidden border-b border-hairline/70 bg-[#fbf3f9] dark:bg-[#0f090d]"
+      className="relative isolate overflow-hidden border-b border-hairline/70 bg-[#e9e9ea] dark:bg-[#0f090d]"
     >
       <div className="shell grid items-center gap-8 pt-10 pb-10 sm:gap-10 sm:pt-12 sm:pb-12 lg:min-h-[36rem] lg:py-16">
         <div className="relative z-10 max-w-xl">
