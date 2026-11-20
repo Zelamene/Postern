@@ -23,12 +23,14 @@
   opacity: 0.05;
 }
 
-/* The artwork is decoration: it only appears when there is room for it, rather
-   than being cropped on phones or squeezed out of a short (minimised) window. */
+
 @utility hero-visual {
   display: none;
+}
 
-  @media (min-width: 64rem) and (min-height: 37.5rem) {
+
+@media (min-width: 64rem) and (min-height: 37.5rem) {
+  .hero-visual {
     display: block;
   }
 }
